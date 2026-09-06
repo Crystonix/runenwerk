@@ -71,6 +71,9 @@ jobs:
           grep_optional 'complete spatial/index symbol census' \
             git grep -n -E 'SpatialHashIndex|SpatialHashConfig|SpatialIndexError|SpatialIndexStorage|SpatialIndex|DEFAULT_SPATIAL_INDEX_NAME' -- '*.rs' 'Cargo.toml'
 
+          grep_optional 'complete World spatial API/internal census' \
+            git grep -n -E 'ensure_spatial_hash_index(_named)?|spatial_(insert|update|remove|query_aabb)(_named)?|remove_entity_from_spatial_indexes|spatial_indexes' -- '*.rs' '*.md' 'Cargo.toml'
+
           grep_optional 'geometry ownership inside ECS' \
             git grep -n -E 'geometry::|Aabb3|Aabb2|Point3|Bounds|bounding|bounds' -- 'domain/ecs/**/*.rs' 'domain/ecs/Cargo.toml'
 
