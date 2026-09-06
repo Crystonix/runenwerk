@@ -5,17 +5,26 @@ use crate::world::World;
 use std::any::TypeId;
 
 impl World {
-    pub fn component_type_info(&self, type_id: TypeId) -> Option<&'static TypeInfo> {
-        self.reflected_component_types
-            .get(&type_id)
-            .map(|registration| registration.type_info)
+    pub fn reflected_component_type_info(&self, type_id: TypeId) -> Option<TypeInfo> {
+        if !self.reflected_component_types.contains_key(&type_id) {
+            return None;
+        }
+        self.type_registry.get(type_id)
     }
 
-    pub fn has_registered_component_type(&self, type_id: TypeId) -> bool {
+    pub fn has_reflected_component_type(&self, type_id: TypeId) -> bool {
+        self.reflected_component_types.contains_key(&type_id)
+    }
+
+    pub fn reflected_component_type_ids(&self) -> Vec<TypeId> {
+        self.reflected_component_order.clone()
+    }
+
+    pub fn has_component_type(&self, type_id: TypeId) -> bool {
         self.component_type_registry.contains_key(&type_id)
     }
 
-    pub fn registered_component_type_ids(&self) -> Vec<TypeId> {
+    pub fn component_type_ids(&self) -> Vec<TypeId> {
         self.component_type_registry.keys().copied().collect()
     }
 
@@ -30,10 +39,10 @@ impl World {
             .unwrap_or_default()
     }
 
-    pub fn entity_registered_component_types(&self, entity: Entity) -> Vec<&'static TypeInfo> {
+    pub fn entity_reflected_component_types(&self, entity: Entity) -> Vec<TypeInfo> {
         self.entity_component_type_ids(entity)
             .into_iter()
-            .filter_map(|type_id| self.component_type_info(type_id))
+            .filter_map(|type_id| self.reflected_component_type_info(type_id))
             .collect()
     }
 

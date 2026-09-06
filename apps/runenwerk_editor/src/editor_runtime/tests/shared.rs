@@ -4,7 +4,7 @@ pub struct Vec2 {
     pub y: f32,
 }
 
-#[derive(Debug, Clone, Default, ecs::Component, ecs::ReflectComponent)]
+#[derive(Debug, Clone, Default, ecs::Component, ecs::Reflect)]
 pub struct Position {
     pub value: Vec2,
     pub speed: f32,

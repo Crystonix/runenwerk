@@ -1,5 +1,4 @@
 use ecs::Reflect;
-use ecs::register_reflect_type;
 
 fn assert_reflect<T: ecs::reflect::Reflect>() {}
 
@@ -14,7 +13,7 @@ struct Vec2 {
     y: f32,
 }
 
-#[derive(Debug, Clone, ecs::Component, ecs::ReflectComponent)]
+#[derive(Debug, Clone, ecs::Component, ecs::Reflect)]
 struct Position {
     value: Vec2,
     speed: f32,
@@ -28,8 +27,8 @@ enum TextureFilter {
 
 #[test]
 fn reflected_named_struct_exposes_fields() {
-    let info = register_reflect_type::<Position>();
-    assert!(info.is_component());
+    let mut registry = ecs::TypeRegistry::new();
+    let info = registry.register::<Position>();
 
     let struct_info = info.struct_info().expect("Position should be a struct");
     assert_eq!(struct_info.field_count(), 2);
@@ -85,7 +84,8 @@ fn reflected_value_supports_field_mutation() {
 
 #[test]
 fn reflected_unit_enum_exposes_variants_and_current_symbol() {
-    let info = register_reflect_type::<TextureFilter>();
+    let mut registry = ecs::TypeRegistry::new();
+    let info = registry.register::<TextureFilter>();
     let enum_info = info.enum_info().expect("TextureFilter should be an enum");
 
     assert_eq!(enum_info.variant_count(), 2);

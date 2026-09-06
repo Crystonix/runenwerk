@@ -66,7 +66,7 @@ impl Default for QuatValue {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, ecs::Component, ecs::ReflectComponent)]
+#[derive(Debug, Copy, Clone, PartialEq, ecs::Component, ecs::Reflect)]
 pub struct LocalTransform {
     pub translation: Vec3Value,
     pub rotation: QuatValue,
@@ -105,7 +105,7 @@ impl Default for LocalTransform {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, ecs::Component, ecs::ReflectComponent)]
+#[derive(Debug, Copy, Clone, PartialEq, ecs::Component, ecs::Reflect)]
 pub struct WorldTransform {
     pub translation: Vec3Value,
     pub rotation: QuatValue,

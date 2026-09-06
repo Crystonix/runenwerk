@@ -46,7 +46,7 @@ impl EditorPrimitiveKind {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, ecs::Component, ecs::ReflectComponent)]
+#[derive(Debug, Clone, Copy, PartialEq, ecs::Component, ecs::Reflect)]
 pub struct EditorPrimitive {
     pub primitive_kind: u32,
     pub box_half_extents: Vec3Value,

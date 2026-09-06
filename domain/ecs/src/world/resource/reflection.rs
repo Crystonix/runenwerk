@@ -5,26 +5,19 @@ use crate::world::World;
 use std::any::TypeId;
 
 impl World {
-    pub fn register_resource_type<T>(&mut self)
+    pub fn register_reflected_resource<T>(&mut self)
     where
         T: Resource + Reflect,
     {
         self.ensure_reflected_resource_registered::<T>();
     }
 
-    pub fn registered_resource_types(&self) -> Vec<&'static crate::reflect::TypeInfo> {
-        self.reflected_resource_types
-            .values()
-            .map(|registration| registration.type_info)
+    pub fn reflected_resource_types(&self) -> Vec<crate::reflect::TypeInfo> {
+        self.reflected_resource_order
+            .iter()
+            .filter(|type_id| self.reflected_resource_types.contains_key(type_id))
+            .filter_map(|type_id| self.type_registry.get(*type_id))
             .collect()
-    }
-
-    pub fn insert_registered_resource<R>(&mut self, resource: R)
-    where
-        R: Resource + Reflect,
-    {
-        self.ensure_reflected_resource_registered::<R>();
-        self.insert_resource(resource);
     }
 
     pub(crate) fn ensure_reflected_resource_registered<T>(&mut self)
@@ -32,11 +25,15 @@ impl World {
         T: crate::Resource + crate::reflect::Reflect,
     {
         let type_id = TypeId::of::<T>();
-        self.reflected_resource_types
-            .entry(type_id)
-            .or_insert_with(|| {
-                let _ = crate::reflect::register_reflect_type::<T>();
-                crate::reflect::reflected_resource_registration::<T>()
-            });
+        if self.reflected_resource_types.contains_key(&type_id) {
+            return;
+        }
+
+        let _ = self.type_registry.register::<T>();
+        self.reflected_resource_types.insert(
+            type_id,
+            crate::reflect::reflected_resource_registration::<T>(),
+        );
+        self.reflected_resource_order.push(type_id);
     }
 }

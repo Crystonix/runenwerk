@@ -4,6 +4,7 @@ mod change_tracking;
 mod component_indexes;
 mod entity_handles;
 pub mod messaging;
+mod reflection;
 mod runtime;
 mod state;
 

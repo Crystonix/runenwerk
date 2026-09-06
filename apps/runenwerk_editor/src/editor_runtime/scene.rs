@@ -531,6 +531,6 @@ fn read_edit_value_at_path(
     }
 
     Err(InspectorEditError::UnsupportedValueType {
-        actual_type: current.type_info().stable_name.to_string(),
+        actual_type: current.type_info().display_name.to_string(),
     })
 }

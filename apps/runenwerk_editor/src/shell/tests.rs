@@ -71,7 +71,7 @@ use crate::shell::{
 #[derive(Debug, Copy, Clone, PartialEq, ecs::Component)]
 struct TestMarker;
 
-#[derive(Debug, Clone, Default, ecs::Component, ecs::ReflectComponent)]
+#[derive(Debug, Clone, Default, ecs::Component, ecs::Reflect)]
 struct QueryMarker {
     value: i32,
 }

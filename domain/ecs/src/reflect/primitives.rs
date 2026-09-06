@@ -1,30 +1,20 @@
 //! File: domain/ecs/src/reflect/primitives.rs
 //! Purpose: Primitive opaque reflection implementations.
 
-use std::sync::OnceLock;
-
-use crate::reflect::{
-    Reflect, ReflectClassification, ReflectShape, TypeInfo, allocate_reflect_type_id,
-};
+use crate::reflect::{Reflect, ReflectShape, TypeInfo};
 
 macro_rules! impl_primitive_reflect {
     ($ty:ty, $stable_name:expr) => {
         impl Reflect for $ty {
-            fn type_info() -> &'static TypeInfo
+            fn type_info() -> TypeInfo
             where
                 Self: Sized,
             {
-                static TYPE_INFO: OnceLock<TypeInfo> = OnceLock::new();
-
-                TYPE_INFO.get_or_init(|| {
-                    TypeInfo::new(
-                        allocate_reflect_type_id(),
-                        std::any::type_name::<Self>(),
-                        $stable_name,
-                        ReflectClassification::Plain,
-                        ReflectShape::Opaque,
-                    )
-                })
+                TypeInfo::new(
+                    std::any::type_name::<Self>(),
+                    $stable_name,
+                    ReflectShape::Opaque,
+                )
             }
         }
     };

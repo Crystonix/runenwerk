@@ -116,7 +116,7 @@ mod tests {
             world.read_broadcast::<EntitySpawnedEvent>().len(),
             spawn_events_before
         );
-        assert!(!world.has_registered_component_type(TypeId::of::<NeverRegistered>()));
+        assert!(!world.has_component_type(TypeId::of::<NeverRegistered>()));
         assert!(world.entity_locations.is_empty());
     }
 

@@ -38,7 +38,7 @@ where
 
         let type_info = self
             .world
-            .component_type_info(rust_type_id)
+            .reflected_component_type_info(rust_type_id)
             .ok_or(InspectorAdapterError::TypeNotRegistered)?;
 
         let reflected = self
@@ -47,14 +47,14 @@ where
             .ok_or(InspectorAdapterError::ValueNotAvailable)?;
 
         let root_field = build_reflect_field(
-            type_info.stable_name,
-            type_info.stable_name,
+            type_info.display_name,
+            type_info.display_name,
             InspectorPath::root(),
             reflected,
         );
 
         Ok(vec![
-            InspectorSection::new(type_info.stable_name, type_info.stable_name)
+            InspectorSection::new(type_info.display_name, type_info.display_name)
                 .with_field(root_field),
         ])
     }
@@ -70,7 +70,7 @@ where
 
         let type_info = self
             .world
-            .resource_type_info(rust_type_id)
+            .reflected_resource_type_info(rust_type_id)
             .ok_or(InspectorAdapterError::TypeNotRegistered)?;
 
         let reflected = self
@@ -79,14 +79,14 @@ where
             .ok_or(InspectorAdapterError::ValueNotAvailable)?;
 
         let root_field = build_reflect_field(
-            type_info.stable_name,
-            type_info.stable_name,
+            type_info.display_name,
+            type_info.display_name,
             InspectorPath::root(),
             reflected,
         );
 
         Ok(vec![
-            InspectorSection::new(type_info.stable_name, type_info.stable_name)
+            InspectorSection::new(type_info.display_name, type_info.display_name)
                 .with_field(root_field),
         ])
     }
@@ -236,7 +236,7 @@ fn build_leaf_field(
         InspectorValue::Text(v.clone())
     } else {
         InspectorValue::Unsupported {
-            type_name: value.type_info().stable_name.to_string(),
+            type_name: value.type_info().display_name.to_string(),
         }
     };
 
@@ -255,7 +255,7 @@ mod tests {
         y: f32,
     }
 
-    #[derive(Debug, Clone, ecs::Component, ecs::ReflectComponent)]
+    #[derive(Debug, Clone, ecs::Component, ecs::Reflect)]
     struct Position {
         value: Vec2,
         speed: f32,
@@ -267,12 +267,12 @@ mod tests {
         Linear,
     }
 
-    #[derive(Debug, Clone, ecs::Component, ecs::ReflectComponent)]
+    #[derive(Debug, Clone, ecs::Component, ecs::Reflect)]
     struct SpritePreview {
         filter: TextureFilter,
     }
 
-    #[derive(Debug, Clone, ecs::Resource, ecs::ReflectResource)]
+    #[derive(Debug, Clone, ecs::Resource, ecs::Reflect)]
     struct CameraSettings {
         zoom: f32,
         exposure: f32,
@@ -281,7 +281,7 @@ mod tests {
     #[test]
     fn builds_component_sections_for_reflected_component() {
         let mut world = ecs::World::new();
-        world.register_component_type::<Position>();
+        world.register_reflected_component::<Position>();
 
         let entity = world
             .spawn(Position {
@@ -314,8 +314,8 @@ mod tests {
     #[test]
     fn builds_resource_sections_for_reflected_resource() {
         let mut world = ecs::World::new();
-        world.register_resource_type::<CameraSettings>();
-        world.insert_registered_resource(CameraSettings {
+        world.register_reflected_resource::<CameraSettings>();
+        world.insert_resource(CameraSettings {
             zoom: 2.0,
             exposure: 1.25,
         });
@@ -340,7 +340,7 @@ mod tests {
     #[test]
     fn builds_enum_fields_for_reflected_component() {
         let mut world = ecs::World::new();
-        world.register_component_type::<SpritePreview>();
+        world.register_reflected_component::<SpritePreview>();
 
         let entity = world
             .spawn(SpritePreview {

@@ -142,7 +142,7 @@ fn apply_primitive_edit(
     mut current: ReflectValueMut<'_>,
     value: &InspectorEditValue,
 ) -> Result<(), InspectorEditError> {
-    let actual_type = current.type_info().stable_name.to_string();
+    let actual_type = current.type_info().display_name.to_string();
 
     match value {
         InspectorEditValue::Bool(next) => {
@@ -293,7 +293,7 @@ mod tests {
         y: f32,
     }
 
-    #[derive(Debug, Clone, ecs::Component, ecs::ReflectComponent)]
+    #[derive(Debug, Clone, ecs::Component, ecs::Reflect)]
     struct Position {
         value: Vec2,
         speed: f32,
@@ -306,12 +306,12 @@ mod tests {
         Linear,
     }
 
-    #[derive(Debug, Clone, ecs::Component, ecs::ReflectComponent)]
+    #[derive(Debug, Clone, ecs::Component, ecs::Reflect)]
     struct SpritePreview {
         filter: TextureFilter,
     }
 
-    #[derive(Debug, Clone, ecs::Resource, ecs::ReflectResource)]
+    #[derive(Debug, Clone, ecs::Resource, ecs::Reflect)]
     struct CameraSettings {
         zoom: f32,
         exposure: f32,
@@ -320,7 +320,7 @@ mod tests {
     #[test]
     fn updates_nested_component_float_field_by_path() {
         let mut world = ecs::World::new();
-        world.register_component_type::<Position>();
+        world.register_reflected_component::<Position>();
 
         let entity = world
             .spawn(Position {
@@ -355,7 +355,7 @@ mod tests {
     #[test]
     fn updates_component_string_field_by_path() {
         let mut world = ecs::World::new();
-        world.register_component_type::<Position>();
+        world.register_reflected_component::<Position>();
 
         let entity = world
             .spawn(Position {
@@ -390,8 +390,8 @@ mod tests {
     #[test]
     fn updates_resource_float_field_by_path() {
         let mut world = ecs::World::new();
-        world.register_resource_type::<CameraSettings>();
-        world.insert_registered_resource(CameraSettings {
+        world.register_reflected_resource::<CameraSettings>();
+        world.insert_resource(CameraSettings {
             zoom: 2.0,
             exposure: 1.25,
         });
@@ -419,7 +419,7 @@ mod tests {
     #[test]
     fn updates_component_enum_field_by_path() {
         let mut world = ecs::World::new();
-        world.register_component_type::<SpritePreview>();
+        world.register_reflected_component::<SpritePreview>();
 
         let entity = world
             .spawn(SpritePreview {
@@ -452,7 +452,7 @@ mod tests {
     #[test]
     fn rejects_unknown_component_enum_symbol() {
         let mut world = ecs::World::new();
-        world.register_component_type::<SpritePreview>();
+        world.register_reflected_component::<SpritePreview>();
 
         let entity = world
             .spawn(SpritePreview {
@@ -487,7 +487,7 @@ mod tests {
     #[test]
     fn rejects_invalid_component_path() {
         let mut world = ecs::World::new();
-        world.register_component_type::<Position>();
+        world.register_reflected_component::<Position>();
 
         let entity = world
             .spawn(Position {
