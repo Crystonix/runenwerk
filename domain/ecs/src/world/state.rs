@@ -12,7 +12,6 @@ use super::messaging::tick_buffer::TickBufferStorage;
 use super::messaging::work_queue::WorkQueueStorage;
 use super::ownership::OwnershipRegistry;
 use crate::entity::{Entity, EntityAllocator, WorldScopeId};
-use crate::indexing::SpatialIndexStorage;
 use crate::storage::{ArchetypeRegistry, EntityLocationMap};
 use std::any::{Any, TypeId};
 use std::cell::RefCell;
@@ -52,7 +51,6 @@ pub struct World {
 
     pub(super) component_indexes:
         RefCell<HashMap<ComponentIndexKey, Box<dyn ComponentIndexStorage>>>,
-    pub(super) spatial_indexes: HashMap<String, Box<dyn SpatialIndexStorage>>,
 
     pub(super) archetype_registry: ArchetypeRegistry,
     pub(super) entity_locations: EntityLocationMap,
@@ -98,7 +96,6 @@ impl World {
             ownership: OwnershipRegistry::default(),
 
             component_indexes: RefCell::new(HashMap::new()),
-            spatial_indexes: HashMap::new(),
 
             archetype_registry: ArchetypeRegistry::new(),
             entity_locations: Default::default(),

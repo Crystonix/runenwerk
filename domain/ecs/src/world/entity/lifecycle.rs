@@ -28,7 +28,6 @@ impl World {
 
     pub fn despawn(&mut self, entity: Entity) -> Result<(), EntityError> {
         self.ensure_entity_exists(entity)?;
-        self.remove_entity_from_spatial_indexes(entity);
 
         let removed_types = self
             .entity_locations

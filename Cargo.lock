@@ -714,7 +714,6 @@ dependencies = [
  "anyhow",
  "criterion",
  "ecs_macros",
- "geometry",
  "glam 0.31.1",
  "scheduler",
  "thiserror 2.0.18",

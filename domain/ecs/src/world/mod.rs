@@ -12,7 +12,6 @@ pub mod component;
 pub mod entity;
 pub mod ownership;
 pub mod resource;
-pub mod spatial;
 
 pub use change_extraction::{
     ChangeExtractionFilter, ChangeExtractionWindow, ComponentStructuralDelta,

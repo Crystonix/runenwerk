@@ -2,10 +2,8 @@ use ecs::prelude::*;
 use ecs::{
     BroadcastLifetime, BroadcastObserverTrigger, BroadcastOverflowPolicy, BroadcastStreamConfig,
     BroadcastTracingPolicy, ComponentChangeKind, EntityDespawnedEvent, EntitySpawnedEvent,
-    QueryTypeAccess, ResourceChangeKind, SpatialHashConfig, SystemParam, WorkQueueConfig,
+    QueryTypeAccess, ResourceChangeKind, SystemParam, WorkQueueConfig,
 };
-use geometry::Aabb3;
-use glam::Vec3;
 use scheduler::ScheduleLabel;
 use scheduler::label::SystemSet;
 use std::any::TypeId;
@@ -90,13 +88,6 @@ struct SpawnGate(bool);
 
 #[derive(Debug, PartialEq, Eq, ecs::Component, ecs::Resource)]
 struct AddedHealthCounts(Vec<usize>);
-
-fn aabb3(min: [f32; 3], max: [f32; 3]) -> Aabb3 {
-    Aabb3::from_corners(
-        Vec3::new(min[0], min[1], min[2]),
-        Vec3::new(max[0], max[1], max[2]),
-    )
-}
 
 #[test]
 fn spawn_query_and_entity_access_work() {
@@ -992,189 +983,6 @@ fn command_queued_spawn_is_visible_next_stage_and_not_readded_next_frame() {
 #[test]
 fn system_param_access_metadata_reports_expected_sets() {
     world_for_param_access_checks();
-}
-
-#[test]
-fn spatial_index_insert_and_query_overlap_work() {
-    let mut world = World::new();
-    world
-        .ensure_spatial_hash_index(SpatialHashConfig { cell_size: 1.0 })
-        .unwrap();
-
-    let near = world.spawn(Player).expect("spawn should succeed");
-    let far = world.spawn(Player).expect("spawn should succeed");
-    world
-        .spatial_insert(near, aabb3([0.0, 0.0, 0.0], [0.8, 0.8, 0.8]))
-        .unwrap();
-    world
-        .spatial_insert(far, aabb3([5.0, 5.0, 5.0], [6.0, 6.0, 6.0]))
-        .unwrap();
-
-    let hits = world
-        .spatial_query_aabb(aabb3([-0.5, -0.5, -0.5], [1.0, 1.0, 1.0]))
-        .unwrap();
-    assert_eq!(hits, vec![near]);
-}
-
-#[test]
-fn spatial_index_update_moves_entity_between_cells() {
-    let mut world = World::new();
-    world
-        .ensure_spatial_hash_index(SpatialHashConfig { cell_size: 1.0 })
-        .unwrap();
-
-    let entity = world.spawn(Player).expect("spawn should succeed");
-    world
-        .spatial_insert(entity, aabb3([0.0, 0.0, 0.0], [0.4, 0.4, 0.4]))
-        .unwrap();
-    world
-        .spatial_update(entity, aabb3([10.0, 10.0, 10.0], [10.5, 10.5, 10.5]))
-        .unwrap();
-
-    assert!(
-        world
-            .spatial_query_aabb(aabb3([-1.0, -1.0, -1.0], [1.0, 1.0, 1.0]))
-            .unwrap()
-            .is_empty()
-    );
-    assert_eq!(
-        world
-            .spatial_query_aabb(aabb3([9.5, 9.5, 9.5], [11.0, 11.0, 11.0]))
-            .unwrap(),
-        vec![entity]
-    );
-}
-
-#[test]
-fn spatial_index_remove_clears_query_results() {
-    let mut world = World::new();
-    world
-        .ensure_spatial_hash_index(SpatialHashConfig { cell_size: 1.0 })
-        .unwrap();
-
-    let entity = world.spawn(Player).expect("spawn should succeed");
-    world
-        .spatial_insert(entity, aabb3([1.0, 1.0, 1.0], [2.0, 2.0, 2.0]))
-        .unwrap();
-    assert!(world.spatial_remove(entity).unwrap());
-    assert!(!world.spatial_remove(entity).unwrap());
-    assert!(
-        world
-            .spatial_query_aabb(aabb3([0.0, 0.0, 0.0], [3.0, 3.0, 3.0]))
-            .unwrap()
-            .is_empty()
-    );
-}
-
-#[test]
-fn spatial_index_sparse_empty_space_queries_return_nothing() {
-    let mut world = World::new();
-    world
-        .ensure_spatial_hash_index(SpatialHashConfig { cell_size: 2.0 })
-        .unwrap();
-
-    let entity = world.spawn(Player).expect("spawn should succeed");
-    world
-        .spatial_insert(entity, aabb3([100.0, 100.0, 100.0], [101.0, 101.0, 101.0]))
-        .unwrap();
-
-    assert!(
-        world
-            .spatial_query_aabb(aabb3([-10.0, -10.0, -10.0], [10.0, 10.0, 10.0]))
-            .unwrap()
-            .is_empty()
-    );
-}
-
-#[test]
-fn spatial_index_deduplicates_entities_spanning_multiple_cells() {
-    let mut world = World::new();
-    world
-        .ensure_spatial_hash_index(SpatialHashConfig { cell_size: 1.0 })
-        .unwrap();
-
-    let entity = world.spawn(Player).expect("spawn should succeed");
-    world
-        .spatial_insert(entity, aabb3([0.25, 0.25, 0.25], [2.25, 2.25, 2.25]))
-        .unwrap();
-
-    let hits = world
-        .spatial_query_aabb(aabb3([0.0, 0.0, 0.0], [3.0, 3.0, 3.0]))
-        .unwrap();
-    assert_eq!(hits, vec![entity]);
-}
-
-#[test]
-fn spatial_index_returns_multiple_entities_for_overlapping_cells() {
-    let mut world = World::new();
-    world
-        .ensure_spatial_hash_index(SpatialHashConfig { cell_size: 1.0 })
-        .unwrap();
-
-    let first = world.spawn(Player).expect("spawn should succeed");
-    let second = world.spawn(Player).expect("spawn should succeed");
-    let third = world.spawn(Player).expect("spawn should succeed");
-    world
-        .spatial_insert(first, aabb3([0.0, 0.0, 0.0], [1.2, 1.2, 1.2]))
-        .unwrap();
-    world
-        .spatial_insert(second, aabb3([0.8, 0.8, 0.8], [2.0, 2.0, 2.0]))
-        .unwrap();
-    world
-        .spatial_insert(third, aabb3([4.0, 4.0, 4.0], [5.0, 5.0, 5.0]))
-        .unwrap();
-
-    let hits = world
-        .spatial_query_aabb(aabb3([0.5, 0.5, 0.5], [1.5, 1.5, 1.5]))
-        .unwrap();
-    assert_eq!(hits, vec![first, second]);
-}
-
-#[test]
-fn spatial_index_lifecycle_stays_correct_under_repeated_updates_and_despawn() {
-    let mut world = World::new();
-    world
-        .ensure_spatial_hash_index(SpatialHashConfig { cell_size: 1.0 })
-        .unwrap();
-
-    let entity = world.spawn(Player).expect("spawn should succeed");
-    world
-        .spatial_insert(entity, aabb3([0.0, 0.0, 0.0], [0.5, 0.5, 0.5]))
-        .unwrap();
-    for step in 1..=4 {
-        let base = step as f32 * 3.0;
-        world
-            .spatial_update(
-                entity,
-                aabb3([base, base, base], [base + 0.5, base + 0.5, base + 0.5]),
-            )
-            .unwrap();
-    }
-    assert_eq!(
-        world
-            .spatial_query_aabb(aabb3([11.5, 11.5, 11.5], [12.6, 12.6, 12.6]))
-            .unwrap(),
-        vec![entity]
-    );
-
-    assert!(world.spatial_remove(entity).unwrap());
-    assert!(
-        world
-            .spatial_query_aabb(aabb3([0.0, 0.0, 0.0], [20.0, 20.0, 20.0]))
-            .unwrap()
-            .is_empty()
-    );
-
-    world
-        .spatial_insert(entity, aabb3([2.0, 2.0, 2.0], [3.0, 3.0, 3.0]))
-        .unwrap();
-    world.despawn(entity).unwrap();
-    assert!(
-        world
-            .spatial_query_aabb(aabb3([0.0, 0.0, 0.0], [4.0, 4.0, 4.0]))
-            .unwrap()
-            .is_empty()
-    );
 }
 
 fn world_for_param_access_checks() {

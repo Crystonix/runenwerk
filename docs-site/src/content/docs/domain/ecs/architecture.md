@@ -5,7 +5,7 @@ status: active
 owner: ecs
 layer: domain
 canonical: true
-last_reviewed: 2026-04-27
+last_reviewed: 2026-09-06
 ---
 
 # ECS Architecture
@@ -32,15 +32,13 @@ Current ownership split:
 
 - `world/*`: world state, lifecycle orchestration, world-facing APIs
 - `commands/*`: deferred command abstraction, typed-erased queue, batching
-- `spatial/*`: spatial index traits and backend implementations
 - `query/*`: query/filter modeling and execution
 - `system/*`: param extraction and scheduler runtime bridge
 
 Boundary intent:
 
-- avoid `world` becoming a dumping ground for command/spatial internals
+- avoid `world` becoming a dumping ground for subsystem internals
 - keep command mechanics in `commands`
-- keep spatial infrastructure in `spatial`
 
 ## 3. Scheduling and Access Model
 
@@ -110,19 +108,13 @@ Core mechanics:
 - observer triggers emit on configured boundaries
 - `BroadcastReader<T>` param state tracks per-system read cursor (`iter_new`)
 
-## 8. Secondary and Spatial Index Internals
+## 8. Secondary Index Internals
 
 Secondary component indexes:
 
 - registered by `(component type, key type, name)`
 - lazily rebuilt when marked dirty by component churn
 - expose `&self` read APIs using interior mutability for cache rebuilds
-
-Spatial indexes:
-
-- live behind `SpatialIndex` trait storage in world state
-- current backend is `SpatialHashIndex`
-- entity despawn removes membership from all registered spatial indexes
 
 ## 9. Unsafe Boundaries and Required Invariants
 
