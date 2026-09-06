@@ -1,0 +1,108 @@
+name: C5 Census Investigation
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/issue-452-c5-census.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: c5-census-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  census:
+    name: Exact-main C5 census
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout accepted pull-request base
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          clean: true
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Prove exact current main
+        env:
+          PULL_REQUEST_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          actual="$(git rev-parse HEAD)"
+          current_main="$(git rev-parse origin/main)"
+          printf 'PR base: %s\nchecked out: %s\norigin/main: %s\n' "$PULL_REQUEST_BASE_SHA" "$actual" "$current_main"
+          test "$actual" = "$PULL_REQUEST_BASE_SHA"
+          test "$actual" = "$current_main"
+          test -z "$(git status --porcelain)"
+
+      - name: Run mandatory C5 census
+        id: census
+        run: |
+          set -euo pipefail
+          log_path="${RUNNER_TEMP}/c5-census.txt"
+          exec > >(tee "$log_path") 2>&1
+
+          C5_BASE="$(git rev-parse HEAD)"
+          printf 'C5 census base: %s\n' "$C5_BASE"
+
+          grep_optional() {
+            label="$1"
+            shift
+            printf '\n===== %s =====\n' "$label"
+            set +e
+            "$@"
+            status=$?
+            set -e
+            if [ "$status" -gt 1 ]; then
+              printf 'command failed with status %s\n' "$status" >&2
+              exit "$status"
+            fi
+            if [ "$status" -eq 1 ]; then
+              printf '(no matches)\n'
+            fi
+          }
+
+          grep_optional 'complete spatial/index symbol census' \
+            git grep -n -E 'SpatialHashIndex|SpatialHashConfig|SpatialIndexError|SpatialIndexStorage|SpatialIndex|DEFAULT_SPATIAL_INDEX_NAME' -- '*.rs' 'Cargo.toml'
+
+          grep_optional 'geometry ownership inside ECS' \
+            git grep -n -E 'geometry::|Aabb3|Aabb2|Point3|Bounds|bounding|bounds' -- 'domain/ecs/**/*.rs' 'domain/ecs/Cargo.toml'
+
+          grep_optional 'standalone RunenSpatial integration' \
+            git grep -n -E 'runen[-_]spatial|runen_spatial' -- '*.rs' 'Cargo.toml'
+
+          grep_optional 'public docs tests benchmarks spatial vocabulary' \
+            git grep -n -E 'spatial index|spatial-index|SpatialHash|SpatialIndex|Aabb3' -- '*.rs' '*.md' 'Cargo.toml'
+
+          printf '\n===== cargo tree -i ecs --workspace --locked =====\n'
+          cargo tree -i ecs --workspace --locked
+
+          printf '\n===== cargo tree -i geometry --workspace --locked =====\n'
+          cargo tree -i geometry --workspace --locked
+
+          printf '\n===== cargo tree -i runen-spatial --workspace --locked =====\n'
+          cargo tree -i runen-spatial --workspace --locked
+
+          printf '\n===== final repository state =====\n'
+          git diff --check
+          status="$(git status --porcelain)"
+          if [ -n "$status" ]; then
+            printf 'census changed tracked state:\n%s\n' "$status" >&2
+            exit 1
+          fi
+          printf 'tracked state clean\n'
+
+      - name: Upload census transcript
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: issue-452-c5-census
+          path: ${{ runner.temp }}/c5-census.txt
+          if-no-files-found: error
+          retention-days: 3
