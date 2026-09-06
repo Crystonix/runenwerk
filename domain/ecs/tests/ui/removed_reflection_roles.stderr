@@ -1,0 +1,5 @@
+error[E0432]: unresolved import `ecs::ReflectComponent`
+ --> tests/ui/removed_reflection_roles.rs:1:5
+  |
+1 | use ecs::ReflectComponent;
+  |     ^^^^^^^^^^^^^^^^^^^^^ no `ReflectComponent` in the root

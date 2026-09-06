@@ -1,25 +1,29 @@
 //! File: domain/ecs/src/reflect/mod.rs
 //! Purpose: ECS reflection foundation.
 
-pub mod component_registration;
-pub mod enum_info;
-pub mod field_info;
-pub mod primitives;
-pub mod registry;
-pub mod resource_registration;
-pub mod struct_info;
-pub mod traits;
-pub mod type_id;
-pub mod type_info;
-pub mod value;
+mod component_registration;
+mod enum_info;
+mod field_info;
+mod primitives;
+mod registry;
+mod resource_registration;
+mod struct_info;
+mod traits;
+mod type_info;
+mod value;
 
-pub use component_registration::*;
-pub use enum_info::*;
-pub use field_info::*;
-pub use registry::*;
-pub use resource_registration::*;
-pub use struct_info::*;
-pub use traits::*;
-pub use type_id::*;
-pub use type_info::*;
-pub use value::*;
+pub use component_registration::ReflectedComponentRegistration;
+pub(crate) use component_registration::reflected_component_registration;
+pub use enum_info::{
+    EnumCurrentVariant, EnumInfo, EnumSetUnitVariant, EnumVariantAt, EnumVariantInfo,
+};
+pub use field_info::{FieldGetMut, FieldGetRef, FieldInfo, FieldTypeInfo};
+pub use registry::TypeRegistry;
+pub use resource_registration::ReflectedResourceRegistration;
+pub(crate) use resource_registration::reflected_resource_registration;
+pub use struct_info::{StructFieldAt, StructInfo};
+pub use traits::Reflect;
+pub use type_info::{ReflectShape, TypeInfo};
+pub use value::{
+    EnumValueMut, EnumValueRef, ReflectValueMut, ReflectValueRef, StructValueMut, StructValueRef,
+};

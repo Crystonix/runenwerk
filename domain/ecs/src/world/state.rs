@@ -25,8 +25,11 @@ pub struct World {
     pub(super) component_type_registry: HashMap<TypeId, ComponentMeta>,
     pub(super) reflected_component_types:
         HashMap<TypeId, crate::reflect::ReflectedComponentRegistration>,
+    pub(super) reflected_component_order: Vec<TypeId>,
     pub(super) reflected_resource_types:
         HashMap<TypeId, crate::reflect::ReflectedResourceRegistration>,
+    pub(super) reflected_resource_order: Vec<TypeId>,
+    pub(super) type_registry: crate::reflect::TypeRegistry,
 
     pub(super) next_component_id: u32,
     pub(super) next_resource_id: u32,
@@ -70,7 +73,10 @@ impl World {
 
             component_type_registry: HashMap::new(),
             reflected_component_types: HashMap::new(),
+            reflected_component_order: Vec::new(),
             reflected_resource_types: HashMap::new(),
+            reflected_resource_order: Vec::new(),
+            type_registry: crate::reflect::TypeRegistry::new(),
 
             next_component_id: 0,
             next_resource_id: 0,

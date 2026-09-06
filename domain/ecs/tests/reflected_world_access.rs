@@ -7,13 +7,13 @@ struct Vec2 {
     y: f32,
 }
 
-#[derive(Debug, Clone, ecs::Component, ecs::ReflectComponent)]
+#[derive(Debug, Clone, ecs::Component, ecs::Reflect)]
 struct Position {
     value: Vec2,
     speed: f32,
 }
 
-#[derive(Debug, Clone, ecs::Resource, ecs::ReflectResource)]
+#[derive(Debug, Clone, ecs::Resource, ecs::Reflect)]
 struct CameraSettings {
     zoom: f32,
     exposure: f32,
@@ -22,7 +22,7 @@ struct CameraSettings {
 #[test]
 fn reflected_component_value_ref_reads_live_component() {
     let mut world = World::new();
-    world.register_component_type::<Position>();
+    world.register_reflected_component::<Position>();
 
     let entity = world
         .spawn(Position {
@@ -51,7 +51,7 @@ fn reflected_component_value_ref_reads_live_component() {
 #[test]
 fn reflected_component_value_mut_updates_live_component() {
     let mut world = World::new();
-    world.register_component_type::<Position>();
+    world.register_reflected_component::<Position>();
 
     let entity = world
         .spawn(Position {
@@ -90,8 +90,8 @@ fn reflected_component_value_mut_updates_live_component() {
 #[test]
 fn reflected_resource_value_ref_reads_live_resource() {
     let mut world = World::new();
-    world.register_resource_type::<CameraSettings>();
-    world.insert_registered_resource(CameraSettings {
+    world.register_reflected_resource::<CameraSettings>();
+    world.insert_resource(CameraSettings {
         zoom: 2.0,
         exposure: 1.25,
     });
@@ -116,8 +116,8 @@ fn reflected_resource_value_ref_reads_live_resource() {
 #[test]
 fn reflected_resource_value_mut_updates_live_resource() {
     let mut world = World::new();
-    world.register_resource_type::<CameraSettings>();
-    world.insert_registered_resource(CameraSettings {
+    world.register_reflected_resource::<CameraSettings>();
+    world.insert_resource(CameraSettings {
         zoom: 2.0,
         exposure: 1.25,
     });
@@ -152,7 +152,7 @@ fn reflected_resource_value_mut_updates_live_resource() {
 #[test]
 fn entity_component_introspection_reports_registered_component() {
     let mut world = World::new();
-    world.register_component_type::<Position>();
+    world.register_reflected_component::<Position>();
 
     let entity = world
         .spawn(Position {
@@ -169,9 +169,7 @@ fn entity_component_introspection_reports_registered_component() {
     let component_type_ids = world.entity_component_type_ids(entity);
     assert_eq!(component_type_ids, vec![type_id]);
 
-    let component_type = world
-        .component_type_info(type_id)
+    let _component_type = world
+        .reflected_component_type_info(type_id)
         .expect("type info should exist");
-
-    assert!(component_type.is_component());
 }

@@ -5,12 +5,12 @@ use crate::reflect::{EnumInfo, EnumVariantInfo, FieldInfo, Reflect, StructInfo, 
 
 #[derive(Clone, Copy)]
 pub struct ReflectValueRef<'a> {
-    pub type_info: &'static TypeInfo,
+    pub type_info: TypeInfo,
     pub value: &'a dyn std::any::Any,
 }
 
 pub struct ReflectValueMut<'a> {
-    pub type_info: &'static TypeInfo,
+    pub type_info: TypeInfo,
     pub value: &'a mut dyn std::any::Any,
 }
 
@@ -41,7 +41,7 @@ impl<'a> ReflectValueRef<'a> {
         }
     }
 
-    pub fn type_info(&self) -> &'static TypeInfo {
+    pub fn type_info(&self) -> TypeInfo {
         self.type_info
     }
 
@@ -79,7 +79,7 @@ impl<'a> ReflectValueMut<'a> {
         }
     }
 
-    pub fn type_info(&self) -> &'static TypeInfo {
+    pub fn type_info(&self) -> TypeInfo {
         self.type_info
     }
 
@@ -116,23 +116,23 @@ impl<'a> ReflectValueMut<'a> {
 
 #[derive(Clone, Copy)]
 pub struct StructValueRef<'a> {
-    pub info: &'static StructInfo,
+    pub info: StructInfo,
     owner: &'a dyn std::any::Any,
 }
 
 pub struct StructValueMut<'a> {
-    pub info: &'static StructInfo,
+    pub info: StructInfo,
     owner: &'a mut dyn std::any::Any,
 }
 
 #[derive(Clone, Copy)]
 pub struct EnumValueRef<'a> {
-    pub info: &'static EnumInfo,
+    pub info: EnumInfo,
     owner: &'a dyn std::any::Any,
 }
 
 pub struct EnumValueMut<'a> {
-    pub info: &'static EnumInfo,
+    pub info: EnumInfo,
     owner: &'a mut dyn std::any::Any,
 }
 
@@ -169,8 +169,8 @@ impl<'a> core::fmt::Debug for EnumValueMut<'a> {
 }
 
 impl<'a> StructValueRef<'a> {
-    pub fn fields(&self) -> &'static [FieldInfo] {
-        self.info.fields
+    pub fn fields(&self) -> impl Iterator<Item = FieldInfo> + '_ {
+        self.info.fields()
     }
 
     pub fn field(&self, name: &str) -> Option<ReflectValueRef<'a>> {
@@ -185,8 +185,8 @@ impl<'a> StructValueRef<'a> {
 }
 
 impl<'a> StructValueMut<'a> {
-    pub fn fields(&self) -> &'static [FieldInfo] {
-        self.info.fields
+    pub fn fields(&self) -> impl Iterator<Item = FieldInfo> + '_ {
+        self.info.fields()
     }
 
     pub fn field_mut(&mut self, name: &str) -> Option<ReflectValueMut<'_>> {
@@ -201,8 +201,8 @@ impl<'a> StructValueMut<'a> {
 }
 
 impl<'a> EnumValueRef<'a> {
-    pub fn variants(&self) -> &'static [EnumVariantInfo] {
-        self.info.variants
+    pub fn variants(&self) -> Vec<EnumVariantInfo> {
+        self.info.variants()
     }
 
     pub fn current_symbol(&self) -> Option<&'static str> {
@@ -211,8 +211,8 @@ impl<'a> EnumValueRef<'a> {
 }
 
 impl<'a> EnumValueMut<'a> {
-    pub fn variants(&self) -> &'static [EnumVariantInfo] {
-        self.info.variants
+    pub fn variants(&self) -> Vec<EnumVariantInfo> {
+        self.info.variants()
     }
 
     pub fn current_symbol(&self) -> Option<&'static str> {

@@ -783,7 +783,7 @@ impl RunenwerkEditorRuntime {
     {
         self.scene_realities
             .instantiated
-            .register_component_type::<T>();
+            .register_reflected_component::<T>();
         self.scene_realities
             .identities
             .register_component_type::<T>(editor_id);
@@ -795,7 +795,7 @@ impl RunenwerkEditorRuntime {
     {
         self.scene_realities
             .instantiated
-            .register_resource_type::<T>();
+            .register_reflected_resource::<T>();
         self.scene_realities
             .identities
             .register_resource_type::<T>(editor_id);

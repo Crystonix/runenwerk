@@ -1,7 +1,10 @@
 use proc_macro::TokenStream;
 use proc_macro_crate::{FoundCrate, crate_name};
 use quote::{format_ident, quote};
-use syn::{Data, DataEnum, DataStruct, DeriveInput, Fields, Ident, parse_macro_input};
+use syn::{
+    Data, DataEnum, DataStruct, DeriveInput, Fields, GenericArgument, GenericParam, Ident, Type,
+    parse_macro_input, parse_quote,
+};
 
 fn ecs_crate_path() -> proc_macro2::TokenStream {
     match crate_name("ecs") {
@@ -254,62 +257,78 @@ pub fn bundle_derive(input: TokenStream) -> TokenStream {
 
 #[proc_macro_derive(Reflect)]
 pub fn reflect_derive(input: TokenStream) -> TokenStream {
-    let ecs = ecs_crate_path();
-    expand_reflect(input, quote!(#ecs::reflect::ReflectClassification::Plain))
+    expand_reflect(input)
 }
 
-#[proc_macro_derive(ReflectComponent)]
-pub fn reflect_component_derive(input: TokenStream) -> TokenStream {
-    let ecs = ecs_crate_path();
-    expand_reflect(
-        input,
-        quote!(#ecs::reflect::ReflectClassification::Component),
-    )
-}
-
-#[proc_macro_derive(ReflectResource)]
-pub fn reflect_resource_derive(input: TokenStream) -> TokenStream {
-    let ecs = ecs_crate_path();
-    expand_reflect(
-        input,
-        quote!(#ecs::reflect::ReflectClassification::Resource),
-    )
-}
-
-fn expand_reflect(input: TokenStream, classification: proc_macro2::TokenStream) -> TokenStream {
+fn expand_reflect(input: TokenStream) -> TokenStream {
     let ecs = ecs_crate_path();
     let input = parse_macro_input!(input as DeriveInput);
     let name = input.ident;
     let generics = input.generics;
 
-    if !generics.params.is_empty() {
+    if generics
+        .params
+        .iter()
+        .any(|param| matches!(param, GenericParam::Lifetime(_)))
+    {
         return TokenStream::from(quote! {
-            compile_error!("Reflect derives currently support only non-generic named structs");
+            compile_error!("Reflect derive does not support borrowed lifetime parameters; reflected values must be 'static");
         });
     }
 
-    let stable_name = name.to_string();
-    let rust_type_name = quote!(::std::any::type_name::<Self>());
-
     match input.data {
-        Data::Struct(data) => {
-            expand_reflect_struct(ecs, name, classification, stable_name, rust_type_name, data)
-        }
-        Data::Enum(data) => {
-            expand_reflect_enum(ecs, name, classification, stable_name, rust_type_name, data)
-        }
+        Data::Struct(data) => expand_reflect_struct(ecs, name, generics, data),
+        Data::Enum(data) => expand_reflect_enum(ecs, name, generics, data),
         Data::Union(_) => TokenStream::from(quote! {
-            compile_error!("Reflect derives currently support only structs and unit enums");
+            compile_error!("Reflect derive does not support unions; use a named struct or unit enum");
         }),
+    }
+}
+
+fn add_static_and_field_bounds(
+    ecs: &proc_macro2::TokenStream,
+    mut generics: syn::Generics,
+    field_types: &[&Type],
+) -> syn::Generics {
+    let type_params = generics
+        .type_params()
+        .map(|param| param.ident.clone())
+        .collect::<Vec<_>>();
+    let where_clause = generics.make_where_clause();
+    for field_ty in field_types {
+        where_clause
+            .predicates
+            .push(parse_quote!(#field_ty: #ecs::reflect::Reflect));
+    }
+    for ident in type_params {
+        where_clause.predicates.push(parse_quote!(#ident: 'static));
+    }
+    generics
+}
+
+fn contains_reference(ty: &Type) -> bool {
+    match ty {
+        Type::Reference(_) => true,
+        Type::Array(array) => contains_reference(&array.elem),
+        Type::Slice(slice) => contains_reference(&slice.elem),
+        Type::Tuple(tuple) => tuple.elems.iter().any(contains_reference),
+        Type::Path(path) => path.path.segments.iter().any(|segment| {
+            let syn::PathArguments::AngleBracketed(arguments) = &segment.arguments else {
+                return false;
+            };
+            arguments.args.iter().any(|argument| match argument {
+                GenericArgument::Type(ty) => contains_reference(ty),
+                _ => false,
+            })
+        }),
+        _ => false,
     }
 }
 
 fn expand_reflect_struct(
     ecs: proc_macro2::TokenStream,
     name: Ident,
-    classification: proc_macro2::TokenStream,
-    stable_name: String,
-    rust_type_name: proc_macro2::TokenStream,
+    generics: syn::Generics,
     data: DataStruct,
 ) -> TokenStream {
     let Fields::Named(fields) = data.fields else {
@@ -318,79 +337,65 @@ fn expand_reflect_struct(
         });
     };
 
-    let field_accessors = fields.named.iter().map(|field| {
-        let field_ident = field.ident.as_ref().expect("named field");
-        let get_ref_fn = format_ident!("__ecs_reflect_get_ref_{}", field_ident);
-        let get_mut_fn = format_ident!("__ecs_reflect_get_mut_{}", field_ident);
+    let field_types = fields
+        .named
+        .iter()
+        .map(|field| &field.ty)
+        .collect::<Vec<_>>();
+    if field_types.iter().any(|ty| contains_reference(ty)) {
+        return TokenStream::from(quote! {
+            compile_error!("Reflect derive does not support borrowed fields; reflected values must be 'static");
+        });
+    }
 
-        quote! {
-            fn #get_ref_fn<'a>(
-                owner: &'a dyn ::std::any::Any
-            ) -> Option<#ecs::reflect::ReflectValueRef<'a>> {
-                let typed = owner.downcast_ref::<#name>()?;
-                Some(#ecs::reflect::ReflectValueRef::new(&typed.#field_ident))
-            }
-
-            fn #get_mut_fn<'a>(
-                owner: &'a mut dyn ::std::any::Any
-            ) -> Option<#ecs::reflect::ReflectValueMut<'a>> {
-                let typed = owner.downcast_mut::<#name>()?;
-                Some(#ecs::reflect::ReflectValueMut::new(&mut typed.#field_ident))
-            }
-        }
-    });
-
-    let field_infos = fields.named.iter().map(|field| {
+    let generics = add_static_and_field_bounds(&ecs, generics, &field_types);
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+    let field_count = fields.named.len();
+    let field_arms = fields.named.iter().enumerate().map(|(index, field)| {
         let field_ident = field.ident.as_ref().expect("named field");
         let field_name_string = field_ident.to_string();
         let field_ty = &field.ty;
-        let get_ref_fn = format_ident!("__ecs_reflect_get_ref_{}", field_ident);
-        let get_mut_fn = format_ident!("__ecs_reflect_get_mut_{}", field_ident);
 
         quote! {
-            #ecs::reflect::FieldInfo::new(
-                #field_name_string,
-                #field_name_string,
-                <#field_ty as #ecs::reflect::Reflect>::type_info().id,
-                #get_ref_fn,
-                #get_mut_fn,
-            )
+            #index => {
+                let get_ref: #ecs::reflect::FieldGetRef = |owner| {
+                    let typed = owner.downcast_ref::<Self>()?;
+                    Some(#ecs::reflect::ReflectValueRef::new(&typed.#field_ident))
+                };
+                let get_mut: #ecs::reflect::FieldGetMut = |owner| {
+                    let typed = owner.downcast_mut::<Self>()?;
+                    Some(#ecs::reflect::ReflectValueMut::new(&mut typed.#field_ident))
+                };
+                Some(#ecs::reflect::FieldInfo::new(
+                    #field_name_string,
+                    #field_name_string,
+                    || <#field_ty as #ecs::reflect::Reflect>::type_info(),
+                    get_ref,
+                    get_mut,
+                ))
+            }
         }
     });
 
     TokenStream::from(quote! {
-        impl #ecs::reflect::Reflect for #name {
-            fn type_info() -> &'static #ecs::reflect::TypeInfo
+        impl #impl_generics #ecs::reflect::Reflect for #name #ty_generics #where_clause {
+            fn type_info() -> #ecs::reflect::TypeInfo
             where
                 Self: Sized,
             {
-                #(#field_accessors)*
-
-                static TYPE_INFO: ::std::sync::OnceLock<#ecs::reflect::TypeInfo> =
-                    ::std::sync::OnceLock::new();
-                static STRUCT_INFO: ::std::sync::OnceLock<#ecs::reflect::StructInfo> =
-                    ::std::sync::OnceLock::new();
-
-                TYPE_INFO.get_or_init(|| {
-                    let reflect_type_id = #ecs::reflect::allocate_reflect_type_id();
-
-                    let struct_info = STRUCT_INFO.get_or_init(|| {
-                        let fields = vec![
-                            #(#field_infos),*
-                        ];
-                        let leaked_fields: &'static [#ecs::reflect::FieldInfo] =
-                            ::std::boxed::Box::leak(fields.into_boxed_slice());
-                        #ecs::reflect::StructInfo::new(leaked_fields)
-                    });
-
-                    #ecs::reflect::TypeInfo::new(
-                        reflect_type_id,
-                        #rust_type_name,
-                        #stable_name,
-                        #classification,
-                        #ecs::reflect::ReflectShape::Struct(struct_info),
-                    )
-                })
+                #ecs::reflect::TypeInfo::new(
+                    ::std::any::type_name::<Self>(),
+                    stringify!(#name),
+                    #ecs::reflect::ReflectShape::Struct(
+                        #ecs::reflect::StructInfo::new(
+                            #field_count,
+                            |index| match index {
+                                #(#field_arms,)*
+                                _ => None,
+                            },
+                        ),
+                    ),
+                )
             }
         }
     })
@@ -399,9 +404,7 @@ fn expand_reflect_struct(
 fn expand_reflect_enum(
     ecs: proc_macro2::TokenStream,
     name: Ident,
-    classification: proc_macro2::TokenStream,
-    stable_name: String,
-    rust_type_name: proc_macro2::TokenStream,
+    generics: syn::Generics,
     data: DataEnum,
 ) -> TokenStream {
     let mut variant_idents = Vec::new();
@@ -422,18 +425,12 @@ fn expand_reflect_enum(
         });
     }
 
-    let variant_infos = variant_symbols.iter().map(|symbol| {
-        quote! {
-            #ecs::reflect::EnumVariantInfo::new(#symbol, #symbol)
-        }
-    });
-
     let current_arms = variant_idents
         .iter()
         .zip(variant_symbols.iter())
         .map(|(ident, symbol)| {
             quote! {
-                #name::#ident => Some(#symbol),
+                Self::#ident => Some(#symbol),
             }
         });
 
@@ -443,69 +440,59 @@ fn expand_reflect_enum(
         .map(|(ident, symbol)| {
             quote! {
                 #symbol => {
-                    *typed = #name::#ident;
+                    *typed = Self::#ident;
                     true
                 }
             }
         });
 
+    let variant_arms = variant_symbols.iter().enumerate().map(|(index, symbol)| {
+        quote! {
+            #index => Some(#ecs::reflect::EnumVariantInfo::new(#symbol, #symbol)),
+        }
+    });
+    let generics = add_static_and_field_bounds(&ecs, generics, &[]);
+    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+    let variant_count = variant_idents.len();
+
     TokenStream::from(quote! {
-        impl #ecs::reflect::Reflect for #name {
-            fn type_info() -> &'static #ecs::reflect::TypeInfo
+        impl #impl_generics #ecs::reflect::Reflect for #name #ty_generics #where_clause {
+            fn type_info() -> #ecs::reflect::TypeInfo
             where
                 Self: Sized,
             {
-                fn __ecs_reflect_current_variant(
-                    owner: &dyn ::std::any::Any
-                ) -> Option<&'static str> {
-                    let typed = owner.downcast_ref::<#name>()?;
+                let current_variant: #ecs::reflect::EnumCurrentVariant = |owner| {
+                    let typed = owner.downcast_ref::<Self>()?;
                     match typed {
                         #(#current_arms)*
                     }
-                }
+                };
 
-                fn __ecs_reflect_set_unit_variant(
-                    owner: &mut dyn ::std::any::Any,
-                    symbol: &str,
-                ) -> bool {
-                    let Some(typed) = owner.downcast_mut::<#name>() else {
+                let set_unit_variant: #ecs::reflect::EnumSetUnitVariant = |owner, symbol| {
+                    let Some(typed) = owner.downcast_mut::<Self>() else {
                         return false;
                     };
                     match symbol {
                         #(#set_arms)*
                         _ => false,
                     }
-                }
+                };
 
-                static TYPE_INFO: ::std::sync::OnceLock<#ecs::reflect::TypeInfo> =
-                    ::std::sync::OnceLock::new();
-                static ENUM_INFO: ::std::sync::OnceLock<#ecs::reflect::EnumInfo> =
-                    ::std::sync::OnceLock::new();
-
-                TYPE_INFO.get_or_init(|| {
-                    let reflect_type_id = #ecs::reflect::allocate_reflect_type_id();
-
-                    let enum_info = ENUM_INFO.get_or_init(|| {
-                        let variants = vec![
-                            #(#variant_infos),*
-                        ];
-                        let leaked_variants: &'static [#ecs::reflect::EnumVariantInfo] =
-                            ::std::boxed::Box::leak(variants.into_boxed_slice());
+                #ecs::reflect::TypeInfo::new(
+                    ::std::any::type_name::<Self>(),
+                    stringify!(#name),
+                    #ecs::reflect::ReflectShape::Enum(
                         #ecs::reflect::EnumInfo::new(
-                            leaked_variants,
-                            __ecs_reflect_current_variant,
-                            __ecs_reflect_set_unit_variant,
-                        )
-                    });
-
-                    #ecs::reflect::TypeInfo::new(
-                        reflect_type_id,
-                        #rust_type_name,
-                        #stable_name,
-                        #classification,
-                        #ecs::reflect::ReflectShape::Enum(enum_info),
-                    )
-                })
+                            #variant_count,
+                            |index| match index {
+                                #(#variant_arms)*
+                                _ => None,
+                            },
+                            current_variant,
+                            set_unit_variant,
+                        ),
+                    ),
+                )
             }
         }
     })

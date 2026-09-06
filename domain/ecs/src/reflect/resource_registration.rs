@@ -10,14 +10,14 @@ pub type ResourceValueMutAccessor = for<'a> fn(&'a mut World) -> Option<ReflectV
 
 #[derive(Debug, Clone, Copy)]
 pub struct ReflectedResourceRegistration {
-    pub type_info: &'static TypeInfo,
+    pub type_info: TypeInfo,
     pub value_ref: ResourceValueRefAccessor,
     pub value_mut: ResourceValueMutAccessor,
 }
 
 impl ReflectedResourceRegistration {
     pub const fn new(
-        type_info: &'static TypeInfo,
+        type_info: TypeInfo,
         value_ref: ResourceValueRefAccessor,
         value_mut: ResourceValueMutAccessor,
     ) -> Self {
@@ -29,7 +29,7 @@ impl ReflectedResourceRegistration {
     }
 }
 
-pub fn reflected_resource_registration<T>() -> ReflectedResourceRegistration
+pub(crate) fn reflected_resource_registration<T>() -> ReflectedResourceRegistration
 where
     T: Reflect + Resource,
 {

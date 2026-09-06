@@ -19,7 +19,7 @@ struct Vec2 {
     y: f32,
 }
 
-#[derive(Debug, Clone, Default, ecs::Component, ecs::ReflectComponent)]
+#[derive(Debug, Clone, Default, ecs::Component, ecs::Reflect)]
 struct Position {
     value: Vec2,
     speed: f32,

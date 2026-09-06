@@ -108,8 +108,8 @@ fn rejected_foreign_insert_preserves_colliding_local_structure_registration_and_
     );
     assert_eq!(first.find_entity_by_index::<A, u32>(&7), Some(local));
     assert_eq!(first.find_entity_by_index::<A, u32>(&1), None);
-    assert!(!first.has_registered_component_type(TypeId::of::<NeverInsertedA>()));
-    assert!(!first.has_registered_component_type(TypeId::of::<NeverInsertedB>()));
+    assert!(!first.has_component_type(TypeId::of::<NeverInsertedA>()));
+    assert!(!first.has_component_type(TypeId::of::<NeverInsertedB>()));
     assert_eq!(first.component_changes_since(0), changes_before);
 }
 
@@ -124,7 +124,7 @@ fn freed_and_stale_insertions_do_not_register_or_mutate_replacement_state() {
         world.insert(original, NeverInsertedA),
         Err(EntityError::AlreadyFreed { .. })
     ));
-    assert!(!world.has_registered_component_type(TypeId::of::<NeverInsertedA>()));
+    assert!(!world.has_component_type(TypeId::of::<NeverInsertedA>()));
     assert_eq!(world.component_changes_since(0), changes_after_despawn);
 
     let replacement = world.spawn(A(9)).expect("slot reuse should succeed");
@@ -150,7 +150,7 @@ fn freed_and_stale_insertions_do_not_register_or_mutate_replacement_state() {
         world.__entity_archetype_location(replacement),
         Some(replacement_location_before)
     );
-    assert!(!world.has_registered_component_type(TypeId::of::<NeverInsertedB>()));
+    assert!(!world.has_component_type(TypeId::of::<NeverInsertedB>()));
     assert_eq!(
         world.component_changes_since(0),
         changes_before_stale_insert

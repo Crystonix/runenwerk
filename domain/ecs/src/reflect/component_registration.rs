@@ -12,14 +12,14 @@ pub type ComponentValueMutAccessor =
 
 #[derive(Debug, Clone, Copy)]
 pub struct ReflectedComponentRegistration {
-    pub type_info: &'static TypeInfo,
+    pub type_info: TypeInfo,
     pub value_ref: ComponentValueRefAccessor,
     pub value_mut: ComponentValueMutAccessor,
 }
 
 impl ReflectedComponentRegistration {
     pub const fn new(
-        type_info: &'static TypeInfo,
+        type_info: TypeInfo,
         value_ref: ComponentValueRefAccessor,
         value_mut: ComponentValueMutAccessor,
     ) -> Self {
@@ -31,7 +31,7 @@ impl ReflectedComponentRegistration {
     }
 }
 
-pub fn reflected_component_registration<T>() -> ReflectedComponentRegistration
+pub(crate) fn reflected_component_registration<T>() -> ReflectedComponentRegistration
 where
     T: Reflect + Component,
 {
