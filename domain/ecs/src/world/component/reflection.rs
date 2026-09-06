@@ -14,8 +14,8 @@ impl World {
     pub fn reflected_component_types(&self) -> Vec<crate::reflect::TypeInfo> {
         self.reflected_component_order
             .iter()
-            .filter_map(|type_id| self.reflected_component_types.get(type_id))
-            .map(|registration| registration.type_info)
+            .filter(|type_id| self.reflected_component_types.contains_key(type_id))
+            .filter_map(|type_id| self.type_registry.get(*type_id))
             .collect()
     }
 

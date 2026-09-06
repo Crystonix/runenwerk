@@ -1,5 +1,6 @@
 use ecs::{Reflect, TypeInfo, TypeRegistry, World};
 use std::any::TypeId;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 #[derive(ecs::Component, ecs::Reflect)]
 struct ComponentA {
@@ -33,6 +34,26 @@ impl Reflect for SameNameA {
 impl Reflect for SameNameB {
     fn type_info() -> TypeInfo {
         TypeInfo::new("SameNameB", "same", ecs::ReflectShape::Opaque)
+    }
+}
+
+#[derive(ecs::Component)]
+struct DescriptorProbe;
+
+static DESCRIPTOR_PROBE_CALLS: AtomicUsize = AtomicUsize::new(0);
+
+impl Reflect for DescriptorProbe {
+    fn type_info() -> TypeInfo {
+        let display_name = if DESCRIPTOR_PROBE_CALLS.fetch_add(1, Ordering::SeqCst) == 0 {
+            "first"
+        } else {
+            "later"
+        };
+        TypeInfo::new(
+            std::any::type_name::<Self>(),
+            display_name,
+            ecs::ReflectShape::Opaque,
+        )
     }
 }
 
@@ -135,6 +156,40 @@ fn world_role_orders_are_independent_and_share_one_metadata_registry() {
     );
     assert_eq!(world.type_registry().types().count(), 4);
     assert!(world.has_reflected_resource_type(TypeId::of::<Both>()));
+
+    let both_type_id = TypeId::of::<Both>();
+    let canonical = world.type_registry().get(both_type_id).unwrap();
+    assert_eq!(
+        world
+            .reflected_component_type_info(both_type_id)
+            .unwrap()
+            .rust_name,
+        canonical.rust_name
+    );
+    assert_eq!(
+        world
+            .reflected_resource_type_info(both_type_id)
+            .unwrap()
+            .rust_name,
+        canonical.rust_name
+    );
+}
+
+#[test]
+fn world_role_registration_reads_descriptor_once_and_reuses_registry_metadata() {
+    DESCRIPTOR_PROBE_CALLS.store(0, Ordering::SeqCst);
+    let mut world = World::new();
+    world.register_reflected_component::<DescriptorProbe>();
+
+    let type_id = TypeId::of::<DescriptorProbe>();
+    assert_eq!(DESCRIPTOR_PROBE_CALLS.load(Ordering::SeqCst), 1);
+
+    let canonical = world.type_registry().get(type_id).unwrap();
+    let reflected = world.reflected_component_type_info(type_id).unwrap();
+    assert_eq!(canonical.display_name, "first");
+    assert_eq!(reflected.display_name, canonical.display_name);
+    assert_eq!(world.reflected_component_types()[0].display_name, "first");
+    assert_eq!(DESCRIPTOR_PROBE_CALLS.load(Ordering::SeqCst), 1);
 }
 
 #[test]

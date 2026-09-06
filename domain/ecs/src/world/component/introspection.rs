@@ -6,9 +6,8 @@ use std::any::TypeId;
 
 impl World {
     pub fn reflected_component_type_info(&self, type_id: TypeId) -> Option<TypeInfo> {
-        self.reflected_component_types
-            .get(&type_id)
-            .map(|registration| registration.type_info)
+        self.reflected_component_types.contains_key(&type_id).then(|| ())?;
+        self.type_registry.get(type_id)
     }
 
     pub fn has_reflected_component_type(&self, type_id: TypeId) -> bool {

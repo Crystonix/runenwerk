@@ -12,15 +12,17 @@ mod traits;
 mod type_info;
 mod value;
 
-pub use component_registration::ReflectedComponentRegistration;
-pub(crate) use component_registration::reflected_component_registration;
+pub(crate) use component_registration::{
+    ReflectedComponentRegistration, reflected_component_registration,
+};
 pub use enum_info::{
     EnumCurrentVariant, EnumInfo, EnumSetUnitVariant, EnumVariantAt, EnumVariantInfo,
 };
 pub use field_info::{FieldGetMut, FieldGetRef, FieldInfo, FieldTypeInfo};
 pub use registry::TypeRegistry;
-pub use resource_registration::ReflectedResourceRegistration;
-pub(crate) use resource_registration::reflected_resource_registration;
+pub(crate) use resource_registration::{
+    ReflectedResourceRegistration, reflected_resource_registration,
+};
 pub use struct_info::{StructFieldAt, StructInfo};
 pub use traits::Reflect;
 pub use type_info::{ReflectShape, TypeInfo};

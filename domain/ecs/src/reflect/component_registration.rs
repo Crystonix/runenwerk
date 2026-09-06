@@ -1,30 +1,28 @@
 //! File: domain/ecs/src/reflect/component_registration.rs
-//! Purpose: ECS-owned reflected component registration metadata and erased value accessors.
+//! Purpose: ECS-owned reflected component role/access capability metadata.
 
 use crate::component::Component;
 use crate::entity::Entity;
-use crate::reflect::{Reflect, ReflectValueMut, ReflectValueRef, TypeInfo};
+use crate::reflect::{Reflect, ReflectValueMut, ReflectValueRef};
 use crate::world::World;
 
-pub type ComponentValueRefAccessor = for<'a> fn(&'a World, Entity) -> Option<ReflectValueRef<'a>>;
-pub type ComponentValueMutAccessor =
+pub(crate) type ComponentValueRefAccessor =
+    for<'a> fn(&'a World, Entity) -> Option<ReflectValueRef<'a>>;
+pub(crate) type ComponentValueMutAccessor =
     for<'a> fn(&'a mut World, Entity) -> Option<ReflectValueMut<'a>>;
 
 #[derive(Debug, Clone, Copy)]
-pub struct ReflectedComponentRegistration {
-    pub type_info: TypeInfo,
-    pub value_ref: ComponentValueRefAccessor,
-    pub value_mut: ComponentValueMutAccessor,
+pub(crate) struct ReflectedComponentRegistration {
+    pub(crate) value_ref: ComponentValueRefAccessor,
+    pub(crate) value_mut: ComponentValueMutAccessor,
 }
 
 impl ReflectedComponentRegistration {
-    pub const fn new(
-        type_info: TypeInfo,
+    pub(crate) const fn new(
         value_ref: ComponentValueRefAccessor,
         value_mut: ComponentValueMutAccessor,
     ) -> Self {
         Self {
-            type_info,
             value_ref,
             value_mut,
         }
@@ -50,5 +48,5 @@ where
         Some(Reflect::reflect_mut(value.into_inner()))
     }
 
-    ReflectedComponentRegistration::new(T::type_info(), value_ref_impl::<T>, value_mut_impl::<T>)
+    ReflectedComponentRegistration::new(value_ref_impl::<T>, value_mut_impl::<T>)
 }

@@ -5,9 +5,8 @@ use std::any::TypeId;
 
 impl World {
     pub fn reflected_resource_type_info(&self, type_id: TypeId) -> Option<TypeInfo> {
-        self.reflected_resource_types
-            .get(&type_id)
-            .map(|registration| registration.type_info)
+        self.reflected_resource_types.contains_key(&type_id).then(|| ())?;
+        self.type_registry.get(type_id)
     }
 
     pub fn has_reflected_resource_type(&self, type_id: TypeId) -> bool {
