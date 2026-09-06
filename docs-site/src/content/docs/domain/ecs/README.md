@@ -5,7 +5,7 @@ status: active
 owner: ecs
 layer: domain
 canonical: true
-last_reviewed: 2026-05-13
+last_reviewed: 2026-09-06
 related_designs:
   - ../../design/accepted/execution-fabric-and-product-jobs-design.md
 related_roadmaps:
@@ -18,7 +18,7 @@ related_roadmaps:
 
 ## Quick Overview
 
-- `World`: entities/components/resources, event channels, component indexes, spatial indexes
+- `World`: entities/components/resources, event channels, component indexes
 - Query runtime: `Query`, `QueryState`, `QueryOrphaned`
 - Runtime and scheduling bridge: `Runtime`, `IntoSystem`, set ordering (`in_set`, `before`, `after`)
 - System params: `Res`, `ResMut`, `ResView`, `Commands`, `BroadcastReader`, `BroadcastWriter`

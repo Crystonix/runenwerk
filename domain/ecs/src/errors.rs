@@ -53,15 +53,3 @@ pub enum QueryError {
         target: &'static str,
     },
 }
-
-#[derive(Debug, Error, Clone, PartialEq)]
-pub enum SpatialIndexError {
-    #[error(transparent)]
-    Entity(#[from] EntityError),
-    #[error("indexing index {name:?} does not exist")]
-    MissingIndex { name: String },
-    #[error("indexing hash cell size must be finite and > 0 (got {cell_size})")]
-    InvalidCellSize { cell_size: f32 },
-    #[error("indexing bounds are invalid")]
-    InvalidBounds,
-}

@@ -5,7 +5,7 @@ status: active
 owner: ecs
 layer: domain
 canonical: true
-last_reviewed: 2026-04-27
+last_reviewed: 2026-09-06
 ---
 
 - ✅ Core-supported
@@ -43,15 +43,12 @@ last_reviewed: 2026-04-27
 |  | Event history buffers / replay store | ❌ | No first-class retained event history abstraction. |
 | **Indexes** | Component secondary indexes | ✅ | Named indexes keyed by `(component type, key type, name)`. |
 |  | Multiple named indexes per component | ✅ | Supported via `ensure_component_index_named` / `find_*_by_index_named`. |
-|  | Spatial index API (`SpatialIndex`) | ✅ | Trait and world integration are in place. |
-|  | Spatial hash backend (`SpatialHashIndex`) | ✅ | Current backend implementation is available. |
-|  | Additional spatial backends (octree/BVH/etc.) | ❌ | Not implemented in this crate yet. |
 | **Telemetry** | Feature-gated telemetry (`reset`, `snapshot`) | ✅ | Runtime/query/scheduler/event instrumentation is available behind `telemetry`. |
 |  | Dedicated query/event profiler APIs | ❌ | No separate high-level profiler subsystem yet. |
 
 ## Notes on Scope
 
-Current ECS priorities are core runtime correctness, deterministic scheduling/flush semantics, and maintainable module boundaries (`world`, `commands`, `spatial`, `query`, `system`).
+Current ECS priorities are core runtime correctness, deterministic scheduling/flush semantics, and maintainable module boundaries (`world`, `commands`, `query`, `system`).
 
 Editor-facing reflection, network replication derives, and history/undo primitives are intentionally out of scope for this phase.
 

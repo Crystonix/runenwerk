@@ -5,7 +5,7 @@ status: active
 owner: ecs
 layer: domain
 canonical: true
-last_reviewed: 2026-04-27
+last_reviewed: 2026-09-06
 ---
 
 # ECS (Entity-Component-System) Domain Overview
@@ -29,7 +29,6 @@ The ECS foundation currently includes:
 - `QueryOrphaned<T>` removed-component stage window
 - `ResView<T>` system param alias
 - `StatefulComponent` generation/version tracking
-- `SpatialIndex` integration with spatial-hash backend
 
 ## Core Concepts
 
@@ -40,13 +39,12 @@ The ECS foundation currently includes:
 - **Query**: typed access to matching component sets, with filters.
 - **Command**: deferred structural mutation applied at stage boundaries.
 - **Event Channel**: typed event stream with configurable capacity/overflow/lifetime policies.
-- **Secondary/Spatial Indexes**: optional lookup acceleration structures.
+- **Secondary Indexes**: optional typed lookup acceleration structures.
 
 ## Module Boundary Summary
 
 - `world`: world state and orchestration APIs.
 - `commands`: deferred command abstractions and queue/apply behavior.
-- `spatial`: spatial-index trait + backend implementations.
 - `query`: query/filter/access runtime.
 - `system`: param extraction + runtime scheduling bridge.
 
