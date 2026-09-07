@@ -229,7 +229,8 @@ where
             let _ = ensure_owner_for_connection(&mut world, connection, OwnerRole::Active);
         }
 
-        if let Ok(staging) = world.resource_mut::<NetworkInputStaging<TDriver::Input>>() {
+        {
+            let staging = world.resource_mut::<NetworkInputStaging<TDriver::Input>>()?;
             for command in &commands {
                 if let Err(NetworkInputStageError::Backpressure { capacity, .. }) =
                     staging.stage(tick, command.clone())
