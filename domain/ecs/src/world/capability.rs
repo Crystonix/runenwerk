@@ -1,9 +1,9 @@
 //! Invocation-scoped projections owned by the `World` implementation.
 //!
-//! These capabilities are deliberately not general world handles.  The only
+//! These capabilities are deliberately not general world handles. The only
 //! raw `World` address is held by the invocation authority in `system::extract`;
 //! this module immediately projects that authority to the concrete storage and
-//! bookkeeping domains used by a parameter.  The projections are valid only
+//! bookkeeping domains used by a parameter. The projections are valid only
 //! while the invocation's structural freeze is active.
 
 use super::World;
@@ -12,16 +12,8 @@ use super::change_tracking::{
     ResourceChangeKind, ResourceChangeRecord, ResourceMeta,
 };
 use super::component_indexes::{ComponentIndexKey, ComponentIndexStorage};
-use super::messaging::broadcast::{
-    BroadcastObserver, BroadcastObserverNotification, BroadcastObserverTrigger,
-    BroadcastStreamStorage,
-};
-use super::messaging::tick_buffer::TickBufferStorage;
-use super::messaging::work_queue::WorkQueueStorage;
-use super::messaging::{BroadcastKey, TickBufferKey, TickBufferProvenance, WorkQueueKey};
 use crate::component::Component;
-use crate::entity::Entity;
-use crate::entity::WorldScopeId;
+use crate::entity::{Entity, WorldScopeId};
 use crate::errors::ResourceError;
 use crate::storage::{ArchetypeExecutionBinding, ArchetypeRegistry, EntityLocationMap};
 use std::any::{TypeId, type_name};
@@ -32,7 +24,7 @@ use std::ptr::NonNull;
 use std::time::Instant;
 
 /// The sole invocation-scoped authority from which narrow capabilities are
-/// projected.  It is never stored in a user-facing parameter value.
+/// projected. It is never stored in a user-facing parameter value.
 #[derive(Copy, Clone)]
 pub(crate) struct WorldAuthority<'world> {
     world: NonNull<World>,
@@ -51,10 +43,6 @@ impl<'world> WorldAuthority<'world> {
         // Safety: the authority was constructed from the live invocation World;
         // the bridge immediately projects only owned query fields.
         unsafe { QueryCapability::from_world_ptr(self.world) }
-    }
-
-    pub(crate) fn messaging(self) -> MessagingCapability<'world> {
-        unsafe { MessagingCapability::from_world_ptr(self.world) }
     }
 
     pub(crate) unsafe fn world_mut(mut self) -> &'world mut World {
@@ -78,7 +66,7 @@ impl<'world> WorldAuthority<'world> {
     }
 }
 
-/// Narrow query-domain authority.  It contains pointers only to the storage,
+/// Narrow query-domain authority. It contains pointers only to the storage,
 /// location, and change-bookkeeping fields needed by supported query forms.
 #[doc(hidden)]
 pub struct QueryCapability<'world> {
@@ -105,7 +93,7 @@ impl<'world> Clone for QueryCapability<'world> {
 
 impl<'world> QueryCapability<'world> {
     pub(super) fn from_world(world: &'world World) -> Self {
-        // Safety: this is the one World-owned projection point.  All fields are
+        // Safety: this is the one World-owned projection point. All fields are
         // part of `world` and remain at stable addresses while the invocation's
         // structural freeze is active; no capability stores an archetype row or
         // movable map entry address.
@@ -270,7 +258,7 @@ impl<'world> QueryCapability<'world> {
                 .as_ref()
                 .component_ptr::<T>(entity, locations)
         }?;
-        // Safety: the storage registry verified the typed column and row.  The
+        // Safety: the storage registry verified the typed column and row. The
         // boxed payload allocation is stable across registry/container moves.
         Some(unsafe { &*ptr })
     }
@@ -419,362 +407,12 @@ impl<'world> QueryCapability<'world> {
 }
 
 /// Stable typed resource payload plus the separate narrow change recorder used
-/// by `ResMut`.  No resource parameter retains a world or registry-entry pointer.
+/// by `ResMut`. No resource parameter retains a world or registry-entry pointer.
 #[doc(hidden)]
 pub struct ResourceCapability<'world, T> {
     value: NonNull<T>,
     mutation: Option<ResourceMutationCapability<'world>>,
     _marker: PhantomData<&'world T>,
-}
-
-/// Invocation-scoped messaging projection.  Every operation looks up its
-/// `TypeId` in the owning map; no movable `HashMap` entry address is retained.
-#[doc(hidden)]
-pub struct MessagingCapability<'world> {
-    broadcast_streams: NonNull<HashMap<TypeId, BroadcastStreamStorage>>,
-    work_queues: NonNull<HashMap<TypeId, WorkQueueStorage>>,
-    tick_buffers: NonNull<HashMap<TypeId, TickBufferStorage>>,
-    broadcast_observers: NonNull<HashMap<String, BroadcastObserver>>,
-    broadcast_observer_notifications: NonNull<Vec<BroadcastObserverNotification>>,
-    next_broadcast_key: NonNull<u64>,
-    next_work_queue_key: NonNull<u64>,
-    next_tick_buffer_key: NonNull<u64>,
-    current_buffer_tick: NonNull<u64>,
-    finalized_buffer_tick: NonNull<Option<u64>>,
-    _marker: PhantomData<&'world mut World>,
-}
-
-impl<'world> Copy for MessagingCapability<'world> {}
-impl<'world> Clone for MessagingCapability<'world> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-impl<'world> MessagingCapability<'world> {
-    pub(super) unsafe fn from_world_ptr(world: NonNull<World>) -> Self {
-        let world_ptr = world.as_ptr();
-        Self {
-            broadcast_streams: unsafe {
-                NonNull::new_unchecked(std::ptr::addr_of_mut!((*world_ptr).broadcast_streams))
-            },
-            work_queues: unsafe {
-                NonNull::new_unchecked(std::ptr::addr_of_mut!((*world_ptr).work_queues))
-            },
-            tick_buffers: unsafe {
-                NonNull::new_unchecked(std::ptr::addr_of_mut!((*world_ptr).tick_buffers))
-            },
-            broadcast_observers: unsafe {
-                NonNull::new_unchecked(std::ptr::addr_of_mut!((*world_ptr).broadcast_observers))
-            },
-            broadcast_observer_notifications: unsafe {
-                NonNull::new_unchecked(std::ptr::addr_of_mut!(
-                    (*world_ptr).broadcast_observer_notifications
-                ))
-            },
-            next_broadcast_key: unsafe {
-                NonNull::new_unchecked(std::ptr::addr_of_mut!((*world_ptr).next_broadcast_key))
-            },
-            next_work_queue_key: unsafe {
-                NonNull::new_unchecked(std::ptr::addr_of_mut!((*world_ptr).next_work_queue_key))
-            },
-            next_tick_buffer_key: unsafe {
-                NonNull::new_unchecked(std::ptr::addr_of_mut!((*world_ptr).next_tick_buffer_key))
-            },
-            current_buffer_tick: unsafe {
-                NonNull::new_unchecked(std::ptr::addr_of_mut!((*world_ptr).current_buffer_tick))
-            },
-            finalized_buffer_tick: unsafe {
-                NonNull::new_unchecked(std::ptr::addr_of_mut!((*world_ptr).finalized_buffer_tick))
-            },
-            _marker: PhantomData,
-        }
-    }
-
-    fn broadcast_key(mut self) -> BroadcastKey {
-        unsafe {
-            *self.next_broadcast_key.as_mut() = self.next_broadcast_key.as_ref().saturating_add(1);
-            BroadcastKey(*self.next_broadcast_key.as_ptr())
-        }
-    }
-    fn work_queue_key(mut self) -> WorkQueueKey {
-        unsafe {
-            *self.next_work_queue_key.as_mut() =
-                self.next_work_queue_key.as_ref().saturating_add(1);
-            WorkQueueKey(*self.next_work_queue_key.as_ptr())
-        }
-    }
-    fn tick_buffer_key(mut self) -> TickBufferKey {
-        unsafe {
-            *self.next_tick_buffer_key.as_mut() =
-                self.next_tick_buffer_key.as_ref().saturating_add(1);
-            TickBufferKey(*self.next_tick_buffer_key.as_ptr())
-        }
-    }
-
-    pub(crate) fn broadcast_read<T: 'static>(self) -> &'world [T] {
-        unsafe {
-            self.broadcast_streams
-                .as_ref()
-                .get(&TypeId::of::<T>())
-                .map(|stream| stream.messages_ref::<T>())
-                .unwrap_or(&[])
-        }
-    }
-    pub(crate) fn broadcast_read_since<T: 'static>(mut self, sequence: u64) -> (&'world [T], u64) {
-        unsafe {
-            let Some(stream) = self.broadcast_streams.as_mut().get_mut(&TypeId::of::<T>()) else {
-                return (&[], 0);
-            };
-            let next = stream.next_sequence;
-            stream.record_consumer_read_from(sequence);
-            (stream.messages_ref_since::<T>(sequence), next)
-        }
-    }
-    pub(crate) fn broadcast_publish<T: 'static>(mut self, message: T) {
-        let (accepted, stream_type_name) = unsafe {
-            let streams = self.broadcast_streams.as_mut();
-            let type_id = TypeId::of::<T>();
-            if let std::collections::hash_map::Entry::Vacant(entry) = streams.entry(type_id) {
-                let key = self.broadcast_key();
-                entry.insert(BroadcastStreamStorage::new::<T>(key));
-            }
-            let stream = streams.get_mut(&type_id).expect("broadcast stream exists");
-            let stream_type_name = stream.stream_type_name;
-            let config = stream.config;
-            let messages = stream.messages_mut::<T>();
-            let accepted = match config.capacity {
-                None => {
-                    messages.push(message);
-                    true
-                }
-                Some(0) => false,
-                Some(capacity) if messages.len() < capacity => {
-                    messages.push(message);
-                    true
-                }
-                Some(_) => match config.overflow {
-                    super::messaging::BroadcastOverflowPolicy::DropOldest => {
-                        messages.remove(0);
-                        messages.push(message);
-                        stream.advance_sequence_for_removed(1);
-                        true
-                    }
-                    super::messaging::BroadcastOverflowPolicy::DropNewest => false,
-                    super::messaging::BroadcastOverflowPolicy::Panic => {
-                        panic!("broadcast stream overflow")
-                    }
-                },
-            };
-            stream.emitted = stream.emitted.saturating_add(1);
-            if !accepted {
-                stream.dropped = stream.dropped.saturating_add(1);
-            }
-            if accepted {
-                stream.next_sequence = stream.next_sequence.saturating_add(1);
-            }
-            (accepted, stream_type_name)
-        };
-        if accepted {
-            self.trigger_broadcast_observers(
-                TypeId::of::<T>(),
-                stream_type_name,
-                BroadcastObserverTrigger::OnPublish,
-                1,
-            );
-        }
-    }
-
-    pub(crate) fn work_queue_iter<T: 'static>(
-        self,
-    ) -> Box<dyn Iterator<Item = &'world T> + 'world> {
-        unsafe {
-            match self.work_queues.as_ref().get(&TypeId::of::<T>()) {
-                Some(queue) => Box::new(queue.messages_ref::<T>().iter()),
-                None => Box::new(std::iter::empty()),
-            }
-        }
-    }
-    pub(crate) fn work_queue_len<T: 'static>(self) -> usize {
-        unsafe {
-            self.work_queues
-                .as_ref()
-                .get(&TypeId::of::<T>())
-                .map(|q| q.messages_len_any())
-                .unwrap_or(0)
-        }
-    }
-    pub(crate) fn work_queue_peek<T: 'static>(self) -> Option<&'world T> {
-        unsafe {
-            self.work_queues
-                .as_ref()
-                .get(&TypeId::of::<T>())
-                .and_then(|q| q.messages_ref::<T>().front())
-        }
-    }
-    pub(crate) fn work_queue_enqueue<T: 'static>(
-        mut self,
-        message: T,
-    ) -> Result<(), super::messaging::WorkQueueEnqueueError> {
-        unsafe {
-            let queues = self.work_queues.as_mut();
-            let id = TypeId::of::<T>();
-            if let std::collections::hash_map::Entry::Vacant(entry) = queues.entry(id) {
-                let key = self.work_queue_key();
-                entry.insert(WorkQueueStorage::new::<T>(key));
-            }
-            let queue = queues.get_mut(&id).unwrap();
-            if let Some(capacity) = queue.config.capacity
-                && queue.messages_ref::<T>().len() >= capacity
-            {
-                queue.rejected += 1;
-                return Err(super::messaging::WorkQueueEnqueueError::Backpressure {
-                    work_queue_type: queue.work_queue_type_name,
-                    capacity,
-                });
-            }
-            queue.messages_mut::<T>().push_back(message);
-            queue.enqueued += 1;
-            Ok(())
-        }
-    }
-    pub(crate) fn work_queue_drain<T: 'static>(mut self) -> Vec<T> {
-        unsafe {
-            let Some(q) = self.work_queues.as_mut().get_mut(&TypeId::of::<T>()) else {
-                return Vec::new();
-            };
-            let out: Vec<_> = q.messages_mut::<T>().drain(..).collect();
-            q.drained += out.len() as u64;
-            out
-        }
-    }
-    pub(crate) fn work_queue_clear<T: 'static>(mut self) -> usize {
-        unsafe {
-            let Some(q) = self.work_queues.as_mut().get_mut(&TypeId::of::<T>()) else {
-                return 0;
-            };
-            let n = q.clear_any();
-            q.drained += n as u64;
-            n
-        }
-    }
-
-    pub(crate) fn current_buffer_messages<T: 'static>(self) -> &'world [T] {
-        unsafe {
-            let tick = *self.current_buffer_tick.as_ptr();
-            self.tick_buffers
-                .as_ref()
-                .get(&TypeId::of::<T>())
-                .and_then(|b| b.buckets_ref::<T>().get(&tick).map(Vec::as_slice))
-                .unwrap_or(&[])
-        }
-    }
-    pub(crate) fn current_buffer_tick(self) -> u64 {
-        unsafe { *self.current_buffer_tick.as_ptr() }
-    }
-    pub(crate) fn buffer_messages_at_tick<T: 'static>(self, tick: u64) -> &'world [T] {
-        unsafe {
-            self.tick_buffers
-                .as_ref()
-                .get(&TypeId::of::<T>())
-                .and_then(|b| b.buckets_ref::<T>().get(&tick).map(Vec::as_slice))
-                .unwrap_or(&[])
-        }
-    }
-    pub(crate) fn push_buffer_message<T: 'static>(
-        mut self,
-        tick: u64,
-        provenance: TickBufferProvenance,
-        message: T,
-    ) -> Result<super::messaging::TickBufferMeta, super::messaging::TickBufferPushError> {
-        unsafe {
-            let buffers = self.tick_buffers.as_mut();
-            let id = TypeId::of::<T>();
-            if let std::collections::hash_map::Entry::Vacant(entry) = buffers.entry(id) {
-                let key = self.tick_buffer_key();
-                entry.insert(TickBufferStorage::new::<T>(key));
-            }
-            let buffer = buffers.get_mut(&id).unwrap();
-            if let Some(finalized) = *self.finalized_buffer_tick.as_ptr()
-                && tick <= finalized
-            {
-                buffer.rejected += 1;
-                return Err(super::messaging::TickBufferPushError::FinalizedTick {
-                    buffer_type: buffer.buffer_type_name,
-                    tick,
-                    finalized_tick: finalized,
-                });
-            }
-            if let Some(capacity) = buffer.config.capacity
-                && buffer.pending_messages >= capacity
-            {
-                buffer.rejected += 1;
-                return Err(super::messaging::TickBufferPushError::Backpressure {
-                    buffer_type: buffer.buffer_type_name,
-                    capacity,
-                });
-            }
-            if buffer.is_duplicate::<T>(tick, &message) {
-                buffer.dropped = buffer.dropped.saturating_add(1);
-                return Err(super::messaging::TickBufferPushError::Deduplicated {
-                    buffer_type: buffer.buffer_type_name,
-                });
-            }
-            buffer.next_sequence += 1;
-            let meta = super::messaging::TickBufferMeta {
-                buffer_key: buffer.buffer_key,
-                tick,
-                sequence: buffer.next_sequence,
-                provenance,
-            };
-            buffer
-                .buckets_mut::<T>()
-                .entry(tick)
-                .or_default()
-                .push(message);
-            buffer.metadata.entry(tick).or_default().push(meta);
-            buffer.pending_messages += 1;
-            buffer.pushed += 1;
-            Ok(meta)
-        }
-    }
-    pub(crate) fn drain_buffer<T: 'static>(mut self, tick: u64) -> Vec<T> {
-        unsafe {
-            let Some(b) = self.tick_buffers.as_mut().get_mut(&TypeId::of::<T>()) else {
-                return Vec::new();
-            };
-            let out = b.buckets_mut::<T>().remove(&tick).unwrap_or_default();
-            b.metadata_remove(tick);
-            b.pending_messages = b.pending_messages.saturating_sub(out.len());
-            b.drained += out.len() as u64;
-            out
-        }
-    }
-
-    fn trigger_broadcast_observers(
-        mut self,
-        stream_type: TypeId,
-        stream_type_name: &'static str,
-        trigger: BroadcastObserverTrigger,
-        message_count: usize,
-    ) {
-        unsafe {
-            let observers = self.broadcast_observers.as_mut();
-            let notifications = self.broadcast_observer_notifications.as_mut();
-            for observer in observers.values_mut() {
-                if observer.stream_type != stream_type || observer.trigger != trigger {
-                    continue;
-                }
-                observer.invocations = observer.invocations.saturating_add(1);
-                notifications.push(BroadcastObserverNotification {
-                    observer_id: observer.observer_id.clone(),
-                    trigger: trigger.clone(),
-                    stream_type: stream_type_name,
-                    message_count,
-                });
-            }
-        }
-    }
 }
 
 impl<'world, T> Copy for ResourceCapability<'world, T> {}
@@ -911,6 +549,7 @@ impl<'world, T> ResourceCapability<'world, T> {
     pub(crate) fn value(self) -> NonNull<T> {
         self.value
     }
+
     pub(crate) fn mutation(self) -> Option<ResourceMutationCapability<'world>> {
         self.mutation
     }
