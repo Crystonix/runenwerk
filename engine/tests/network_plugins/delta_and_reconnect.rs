@@ -222,13 +222,14 @@ fn server_rejects_future_snapshot_ack_without_mutating_baseline() {
 }
 
 #[test]
-fn server_tracks_lagged_input_frames_in_replication_diagnostics() {
+fn server_tracks_lagged_input_frames_against_simulation_tick() {
     let mut app = App::headless();
     app.add_plugins(default_plugins());
     app.add_plugins((ScenePlugin, NetworkServerPlugin));
+    install_network_test_clock(&mut app);
     let connection = ConnectionHandle::new(1);
     install_runennet_connections(&mut app, &[(connection, ParticipantId::new(1))]);
-    app.world_mut().set_current_buffer_tick(5);
+    *app.world_mut().resource_mut::<SimulationTick>().unwrap() = SimulationTick(5);
 
     let payload =
         TestReplicationDriver::encode_input(&[ClientCommandEnvelope::Move(MoveCommand {
@@ -247,11 +248,95 @@ fn server_tracks_lagged_input_frames_in_replication_diagnostics() {
     )
     .expect("server inbox enqueue should succeed");
 
-    let app = app
-        .run_for_frames(1)
-        .expect("server lagged input frame should run");
+    let app = run_network_protocol_frame(app, "server lagged input frame should run");
+    assert_eq!(
+        *app.world().resource::<SimulationTick>().unwrap(),
+        SimulationTick(5),
+        "protocol-only frame must not advance fixed time"
+    );
     let diagnostics = app.world().resource::<ReplicationDiagnostics>().unwrap();
     assert_eq!(diagnostics.lagged, 1);
+    assert!(app.world().resource::<AppliedInputLog>().is_err());
+}
+
+#[test]
+fn server_rejects_equal_current_remote_input_as_already_simulated() {
+    let mut app = App::headless();
+    app.add_plugins(default_plugins());
+    app.add_plugins((ScenePlugin, NetworkServerPlugin));
+    install_network_test_clock(&mut app);
+    let connection = ConnectionHandle::new(1);
+    install_runennet_connections(&mut app, &[(connection, ParticipantId::new(1))]);
+    *app.world_mut().resource_mut::<SimulationTick>().unwrap() = SimulationTick(5);
+
+    let payload = TestReplicationDriver::encode_input(&[ClientCommandEnvelope::Ability(
+        AbilityCommand { slot: 5 },
+    )])
+    .expect("input payload should encode");
+
+    enqueue_server_inbox_from(
+        app.world_mut(),
+        Some(connection),
+        ClientMessage::InputFrame(InputFrame {
+            tick: SimulationTick(5),
+            payload,
+        }),
+    )
+    .expect("server inbox enqueue should succeed");
+
+    let app = run_network_protocol_frame(app, "equal-current remote input frame should run");
+    let diagnostics = app.world().resource::<ReplicationDiagnostics>().unwrap();
+    assert_eq!(diagnostics.lagged, 1);
+    assert_eq!(
+        *app.world().resource::<SimulationTick>().unwrap(),
+        SimulationTick(5)
+    );
+    assert!(app.world().resource::<AppliedInputLog>().is_err());
+}
+
+#[test]
+fn future_remote_input_precedes_local_input_for_same_fixed_tick() {
+    let mut app = App::headless();
+    app.add_plugins(default_plugins());
+    app.add_plugins((ScenePlugin, NetworkServerPlugin));
+    install_network_test_clock(&mut app);
+    let connection = ConnectionHandle::new(1);
+    install_runennet_connections(&mut app, &[(connection, ParticipantId::new(1))]);
+
+    let remote = ClientCommandEnvelope::Ability(AbilityCommand { slot: 7 });
+    let local = ClientCommandEnvelope::Ability(AbilityCommand { slot: 8 });
+    let payload = TestReplicationDriver::encode_input(std::slice::from_ref(&remote))
+        .expect("input payload should encode");
+    enqueue_server_inbox_from(
+        app.world_mut(),
+        Some(connection),
+        ClientMessage::InputFrame(InputFrame {
+            tick: SimulationTick(1),
+            payload,
+        }),
+    )
+    .expect("future remote input should enqueue");
+    app.world_mut()
+        .resource_mut::<PlayerCommandBuffer>()
+        .unwrap()
+        .push(local.clone());
+
+    let app = run_network_fixed_tick(app, "same-tick remote/local input should run");
+    assert_eq!(
+        *app.world().resource::<SimulationTick>().unwrap(),
+        SimulationTick(1)
+    );
+    assert_eq!(
+        app.world().resource::<AppliedInputLog>().unwrap().inputs,
+        vec![remote, local]
+    );
+    assert_eq!(
+        app.world()
+            .resource::<ReplicationDiagnostics>()
+            .unwrap()
+            .lagged,
+        0
+    );
 }
 
 #[test]
