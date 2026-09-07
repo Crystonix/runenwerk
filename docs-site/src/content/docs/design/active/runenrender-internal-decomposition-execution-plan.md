@@ -506,6 +506,36 @@ Cutover:
 
 RX is transfer/cutover, not architecture invention.
 
+## A1 — reusable adapter review
+
+Only after both RunenGPU and RunenRender clean cutovers, review whether any Runenwerk
+bridge has at least two independent consumers, stable host-neutral semantics, and enough
+maintenance duplication to justify extraction. Do not pre-create adapter packages or
+change dependency direction merely because one bridge exists.
+
+## V1+ — advanced renderer program
+
+Advanced renderer capability continues through separately accepted protocols,
+representations, methods, outputs, semantic inputs, relationships, appearance
+extensions, or derived-state kinds. Examples may include:
+
+```text
+multi-bounce and bidirectional transport
+regional / cellular transport
+volumes and sparse scientific fields
+populations, fibers, hair, liquids, and deformation
+spectral and polarized rendering
+differentiable and inverse rendering
+learned / neural representations and reconstruction
+deep output
+XR and foveated rendering
+multi-device and distributed rendering
+hardware-specialized realizations
+```
+
+V1+ does not replace or widen the R0 semantic spine by implication. Any new owner,
+dependency, stable format, or shared framework still requires its own accepted evidence.
+
 # Advanced compatibility requirements
 
 ## Shader/program ownership
@@ -574,7 +604,7 @@ review.
 
 # Shared logical Plan compatibility
 
-RunenRender remains correct whether draft PR #282's shared logical Plan proposal is
+RunenRender remains correct whether a future shared logical Plan architecture is
 accepted or rejected.
 
 A future shared Plan layer may express, compose, inspect, partition, or orchestrate
