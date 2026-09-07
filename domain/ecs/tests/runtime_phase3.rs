@@ -795,7 +795,10 @@ fn cached_system_param_state_reuse_is_stable_over_many_runs() {
         runtime.run_schedule::<Update>(&mut world).unwrap();
     }
     assert_eq!(PARAM_INIT_CALLS.load(Ordering::SeqCst) - init_before, 1);
-    assert_eq!(PARAM_EXTRACT_CALLS.load(Ordering::SeqCst) - extract_before, 5);
+    assert_eq!(
+        PARAM_EXTRACT_CALLS.load(Ordering::SeqCst) - extract_before,
+        5
+    );
     assert_eq!(world.resource::<SeenCount>().unwrap().0, 15);
 }
 
