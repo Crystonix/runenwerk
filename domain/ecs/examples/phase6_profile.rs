@@ -31,12 +31,6 @@ struct ChurnTag;
 struct MixedStats(u64);
 
 #[derive(Debug, Default, ecs::Component, ecs::Resource)]
-struct EventStats(u64);
-
-#[derive(Debug, Copy, Clone)]
-struct BenchEvent(u32);
-
-#[derive(Debug, Default, ecs::Component, ecs::Resource)]
 struct R0(u64);
 #[derive(Debug, Default, ecs::Component, ecs::Resource)]
 struct R1(u64);
@@ -60,14 +54,6 @@ struct W3;
 impl ScheduleLabel for W3 {
     fn name() -> &'static str {
         "W3"
-    }
-}
-
-#[derive(Copy, Clone)]
-struct W4;
-impl ScheduleLabel for W4 {
-    fn name() -> &'static str {
-        "W4"
     }
 }
 
@@ -139,11 +125,6 @@ fn print_workload_report(
             .saturating_add(delta.runtime_stage_nanos)
             .saturating_add(delta.runtime_flush_nanos),
     );
-    let event_total_ms = nanos_to_ms(
-        delta
-            .event_reader_nanos
-            .saturating_add(delta.event_writer_nanos),
-    );
 
     println!("\n=== {} ===", name);
     println!("setup_time_ms: {:.3}", setup_elapsed.as_secs_f64() * 1000.0);
@@ -154,8 +135,8 @@ fn print_workload_report(
     );
 
     println!(
-        "derived_ms: query_total={:.3} filter_total={:.3} runtime_total={:.3} event_total={:.3}",
-        query_total_ms, filter_total_ms, runtime_total_ms, event_total_ms
+        "derived_ms: query_total={:.3} filter_total={:.3} runtime_total={:.3}",
+        query_total_ms, filter_total_ms, runtime_total_ms
     );
 
     println!(
@@ -171,10 +152,6 @@ fn print_workload_report(
         delta.runtime_stage_calls,
         delta.runtime_flush_calls,
         delta.runtime_flush_command_queues
-    );
-    println!(
-        "events: reader_calls={} writer_calls={} read={} written={}",
-        delta.event_reader_calls, delta.event_writer_calls, delta.events_read, delta.events_written
     );
 
     println!("scheduler_summary:");
@@ -250,27 +227,6 @@ fn w3_despawn(mut commands: Commands, mut query: Query<(Entity, &ChurnTag)>) {
         }
         commands.despawn(entity);
     }
-}
-
-fn w4_write_events(mut writer: BroadcastWriter<BenchEvent>) {
-    for i in 0..256_u32 {
-        writer.send(BenchEvent(i));
-    }
-}
-
-fn w4_read_broadcast(
-    reader: BroadcastReader<BenchEvent>,
-    mut query: Query<&Position>,
-    mut stats: ResMut<EventStats>,
-) {
-    let events_seen = reader
-        .iter()
-        .fold(0_u64, |acc, event| acc.wrapping_add(event.0 as u64));
-    let entities_seen = query.iter().count() as u64;
-    stats.0 = stats
-        .0
-        .wrapping_add(events_seen)
-        .wrapping_add(entities_seen);
 }
 
 fn w5_write_r0(mut r0: ResMut<R0>) {
@@ -615,57 +571,6 @@ fn main() {
             run_elapsed,
             WorkloadMeta {
                 entity_count: 20_000,
-                repetition_count: 20,
-                schedule_run_count: 20,
-            },
-            &telemetry::snapshot_delta(&before, &after),
-        );
-    }
-
-    {
-        let setup_start = Instant::now();
-        let mut world = World::new();
-        world.insert_resource(EventStats::default());
-        for i in 0..10_000 {
-            world
-                .spawn((
-                    Position {
-                        x: i as f32,
-                        y: i as f32,
-                    },
-                    Velocity { x: 0.0, y: 0.0 },
-                ))
-                .expect("profile setup spawn should succeed");
-        }
-        let mut runtime = Runtime::new();
-        runtime.add_systems::<W4, _, _>(&mut world, (w4_write_events, w4_read_broadcast));
-        let _ = runtime.plan_for::<W4>().expect("w4 plan should exist");
-        let setup_elapsed = setup_start.elapsed();
-
-        // Warmup iteration (untimed).
-        runtime
-            .run_schedule::<W4>(&mut world)
-            .expect("w4 warmup run");
-        // Clearing the event channel between runs is intentional here: this workload models
-        // per-frame transient event consumption where backlog carryover would skew read/write cost.
-        world.clear_broadcast_admin::<BenchEvent>();
-
-        let before = telemetry::snapshot();
-        let run_start = Instant::now();
-        for _ in 0..20 {
-            runtime.run_schedule::<W4>(&mut world).expect("w4 run");
-            // This workload intentionally uses explicit clear-based event lifecycle cleanup.
-            world.clear_broadcast_admin::<BenchEvent>();
-        }
-        let run_elapsed = run_start.elapsed();
-        let after = telemetry::snapshot();
-
-        print_workload_report(
-            "W4 event-heavy schedule (10k entities, 256 events x 20 runs)",
-            setup_elapsed,
-            run_elapsed,
-            WorkloadMeta {
-                entity_count: 10_000,
                 repetition_count: 20,
                 schedule_run_count: 20,
             },
