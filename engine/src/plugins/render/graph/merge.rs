@@ -1,4 +1,3 @@
-use crate::plugins::gpu::GpuCapabilities;
 use crate::plugins::render::composition::{
     RenderFragmentDescriptor, RenderFragmentDiagnostic, RenderFragmentDiagnosticKind,
     RenderFragmentLabelRef, RenderFragmentMergeReport, RenderFragmentPackageDescriptor,
@@ -10,6 +9,7 @@ use crate::plugins::render::{
     RenderFlow, RenderFlowAuthoringError, RenderPassViewScope, RenderTargetAliasKind,
     compile_flow_plan_checked,
 };
+use runen_gpu::GpuCapabilities;
 
 #[derive(Debug)]
 pub struct RenderFragmentMergeResult {

@@ -1,8 +1,8 @@
-use crate::plugins::gpu::{
+use crate::plugins::render::{RenderFeatureId, RenderFlowId, RenderPassId, RenderPassKind};
+use runen_gpu::{
     GpuComputePipelineDescriptor, GpuPipelineLayoutDescriptor, GpuProgramDescriptor,
     GpuRenderPipelineDescriptor, GpuRenderPipelineStateDescriptor, GpuSpecializationValueSet,
 };
-use crate::plugins::render::{RenderFeatureId, RenderFlowId, RenderPassId, RenderPassKind};
 use std::hash::{Hash, Hasher};
 
 /// Renderer-local discrimination over the complete generic G4B pipeline contracts.
@@ -134,7 +134,7 @@ impl From<RenderPassKind> for FlowPassKind {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::plugins::gpu::{
+    use runen_gpu::{
         GpuAdmittedProgramSource, GpuBindingLayoutRefinement, GpuBlendMode,
         GpuCapabilityRequirements, GpuColorTargetStateDescriptor, GpuColorWriteMask,
         GpuEntryPointName, GpuFragmentOutputStateDescriptor, GpuMultisampleStateDescriptor,

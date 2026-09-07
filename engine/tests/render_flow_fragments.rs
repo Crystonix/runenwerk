@@ -1,4 +1,3 @@
-use engine::plugins::gpu::{GpuBindingKey, GpuCapabilities, GpuCapabilityFeature};
 use engine::plugins::render::inspect::{
     inspect_fragment_pass_provenance, inspect_render_fragment_merge_report,
 };
@@ -8,6 +7,7 @@ use engine::plugins::render::{
     RenderFragmentPassDescriptor, RenderFragmentResourceDescriptor, RenderTextureTargetFormat,
     current_runtime_gpu_capabilities, merge_fragment_package_into_flow, validate_fragment_package,
 };
+use runen_gpu::{GpuBindingKey, GpuCapabilities, GpuCapabilityFeature};
 
 fn binding_key(binding: u64) -> GpuBindingKey {
     GpuBindingKey::try_new(0, binding).expect("fragment test binding should fit GpuBindingKey")

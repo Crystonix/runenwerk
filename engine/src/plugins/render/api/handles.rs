@@ -1,5 +1,5 @@
-use crate::plugins::gpu::GpuBufferHandle;
 use crate::plugins::render::RenderPassId;
+use runen_gpu::GpuBufferHandle;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct PassHandle {

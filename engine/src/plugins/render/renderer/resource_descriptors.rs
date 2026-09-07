@@ -1,4 +1,5 @@
-use crate::plugins::gpu::{
+use anyhow::Result;
+use runen_gpu::{
     GpuAddressMode, GpuBufferDescriptor, GpuBufferInitialization, GpuBufferUsage, GpuBufferUsages,
     GpuFilterMode, GpuMemoryIntent, GpuReconstruction, GpuResourceCommon, GpuResourceLabel,
     GpuResourceLifetime, GpuResourceProvenance, GpuSamplerDescriptor, GpuTextureAspect,
@@ -6,8 +7,6 @@ use crate::plugins::gpu::{
     GpuTextureHandle, GpuTextureInitialization, GpuTextureSubresourceRange, GpuTextureUsage,
     GpuTextureUsages, GpuTextureViewDescriptor,
 };
-use anyhow::{Result, bail};
-use wgpu::TextureFormat;
 
 pub(super) fn owned_common(
     label: impl Into<String>,
@@ -157,36 +156,10 @@ fn linear_sampler_descriptor_with_address_mode(
     )?)
 }
 
-pub(super) fn gpu_texture_format(format: TextureFormat) -> Result<GpuTextureFormat> {
-    match format {
-        TextureFormat::R8Unorm => Ok(GpuTextureFormat::R8Unorm),
-        TextureFormat::Rgba8Unorm => Ok(GpuTextureFormat::Rgba8Unorm),
-        TextureFormat::Rgba8UnormSrgb => Ok(GpuTextureFormat::Rgba8UnormSrgb),
-        TextureFormat::Bgra8Unorm => Ok(GpuTextureFormat::Bgra8Unorm),
-        TextureFormat::Bgra8UnormSrgb => Ok(GpuTextureFormat::Bgra8UnormSrgb),
-        TextureFormat::R32Uint => Ok(GpuTextureFormat::R32Uint),
-        TextureFormat::Depth32Float => Ok(GpuTextureFormat::Depth32Float),
-        other => bail!("current renderer format {other:?} has no admitted RunenGPU mapping"),
-    }
-}
-
-pub(super) const fn wgpu_texture_format(format: GpuTextureFormat) -> TextureFormat {
-    match format {
-        GpuTextureFormat::R8Unorm => TextureFormat::R8Unorm,
-        GpuTextureFormat::Rgba8Unorm => TextureFormat::Rgba8Unorm,
-        GpuTextureFormat::Rgba8UnormSrgb => TextureFormat::Rgba8UnormSrgb,
-        GpuTextureFormat::Bgra8Unorm => TextureFormat::Bgra8Unorm,
-        GpuTextureFormat::Bgra8UnormSrgb => TextureFormat::Bgra8UnormSrgb,
-        GpuTextureFormat::R32Uint => TextureFormat::R32Uint,
-        GpuTextureFormat::Depth32Float => TextureFormat::Depth32Float,
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::plugins::gpu::GpuWorkResourceIdAllocator;
-    use std::num::NonZeroU64;
+    use runen_gpu::GpuWorkResourceIdAllocator;
 
     #[test]
     fn whole_volume_view_uses_one_array_layer() {
@@ -199,8 +172,7 @@ mod tests {
             GpuResourceLifetime::Retained,
         )
         .unwrap();
-        let mut allocator =
-            GpuWorkResourceIdAllocator::for_owner_scope(NonZeroU64::new(1).unwrap());
+        let mut allocator = GpuWorkResourceIdAllocator::new();
         let texture = allocator.allocate_texture_handle(descriptor).unwrap();
 
         let view = whole_texture_view_descriptor("whole volume view test", &texture).unwrap();

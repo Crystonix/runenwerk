@@ -12,7 +12,7 @@
 //! occurrence identities plus only render-owned control/non-data requirements. RunenGPU continues
 //! to derive every resource dependency and hazard from the canonical operations.
 
-use crate::plugins::gpu::*;
+use runen_gpu::*;
 use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Debug, thiserror::Error)]
@@ -323,6 +323,17 @@ fn author_render_fragment(
     graph_provenance: &GpuResourceProvenance,
     explicit_orders: &BTreeSet<(RenderGpuWorkOccurrenceId, RenderGpuWorkOccurrenceId)>,
 ) -> Result<AuthoredRenderFragment, RenderGpuWorkAdapterError> {
+    for occurrence in explicit_orders
+        .iter()
+        .flat_map(|(before, after)| [before, after])
+    {
+        if !nodes.iter().any(|node| node.occurrence == *occurrence) {
+            return Err(RenderGpuWorkAdapterError::MissingOrderedOccurrence {
+                occurrence: *occurrence,
+            });
+        }
+    }
+
     let mut occurrence_nodes = BTreeMap::<RenderGpuWorkOccurrenceId, GpuWorkNodeId>::new();
     let fragment = GpuWorkFragment::build_with_provenance(
         graph_label.clone(),
@@ -348,34 +359,12 @@ fn author_render_fragment(
             }
 
             for (before_occurrence, after_occurrence) in explicit_orders {
-                let before = occurrence_nodes.get(before_occurrence).ok_or_else(|| {
-                    GpuWorkAuthoringError::invalid(
-                        "author resolved render occurrence order",
-                        GpuWorkAuthoringErrorContext::new(
-                            Some(graph_label.as_str().to_string()),
-                            None,
-                            None,
-                            None,
-                            Some(graph_provenance.clone()),
-                        ),
-                        GpuWorkAuthoringCause::UnknownIdentity,
-                        "include every render control predecessor as an execution occurrence in this bounded render work",
-                    )
-                })?;
-                let after = occurrence_nodes.get(after_occurrence).ok_or_else(|| {
-                    GpuWorkAuthoringError::invalid(
-                        "author resolved render occurrence order",
-                        GpuWorkAuthoringErrorContext::new(
-                            Some(graph_label.as_str().to_string()),
-                            None,
-                            None,
-                            None,
-                            Some(graph_provenance.clone()),
-                        ),
-                        GpuWorkAuthoringCause::UnknownIdentity,
-                        "include every render control successor as an execution occurrence in this bounded render work",
-                    )
-                })?;
+                let before = occurrence_nodes
+                    .get(before_occurrence)
+                    .expect("validated render occurrence predecessor must be authored");
+                let after = occurrence_nodes
+                    .get(after_occurrence)
+                    .expect("validated render occurrence successor must be authored");
                 builder.add_explicit_order(GpuExplicitOrder::new(
                     before,
                     after,
@@ -505,7 +494,6 @@ fn declared_resource_for_access(access: &GpuResourceAccess) -> GpuResourceRef {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::num::NonZeroU64;
 
     fn label(value: &str) -> GpuResourceLabel {
         GpuResourceLabel::new(value).expect("test label should be valid")
@@ -607,8 +595,7 @@ mod tests {
 
     #[test]
     fn frame_work_preparation_owns_cross_invocation_raw_and_initialization() {
-        let mut allocator =
-            GpuWorkResourceIdAllocator::for_owner_scope(NonZeroU64::new(701).unwrap());
+        let mut allocator = GpuWorkResourceIdAllocator::new();
         let shared = buffer(&mut allocator, "frame shared", 16);
         let copied = buffer(&mut allocator, "frame copied", 16);
         let independent = buffer(&mut allocator, "frame independent", 16);
@@ -691,8 +678,7 @@ mod tests {
 
     #[test]
     fn capture_readback_control_order_survives_without_data_hazards() {
-        let mut allocator =
-            GpuWorkResourceIdAllocator::for_owner_scope(NonZeroU64::new(702).unwrap());
+        let mut allocator = GpuWorkResourceIdAllocator::new();
         let captured = buffer(&mut allocator, "capture source", 16);
         let pass_source = buffer(&mut allocator, "pass source", 16);
         let pass_destination = buffer(&mut allocator, "pass destination", 16);
@@ -789,8 +775,7 @@ mod tests {
 
     #[test]
     fn presenting_frame_without_explicit_present_predecessors_ends_at_present() {
-        let mut allocator =
-            GpuWorkResourceIdAllocator::for_owner_scope(NonZeroU64::new(703).unwrap());
+        let mut allocator = GpuWorkResourceIdAllocator::new();
         let surface_view = color_target_view(&mut allocator);
         let independent = buffer(&mut allocator, "independent frame upload", 16);
         let render_occurrence = RenderGpuWorkOccurrenceId::new(1);

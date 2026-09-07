@@ -77,7 +77,11 @@ cargo validate
 
 Documentation changes additionally run the Astro/Starlight production build through the path-scoped documentation workflow. It is supplemental evidence, not a second Rust baseline. Success output is compact; failures preserve status, print bounded diagnostics, retain a short-lived complete artifact, and clean temporary state.
 
-RunenGPU implementation and conformance changes additionally run the path-scoped `RunenGPU Conformance` workflow when supplemental target evidence is required by the active RunenGPU slice. It independently selects and proves the reviewed revision. Its native job uses the repository's public RunenGPU API and executes the bounded proof on the explicitly configured Mesa Vulkan software adapter. Its Wasm job checks the RunenGPU-containing engine library for `wasm32-unknown-unknown` against the locked dependency graph. Native execution evidence is limited to the exact configured tests and adapter; Wasm compilation establishes target compatibility only and does not establish unexecuted browser runtime or hardware-backend claims. This workflow is supplemental evidence, not a second Rust baseline.
+RunenGPU implementation and framework conformance are owned by the external
+`dornglut/runen-gpu` repository after its accepted exact-revision handoff. Runenwerk
+validates the consumer cutover, public-API integration, and product/runtime behavior
+through its own locked baseline and focused integration tests; it does not duplicate
+the framework's standalone conformance workflow.
 
 Broader tools such as cargo-deny, cargo-machete, Lychee, ast-grep, benchmarks, or platform matrices are run directly when the affected change or release needs them. They are not a second named Rust gate.
 

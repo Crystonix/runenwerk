@@ -2,16 +2,16 @@
 //! Runenwerk contract; they do not query a backend. G5 deletes this adapter when
 //! generic execution consumes admitted RunenGPU facts directly.
 
-use crate::plugins::gpu::{
-    GpuCapabilities, GpuCapabilityFeature, GpuCapabilityRequirement, GpuLimits,
-    GpuPreparedWorkGraph, GpuTextureFormat, GpuTextureFormatCapabilities,
-};
 use crate::plugins::render::graph::{
     CompiledBindingEntry, CompiledDrawSource, CompiledPassExecutionPlan, CompiledRenderFlowPlan,
     RenderExecutionGraphDiagnostic, RenderExecutionGraphDiagnosticKind,
 };
 use crate::plugins::render::{
     RenderResourceDeclaration, RenderTextureFormatPolicy, RenderTextureTargetFormat,
+};
+use runen_gpu::{
+    GpuCapabilities, GpuCapabilityFeature, GpuCapabilityRequirement, GpuLimits,
+    GpuPreparedWorkGraph, GpuTextureFormat, GpuTextureFormatCapabilities,
 };
 
 /// Returns normalized facts for the fixed capability contract the current
@@ -27,7 +27,7 @@ pub fn current_runtime_gpu_capabilities() -> GpuCapabilities {
         GpuCapabilityFeature::Presentation,
     ]
     .into_iter();
-    let limits = GpuLimits::from_validated_adapter_facts(
+    let limits = GpuLimits::new(
         64 * 1024,
         128 * 1024 * 1024,
         1,
@@ -39,7 +39,8 @@ pub fn current_runtime_gpu_capabilities() -> GpuCapabilities {
         8,
         4,
         65_535,
-    );
+    )
+    .expect("fixed renderer capability limits are internally consistent");
     GpuCapabilities::from_normalized_facts(features, limits, current_format_facts())
 }
 
@@ -515,7 +516,7 @@ enum TextureCapability {
 
 fn validate_texture_format_capability(
     flow: &CompiledRenderFlowPlan,
-    resource_id: crate::plugins::gpu::GpuWorkResourceId,
+    resource_id: runen_gpu::GpuWorkResourceId,
     format: RenderTextureFormatPolicy,
     capabilities: &GpuCapabilities,
     required: TextureCapability,
@@ -558,7 +559,7 @@ pub const fn normalized_render_format(format: RenderTextureTargetFormat) -> GpuT
 
 fn resource_capability_diagnostic(
     flow: &CompiledRenderFlowPlan,
-    resource_id: crate::plugins::gpu::GpuWorkResourceId,
+    resource_id: runen_gpu::GpuWorkResourceId,
     capability: impl Into<String>,
     message: impl Into<String>,
 ) -> RenderExecutionGraphDiagnostic {

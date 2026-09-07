@@ -213,8 +213,8 @@ fn fixed_step_schedule_for_region(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::plugins::gpu::GpuBindingKey;
     use crate::plugins::render::{GpuStorage, RenderFlow, compile_flow_plan};
+    use runen_gpu::GpuBindingKey;
 
     #[derive(Debug, Clone, Copy, GpuStorage)]
     struct TestCell {

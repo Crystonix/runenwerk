@@ -1,14 +1,15 @@
 use super::*;
-use crate::plugins::gpu::{
-    GpuBufferDescriptor, GpuBufferHandle, GpuTextureDescriptor, GpuTextureDimension,
-    GpuTextureHandle, GpuTextureViewHandle, GpuWorkResourceId, GpuWorkResourceIdAllocator,
-    PreparedGpuData, UniformData,
-};
 use crate::plugins::render::{
     PreparedTargetBinding, RenderDynamicTextureTargetKey, RenderFlowId,
     RenderGpuResourceAdapterError, RenderImportedBufferIntent, RenderImportedTextureIntent,
     RenderPassId, RenderTargetAliasDeclaration, RenderTargetAliasKey,
     prepare_projected_uniform_bytes,
+};
+use runen_gpu::{
+    GpuBufferDescriptor, GpuBufferHandle, GpuBufferUsages, GpuTextureDescriptor,
+    GpuTextureDimension, GpuTextureFormat, GpuTextureHandle, GpuTextureUsages,
+    GpuTextureViewHandle, GpuWorkResourceId, GpuWorkResourceIdAllocator, PreparedGpuData,
+    UniformData,
 };
 use std::fmt;
 
@@ -28,9 +29,9 @@ pub enum RuntimeBufferKind {
 pub struct RuntimeTextureResource {
     pub handle: GpuTextureHandle,
     pub view_handle: GpuTextureViewHandle,
-    pub format: TextureFormat,
+    pub format: GpuTextureFormat,
     pub size: (u32, u32),
-    pub usage: TextureUsages,
+    pub usage: GpuTextureUsages,
     pub is_depth: bool,
     pub history_signature: Option<String>,
     pub generation: u64,
@@ -50,8 +51,8 @@ pub struct RuntimeBufferResource {
 pub struct TextureAllocationSpec {
     pub descriptor: GpuTextureDescriptor,
     pub size: (u32, u32),
-    pub format: TextureFormat,
-    pub usage: TextureUsages,
+    pub format: GpuTextureFormat,
+    pub usage: GpuTextureUsages,
     pub is_depth: bool,
 }
 
@@ -59,7 +60,7 @@ pub struct TextureAllocationSpec {
 pub struct BufferAllocationSpec {
     pub descriptor: GpuBufferDescriptor,
     pub size: u64,
-    pub usage: BufferUsages,
+    pub usage: GpuBufferUsages,
     pub kind: RuntimeBufferKind,
 }
 
@@ -99,10 +100,6 @@ enum CurrentRuntimeResourceRealizationError {
         resource_id: GpuWorkResourceId,
         normalized_kind: &'static str,
     },
-    #[error(
-        "current render surface format {surface_format:?} has no admitted normalized RunenGPU format"
-    )]
-    UnsupportedSurfaceFormat { surface_format: TextureFormat },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -186,7 +183,7 @@ impl FlowRuntimeResources {
 pub struct ResolvedTextureRef<'a> {
     pub id: RuntimeResourceKey,
     pub view_handle: Option<&'a GpuTextureViewHandle>,
-    pub format: TextureFormat,
+    pub format: GpuTextureFormat,
     pub size: (u32, u32),
     pub is_depth: bool,
 }
@@ -206,7 +203,11 @@ mod resolve;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::plugins::gpu::{
+    use crate::plugins::render::{
+        CompiledTargetAliasRef, GpuParams, RenderGpuResourceLowering, RenderImportedBufferSemantic,
+        RenderImportedTextureSemantic, RenderTargetAliasKind, RenderTextureIntent,
+    };
+    use runen_gpu::{
         GpuAddressMode, GpuBufferUsage, GpuFilterMode, GpuMemoryIntent, GpuQueryKind,
         GpuQuerySetDescriptor, GpuReconstruction, GpuResourceCommon, GpuResourceDescriptor,
         GpuResourceLabel, GpuResourceLifetime, GpuResourceProvenance, GpuSamplerDescriptor,
@@ -214,11 +215,6 @@ mod tests {
         GpuTextureInitialization, GpuTextureSubresourceRange, GpuTextureUsage, GpuTextureUsages,
         GpuTextureViewDescriptor, GpuWorkResourceIdAllocator,
     };
-    use crate::plugins::render::{
-        CompiledTargetAliasRef, GpuParams, RenderGpuResourceLowering, RenderImportedBufferSemantic,
-        RenderImportedTextureSemantic, RenderTargetAliasKind, RenderTextureIntent,
-    };
-    use std::num::NonZeroU64;
 
     struct RuntimeTestUniform(u32);
 
@@ -231,9 +227,7 @@ mod tests {
     }
 
     fn resource(local: u64) -> GpuWorkResourceId {
-        let mut allocator = GpuWorkResourceIdAllocator::for_owner_scope(
-            NonZeroU64::new(1).expect("test owner scope is nonzero"),
-        );
+        let mut allocator = GpuWorkResourceIdAllocator::new();
         (1..=local)
             .map(|_| {
                 allocator
@@ -273,8 +267,7 @@ mod tests {
             GpuTextureInitialization::Uninitialized,
         )
         .unwrap();
-        let mut allocator =
-            GpuWorkResourceIdAllocator::for_owner_scope(NonZeroU64::new(8).unwrap());
+        let mut allocator = GpuWorkResourceIdAllocator::new();
         let handle = allocator.allocate_texture_handle(parent).unwrap();
         let view_label = gpu_label("runtime test texture view");
         let subresources =
@@ -308,13 +301,14 @@ mod tests {
     #[test]
     fn capture_texture_class_resolves_label_alias_to_descriptor() {
         let mut resources = FlowRuntimeResources::default();
+        let id = resource(7);
         resources.descriptors.insert(
-            resource(7),
-            RenderResourceDeclaration::declare_color_attachment(resource(7), "overlay"),
+            id,
+            RenderResourceDeclaration::declare_color_attachment(id, "overlay"),
         );
         resources
             .resource_ids_by_label
-            .insert("editor.viewport.v1.overlay".to_string(), resource(7));
+            .insert("editor.viewport.v1.overlay".to_string(), id);
 
         assert_eq!(
             resources.capture_texture_class(
@@ -395,7 +389,7 @@ mod tests {
         let disposition = FlowRuntimeResources::current_runtime_resource_disposition(
             &descriptor,
             (1920, 1080),
-            TextureFormat::Bgra8UnormSrgb,
+            GpuTextureFormat::Bgra8UnormSrgb,
         )
         .expect("normalized descriptor lowering should succeed");
         let CurrentRuntimeResourceDisposition::FlowTexture(spec) = disposition else {
@@ -403,12 +397,12 @@ mod tests {
         };
 
         assert_eq!(spec.size, (320, 180));
-        assert_eq!(spec.format, TextureFormat::R32Uint);
-        assert!(spec.usage.contains(TextureUsages::TEXTURE_BINDING));
-        assert!(spec.usage.contains(TextureUsages::STORAGE_BINDING));
-        assert!(spec.usage.contains(TextureUsages::COPY_DST));
-        assert!(!spec.usage.contains(TextureUsages::RENDER_ATTACHMENT));
-        assert!(!spec.usage.contains(TextureUsages::COPY_SRC));
+        assert_eq!(spec.format, GpuTextureFormat::R32Uint);
+        assert!(spec.usage.contains(GpuTextureUsage::Sampled));
+        assert!(spec.usage.contains(GpuTextureUsage::StorageWrite));
+        assert!(spec.usage.contains(GpuTextureUsage::CopyDestination));
+        assert!(!spec.usage.contains(GpuTextureUsage::ColorAttachment));
+        assert!(!spec.usage.contains(GpuTextureUsage::CopySource));
     }
 
     #[test]
@@ -419,7 +413,7 @@ mod tests {
         let disposition = FlowRuntimeResources::current_runtime_resource_disposition(
             &descriptor,
             (1280, 720),
-            TextureFormat::Rgba8UnormSrgb,
+            GpuTextureFormat::Rgba8UnormSrgb,
         )
         .expect("normalized descriptor lowering should succeed");
         let CurrentRuntimeResourceDisposition::FlowTexture(spec) = disposition else {
@@ -427,9 +421,9 @@ mod tests {
         };
 
         assert_eq!(spec.size, (1280, 720));
-        assert_eq!(spec.format, TextureFormat::Rgba8UnormSrgb);
-        assert!(spec.usage.contains(TextureUsages::RENDER_ATTACHMENT));
-        assert!(spec.usage.contains(TextureUsages::TEXTURE_BINDING));
+        assert_eq!(spec.format, GpuTextureFormat::Rgba8UnormSrgb);
+        assert!(spec.usage.contains(GpuTextureUsage::ColorAttachment));
+        assert!(spec.usage.contains(GpuTextureUsage::Sampled));
     }
 
     #[test]
@@ -444,7 +438,7 @@ mod tests {
         let disposition = FlowRuntimeResources::current_runtime_resource_disposition(
             &descriptor,
             (1280, 720),
-            TextureFormat::Rgba8UnormSrgb,
+            GpuTextureFormat::Rgba8UnormSrgb,
         )
         .expect("normalized descriptor lowering should succeed");
         let CurrentRuntimeResourceDisposition::FlowTexture(spec) = disposition else {
@@ -452,9 +446,9 @@ mod tests {
         };
 
         assert_eq!(spec.size, (1280, 720));
-        assert_eq!(spec.format, TextureFormat::Rgba8Unorm);
-        assert!(spec.usage.contains(TextureUsages::RENDER_ATTACHMENT));
-        assert!(spec.usage.contains(TextureUsages::TEXTURE_BINDING));
+        assert_eq!(spec.format, GpuTextureFormat::Rgba8Unorm);
+        assert!(spec.usage.contains(GpuTextureUsage::ColorAttachment));
+        assert!(spec.usage.contains(GpuTextureUsage::Sampled));
     }
 
     #[test]
@@ -469,7 +463,7 @@ mod tests {
         let disposition = FlowRuntimeResources::current_runtime_resource_disposition(
             &descriptor,
             (1, 1),
-            TextureFormat::Rgba8Unorm,
+            GpuTextureFormat::Rgba8Unorm,
         )
         .unwrap();
         let CurrentRuntimeResourceDisposition::Buffer(spec) = disposition else {
@@ -478,8 +472,8 @@ mod tests {
 
         assert_eq!(spec.kind, RuntimeBufferKind::Uniform);
         assert!(spec.size > 0);
-        assert!(spec.usage.contains(BufferUsages::UNIFORM));
-        assert!(spec.usage.contains(BufferUsages::COPY_DST));
+        assert!(spec.usage.contains(GpuBufferUsage::Uniform));
+        assert!(spec.usage.contains(GpuBufferUsage::CopyDestination));
         assert!(matches!(
             descriptor,
             RenderResourceDeclaration::Uniform(ref value)
@@ -507,7 +501,7 @@ mod tests {
             FlowRuntimeResources::current_runtime_resource_disposition(
                 &imported_texture,
                 (64, 64),
-                TextureFormat::Rgba8Unorm,
+                GpuTextureFormat::Rgba8Unorm,
             )
             .unwrap(),
             CurrentRuntimeResourceDisposition::ImportedTexture(intent)
@@ -519,7 +513,7 @@ mod tests {
             FlowRuntimeResources::current_runtime_resource_disposition(
                 &imported_buffer,
                 (64, 64),
-                TextureFormat::Rgba8Unorm,
+                GpuTextureFormat::Rgba8Unorm,
             )
             .unwrap(),
             CurrentRuntimeResourceDisposition::ImportedBuffer(intent)
@@ -531,7 +525,7 @@ mod tests {
             FlowRuntimeResources::current_runtime_resource_disposition(
                 &alias,
                 (64, 64),
-                TextureFormat::Rgba8Unorm,
+                GpuTextureFormat::Rgba8Unorm,
             )
             .unwrap(),
             CurrentRuntimeResourceDisposition::TargetAlias(value)
@@ -549,7 +543,7 @@ mod tests {
         let disposition = FlowRuntimeResources::current_runtime_resource_disposition(
             &descriptor,
             (1024, 576),
-            TextureFormat::Bgra8UnormSrgb,
+            GpuTextureFormat::Bgra8UnormSrgb,
         )
         .unwrap();
         let CurrentRuntimeResourceDisposition::InvocationHistoryTexture(spec) = disposition else {
@@ -557,9 +551,9 @@ mod tests {
         };
 
         assert_eq!(spec.size, (1024, 576));
-        assert_eq!(spec.format, TextureFormat::Bgra8UnormSrgb);
-        assert!(spec.usage.contains(TextureUsages::TEXTURE_BINDING));
-        assert!(spec.usage.contains(TextureUsages::RENDER_ATTACHMENT));
+        assert_eq!(spec.format, GpuTextureFormat::Bgra8UnormSrgb);
+        assert!(spec.usage.contains(GpuTextureUsage::Sampled));
+        assert!(spec.usage.contains(GpuTextureUsage::ColorAttachment));
     }
 
     #[test]
@@ -608,7 +602,7 @@ mod tests {
             let error = FlowRuntimeResources::current_runtime_resource_disposition_from_lowering(
                 &declaration,
                 RenderGpuResourceLowering::Normalized(Box::new(normalized)),
-                TextureFormat::Rgba8Unorm,
+                GpuTextureFormat::Rgba8Unorm,
             )
             .unwrap_err();
             assert!(matches!(

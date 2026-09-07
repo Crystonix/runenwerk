@@ -1,11 +1,11 @@
 use super::super::dynamic_targets::RendererDynamicTextureTargetCache;
 use super::*;
-use crate::plugins::gpu::{
+use crate::plugins::render::RenderPassId;
+use runen_gpu::{
     GpuBufferRange, GpuBufferRegion, GpuCopyExtent, GpuCopyOperation, GpuTextureAspect,
     GpuTextureCopyRegion, GpuTextureHandle, GpuTextureOrigin, GpuTextureViewHandle,
     GpuWorkOperation,
 };
-use crate::plugins::render::RenderPassId;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) enum ProjectedCopyOperation {

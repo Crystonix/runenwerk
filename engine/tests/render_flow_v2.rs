@@ -1,4 +1,3 @@
-use engine::plugins::gpu::{GpuBindingKey, GpuCapabilities, GpuCapabilityFeature};
 use engine::plugins::render::{
     CompiledPassExecutionPlan, DrawIndirectArgs, GpuStorage, GpuUniform, PreparedFlowInputs,
     PreparedFlowInvocation, PreparedFrameContext, PreparedFrameContributions, PreparedRenderFrame,
@@ -10,6 +9,7 @@ use engine::plugins::render::{
     compile_flow_plan_checked, current_runtime_gpu_capabilities,
     preflight_prepared_render_frame_runtime_guards,
 };
+use runen_gpu::{GpuBindingKey, GpuCapabilities, GpuCapabilityFeature};
 use std::any::TypeId;
 use std::collections::BTreeMap;
 use ui_render_data::ViewportSurfaceBindingRegistry;

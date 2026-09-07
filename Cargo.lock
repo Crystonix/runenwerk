@@ -873,9 +873,9 @@ dependencies = [
  "pollster",
  "postcard",
  "product",
- "raw-window-handle",
  "resource_ref",
  "ron",
+ "runen-gpu",
  "runen-net",
  "runen-spatial",
  "rusttype",
@@ -883,7 +883,6 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 2.0.18",
- "tokio",
  "tracing",
  "tracing-appender",
  "tracing-subscriber",
@@ -907,7 +906,6 @@ dependencies = [
  "ui_surface",
  "ui_text",
  "ui_theme",
- "wgpu",
  "winit",
  "world_ops",
  "world_sdf",
@@ -2612,6 +2610,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "runen-gpu"
+version = "0.1.0"
+source = "git+https://github.com/dornglut/runen-gpu?rev=77c7c8d5ad6922b6f46c6b25e31b1a224c1314a4#77c7c8d5ad6922b6f46c6b25e31b1a224c1314a4"
+dependencies = [
+ "bytemuck",
+ "naga",
+ "raw-window-handle",
+ "tokio",
+ "tracing",
+ "wgpu",
+]
+
+[[package]]
 name = "runen-net"
 version = "0.1.0"
 source = "git+https://github.com/dornglut/runen-net?rev=2af5700b2889f6503395ffb72ae85f37629f2625#2af5700b2889f6503395ffb72ae85f37629f2625"
@@ -2646,6 +2657,7 @@ dependencies = [
  "native_tablet_input",
  "product",
  "ron",
+ "runen-gpu",
  "serde",
  "tracing",
  "ui_composition",
@@ -2682,6 +2694,7 @@ dependencies = [
  "product",
  "resource_ref",
  "ron",
+ "runen-gpu",
  "runen-net",
  "runen-net-quic",
  "runen-spatial",

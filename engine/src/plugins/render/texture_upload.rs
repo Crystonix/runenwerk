@@ -1,12 +1,12 @@
 use crate::plugins::render::{PreparedMaterialTextureBinding, PreparedMaterialTextureKind};
 use anyhow::{Context, bail};
-use wgpu::{Extent3d, TextureDimension, TextureFormat};
+use runen_gpu::{GpuResourceLabel, GpuTextureDimension, GpuTextureExtent, GpuTextureFormat};
 
 #[derive(Debug)]
 pub(crate) struct MaterialKtx2Upload {
-    pub size: Extent3d,
-    pub dimension: TextureDimension,
-    pub format: TextureFormat,
+    pub size: GpuTextureExtent,
+    pub dimension: GpuTextureDimension,
+    pub format: GpuTextureFormat,
     pub bytes: Vec<u8>,
 }
 
@@ -63,8 +63,8 @@ pub(crate) fn load_material_ktx2_upload(
         );
     }
     let format = match header.format {
-        Some(ktx2::Format::R8G8B8A8_UNORM) => TextureFormat::Rgba8Unorm,
-        Some(ktx2::Format::R8G8B8A8_SRGB) => TextureFormat::Rgba8UnormSrgb,
+        Some(ktx2::Format::R8G8B8A8_UNORM) => GpuTextureFormat::Rgba8Unorm,
+        Some(ktx2::Format::R8G8B8A8_SRGB) => GpuTextureFormat::Rgba8UnormSrgb,
         other => {
             bail!(
                 "KTX2 material texture artifact '{}' uses unsupported runtime format {:?}",
@@ -85,7 +85,7 @@ pub(crate) fn load_material_ktx2_upload(
                     depth
                 );
             }
-            TextureDimension::D2
+            GpuTextureDimension::D2
         }
         PreparedMaterialTextureKind::Texture3D => {
             if depth <= 1 {
@@ -95,7 +95,7 @@ pub(crate) fn load_material_ktx2_upload(
                     depth
                 );
             }
-            TextureDimension::D3
+            GpuTextureDimension::D3
         }
     };
     if width != binding.extent_width.max(1)
@@ -129,12 +129,10 @@ pub(crate) fn load_material_ktx2_upload(
             depth
         );
     }
+    let extent_label = GpuResourceLabel::new(format!("material_texture_{}", binding.artifact_id))?;
+    let size = GpuTextureExtent::new(&extent_label, expected_dimension, width, height, depth)?;
     Ok(MaterialKtx2Upload {
-        size: Extent3d {
-            width,
-            height,
-            depth_or_array_layers: depth,
-        },
+        size,
         dimension: expected_dimension,
         format,
         bytes: level.data.to_vec(),

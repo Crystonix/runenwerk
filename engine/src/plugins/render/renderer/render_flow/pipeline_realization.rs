@@ -1,11 +1,11 @@
 use super::*;
-use crate::plugins::gpu::{
+use crate::plugins::render::pipelines::FlowPassPipelineDescriptor;
+use crate::plugins::render::{RenderPassId, RenderShaderConstant};
+use runen_gpu::{
     GpuAdmittedProgramSource, GpuCapabilityRequirements, GpuProgramSourceKey,
     GpuProgramSourceProvenance, GpuSpecializationDeclaration, GpuSpecializationEntry,
     GpuSpecializationKey, GpuSpecializationSchema, GpuSpecializationValueSet,
 };
-use crate::plugins::render::pipelines::FlowPassPipelineDescriptor;
-use crate::plugins::render::{RenderPassId, RenderShaderConstant};
 
 impl Renderer {
     /// First half of the renderer's two-phase integration: realize every G4C1/G4C2/G4C3
@@ -251,8 +251,8 @@ impl Renderer {
         runtime_resources: &FlowRuntimeResources,
         pass_id: RenderPassId,
         targets: &CompiledTargetPlan,
-        surface_format: TextureFormat,
-    ) -> Result<TextureFormat> {
+        surface_format: GpuTextureFormat,
+    ) -> Result<GpuTextureFormat> {
         if targets.color_outputs.len() != 1 {
             bail!(
                 "pass '{}' declares {} color outputs, but runtime realization requires exactly one color output",
@@ -284,7 +284,7 @@ impl Renderer {
         runtime_resources: &FlowRuntimeResources,
         pass_id: RenderPassId,
         targets: &CompiledTargetPlan,
-    ) -> Result<Option<TextureFormat>> {
+    ) -> Result<Option<GpuTextureFormat>> {
         let Some(depth_target) = targets.depth_output.as_ref() else {
             return Ok(None);
         };

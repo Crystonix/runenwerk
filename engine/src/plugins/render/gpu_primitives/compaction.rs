@@ -1,5 +1,5 @@
 use super::{GpuPrimitiveValidationError, U32ScanElement, buffer_capacity, validate_capacity};
-use crate::plugins::gpu::GpuBufferHandle;
+use runen_gpu::GpuBufferHandle;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct U32ScatterDescriptor {

@@ -2,12 +2,12 @@ use super::{
     RenderCaptureIdentity, RenderCapturePointIdentity, RenderCaptureSelector,
     RenderCaptureTerminal, RenderCaptureTerminalCode, RenderCaptureTerminalReason,
 };
-use crate::plugins::gpu::GpuCapabilities;
 use crate::plugins::render::current_runtime_gpu_capabilities;
 use crate::plugins::render::graph::{
     CompiledRenderFlowPlan, RenderExecutionGraphDiagnostic, RenderExecutionGraphPreparedReport,
     RenderPreparedFramePreflightCacheState,
 };
+use runen_gpu::GpuCapabilities;
 use std::path::PathBuf;
 
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -355,8 +355,8 @@ fn validate_fragment_binding_key(
     package: &RenderFragmentPackageDescriptor,
     fragment: &RenderFragmentDescriptor,
     pass: &RenderFragmentPassDescriptor,
-    key: crate::plugins::gpu::GpuBindingKey,
-    keys: &mut BTreeSet<crate::plugins::gpu::GpuBindingKey>,
+    key: runen_gpu::GpuBindingKey,
+    keys: &mut BTreeSet<runen_gpu::GpuBindingKey>,
     diagnostics: &mut Vec<RenderFragmentDiagnostic>,
 ) {
     if key.group() != 0 {

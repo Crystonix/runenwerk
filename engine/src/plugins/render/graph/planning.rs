@@ -1,4 +1,3 @@
-use crate::plugins::gpu::{GpuCapabilities, GpuWorkResourceId};
 use crate::plugins::render::RenderFlowValidationError;
 use crate::plugins::render::api::RenderFlow;
 use crate::plugins::render::graph::{
@@ -7,6 +6,7 @@ use crate::plugins::render::graph::{
     compile_execution_plan, diagnose_compiled_pass_shapes,
 };
 use crate::plugins::render::{RenderFlowId, RenderPassId, validate_compiled_flow_capabilities};
+use runen_gpu::{GpuCapabilities, GpuWorkResourceId};
 use std::collections::BTreeMap;
 
 #[derive(Debug, Clone)]

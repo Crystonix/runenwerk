@@ -1,8 +1,8 @@
-use crate::plugins::gpu::GpuBindingKey;
 use crate::plugins::render::{
     RenderDrawDescriptor, RenderPassKind, RenderPassViewScope, RenderTargetAliasKind,
     RenderTextureTargetFormat,
 };
+use runen_gpu::GpuBindingKey;
 use std::fmt;
 
 pub const SUPPORTED_RENDER_FRAGMENT_SCHEMA_VERSION: u32 = 1;

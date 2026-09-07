@@ -1,13 +1,11 @@
 use super::*;
-use crate::plugins::gpu::{
-    GpuBufferDescriptor, GpuBufferUsage, GpuContext, GpuMemoryIntent, GpuResourceDescriptor,
-    GpuResourceLifetime, GpuTextureDescriptor, GpuTextureDimension, GpuTextureUsage,
-    GpuWorkResourceId,
-};
 use crate::plugins::render::RenderGpuResourceLowering;
 use crate::plugins::render::renderer::resource_descriptors::{
-    buffer_descriptor, gpu_texture_format, texture_descriptor, wgpu_texture_format,
-    whole_texture_view_descriptor,
+    buffer_descriptor, texture_descriptor, whole_texture_view_descriptor,
+};
+use runen_gpu::{
+    GpuContext, GpuMemoryIntent, GpuResourceDescriptor, GpuResourceLifetime, GpuTextureDimension,
+    GpuTextureFormat, GpuWorkResourceId,
 };
 
 impl FlowRuntimeResources {
@@ -16,7 +14,7 @@ impl FlowRuntimeResources {
         _context: &GpuContext,
         flow: &CompiledRenderFlowPlan,
         surface_size: (u32, u32),
-        surface_format: TextureFormat,
+        surface_format: GpuTextureFormat,
     ) -> Result<()> {
         let frame_size = (surface_size.0.max(1), surface_size.1.max(1));
         let mut declared_ids = BTreeSet::<GpuWorkResourceId>::new();
@@ -86,7 +84,7 @@ impl FlowRuntimeResources {
     fn realize_flow_texture(
         &mut self,
         id: GpuWorkResourceId,
-        lifetime: crate::plugins::gpu::GpuResourceLifetime,
+        lifetime: runen_gpu::GpuResourceLifetime,
         spec: TextureAllocationSpec,
     ) -> Result<()> {
         let previous_generation = self
@@ -210,7 +208,7 @@ impl FlowRuntimeResources {
         &mut self,
         invocation_id: &str,
         surface_size: (u32, u32),
-        surface_format: TextureFormat,
+        surface_format: GpuTextureFormat,
         history_signature: Option<&str>,
     ) -> Result<()> {
         let history_descriptors = self
@@ -310,7 +308,7 @@ impl FlowRuntimeResources {
         let spec = match Self::current_runtime_resource_disposition(
             descriptor,
             (1, 1),
-            TextureFormat::Rgba8Unorm,
+            GpuTextureFormat::Rgba8Unorm,
         )? {
             CurrentRuntimeResourceDisposition::Buffer(spec) => spec,
             CurrentRuntimeResourceDisposition::FlowTexture(_)
@@ -378,15 +376,12 @@ impl FlowRuntimeResources {
     pub(super) fn current_runtime_resource_disposition(
         descriptor: &RenderResourceDeclaration,
         surface_size: (u32, u32),
-        surface_format: TextureFormat,
+        surface_format: GpuTextureFormat,
     ) -> core::result::Result<
         CurrentRuntimeResourceDisposition,
         CurrentRuntimeResourceRealizationError,
     > {
-        let surface_gpu_format = gpu_texture_format(surface_format).map_err(|_| {
-            CurrentRuntimeResourceRealizationError::UnsupportedSurfaceFormat { surface_format }
-        })?;
-        let lowering = descriptor.lower_gpu_resource(surface_size, surface_gpu_format)?;
+        let lowering = descriptor.lower_gpu_resource(surface_size, surface_format)?;
         Self::current_runtime_resource_disposition_from_lowering(
             descriptor,
             lowering,
@@ -397,7 +392,7 @@ impl FlowRuntimeResources {
     pub(super) fn current_runtime_resource_disposition_from_lowering(
         descriptor: &RenderResourceDeclaration,
         lowering: RenderGpuResourceLowering,
-        _surface_format: TextureFormat,
+        _surface_format: GpuTextureFormat,
     ) -> core::result::Result<
         CurrentRuntimeResourceDisposition,
         CurrentRuntimeResourceRealizationError,
@@ -425,7 +420,7 @@ impl FlowRuntimeResources {
                             );
                         }
                     };
-                    let usage = buffer_usage_to_wgpu(buffer);
+                    let usage = buffer.usages().clone();
                     Ok(CurrentRuntimeResourceDisposition::Buffer(
                         BufferAllocationSpec {
                             descriptor: buffer.clone(),
@@ -469,8 +464,8 @@ impl FlowRuntimeResources {
                     let spec = TextureAllocationSpec {
                         descriptor: texture.clone(),
                         size: (texture.extent().width(), texture.extent().height()),
-                        format: wgpu_texture_format(texture.format()),
-                        usage: texture_usage_to_wgpu(texture),
+                        format: texture.format(),
+                        usage: texture.usages().clone(),
                         is_depth: texture.format().is_depth(),
                     };
                     if matches!(descriptor, RenderResourceDeclaration::History(_)) {
@@ -511,43 +506,4 @@ impl FlowRuntimeResources {
             }
         }
     }
-}
-
-fn buffer_usage_to_wgpu(descriptor: &GpuBufferDescriptor) -> BufferUsages {
-    descriptor
-        .usages()
-        .iter()
-        .fold(BufferUsages::empty(), |usage, next| {
-            usage
-                | match next {
-                    GpuBufferUsage::Uniform => BufferUsages::UNIFORM,
-                    GpuBufferUsage::Storage => BufferUsages::STORAGE,
-                    GpuBufferUsage::Vertex => BufferUsages::VERTEX,
-                    GpuBufferUsage::Index => BufferUsages::INDEX,
-                    GpuBufferUsage::Indirect => BufferUsages::INDIRECT,
-                    GpuBufferUsage::CopySource => BufferUsages::COPY_SRC,
-                    GpuBufferUsage::CopyDestination => BufferUsages::COPY_DST,
-                    GpuBufferUsage::QueryResolve => BufferUsages::QUERY_RESOLVE,
-                }
-        })
-}
-
-fn texture_usage_to_wgpu(descriptor: &GpuTextureDescriptor) -> TextureUsages {
-    descriptor
-        .usages()
-        .iter()
-        .fold(TextureUsages::empty(), |usage, next| {
-            usage
-                | match next {
-                    GpuTextureUsage::Sampled => TextureUsages::TEXTURE_BINDING,
-                    GpuTextureUsage::StorageRead | GpuTextureUsage::StorageWrite => {
-                        TextureUsages::STORAGE_BINDING
-                    }
-                    GpuTextureUsage::ColorAttachment | GpuTextureUsage::DepthStencilAttachment => {
-                        TextureUsages::RENDER_ATTACHMENT
-                    }
-                    GpuTextureUsage::CopySource => TextureUsages::COPY_SRC,
-                    GpuTextureUsage::CopyDestination => TextureUsages::COPY_DST,
-                }
-        })
 }

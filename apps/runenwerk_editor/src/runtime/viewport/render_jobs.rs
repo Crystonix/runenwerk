@@ -4,7 +4,6 @@
 use std::collections::BTreeMap;
 
 use editor_viewport::{ExpressionDimensions, ViewportId, ViewportSurfacePresentationSlot};
-use engine::plugins::gpu::GpuWorkResourceId;
 #[cfg(test)]
 use engine::plugins::render::RenderTargetAliasKey;
 use engine::plugins::render::{
@@ -13,6 +12,7 @@ use engine::plugins::render::{
     RenderProductSurfaceManifest, RenderProductSurfaceRequest, RenderProductSurfaceRequestBatch,
 };
 use engine::runtime::{Res, ResMut};
+use runen_gpu::GpuWorkResourceId;
 use ui_math::UiRect;
 
 use crate::runtime::viewport::{

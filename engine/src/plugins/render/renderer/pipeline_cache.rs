@@ -1,12 +1,12 @@
 use super::render_flow::RendererProgramSourceAuthority;
 use super::{DEFAULT_COMPUTE_SHADER, DEFAULT_FULLSCREEN_SHADER, DEFAULT_GRAPHICS_SHADER};
-use crate::plugins::gpu::{
+use crate::plugins::render::RenderFlowId;
+use crate::plugins::render::pipelines::FlowPassPipelineKey;
+use runen_gpu::{
     GpuAdmittedProgramSource, GpuContext, GpuProgramSourceError, GpuProgramSourceKey,
     GpuProgramSourceProvenance, GpuRealizedSampler, GpuSamplerDescriptor, GpuSamplerHandle,
     GpuWorkResourceIdAllocator,
 };
-use crate::plugins::render::RenderFlowId;
-use crate::plugins::render::pipelines::FlowPassPipelineKey;
 use std::collections::HashMap;
 
 const RENDERER_PROGRAM_SOURCE_MAX_RECORDS: usize = 1024;
@@ -142,9 +142,7 @@ fn admit_builtin_program_source(cache: &mut FlowPipelineArtifactCache, key: &str
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::plugins::gpu::{
-        GpuBindingLayoutRefinement, GpuEntryPointName, GpuProgramDescriptor,
-    };
+    use runen_gpu::{GpuBindingLayoutRefinement, GpuEntryPointName, GpuProgramDescriptor};
 
     fn compute_program(source: GpuAdmittedProgramSource) -> GpuProgramDescriptor {
         let entry_point = GpuEntryPointName::new("cs_main")
@@ -223,7 +221,7 @@ mod tests {
             .expect_err("different source text must allocate a new renderer revision");
         assert_eq!(
             error.cause(),
-            crate::plugins::gpu::GpuProgramSourceCause::SourceRevisionConflict
+            runen_gpu::GpuProgramSourceCause::SourceRevisionConflict
         );
         assert_eq!(cache.stats().program_source_records, 4);
     }

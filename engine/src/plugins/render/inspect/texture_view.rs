@@ -1,7 +1,7 @@
-use crate::plugins::gpu::GpuResourceLifetime;
 use crate::plugins::render::RenderImportedTextureSemantic;
 use crate::plugins::render::inspect::{CaptureStage, RenderCapturedTexture};
 use crate::plugins::render::{RenderFlow, RenderResourceDeclaration, RenderTargetAliasKind};
+use runen_gpu::GpuResourceLifetime;
 
 #[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
 pub struct RenderTextureInspectorState {

@@ -1,11 +1,11 @@
 //! Current `GpuParams` lowering. G4 deletes this adapter when admitted shader
 //! interfaces and purpose-specific encoders replace the transitional traits.
 
-use crate::plugins::gpu::{
+use crate::plugins::render::GpuParams;
+use runen_gpu::{
     GpuDataEncoder, GpuDataLayout, GpuDataPreparationError, GpuResourceProvenance, PreparedGpuData,
     StorageData, UniformData, prepare_gpu_data,
 };
-use crate::plugins::render::GpuParams;
 use std::any::{TypeId, type_name};
 
 #[derive(Debug, Clone, Copy)]
@@ -39,7 +39,7 @@ impl RenderGpuParamsLayout {
             GpuDataPreparationError::Invalid {
                 operation: "lower current render parameter layout",
                 label: label.to_string(),
-                cause: crate::plugins::gpu::GpuDataPreparationCause::ArithmeticOverflow,
+                cause: runen_gpu::GpuDataPreparationCause::ArithmeticOverflow,
                 correction: "use a parameter alignment representable by the platform",
             }
         })?;
@@ -47,7 +47,7 @@ impl RenderGpuParamsLayout {
             GpuDataPreparationError::Invalid {
                 operation: "lower current render parameter layout",
                 label: label.to_string(),
-                cause: crate::plugins::gpu::GpuDataPreparationCause::ArithmeticOverflow,
+                cause: runen_gpu::GpuDataPreparationCause::ArithmeticOverflow,
                 correction: "use a parameter size representable by the platform",
             }
         })?;
@@ -58,7 +58,7 @@ impl RenderGpuParamsLayout {
                 .ok_or_else(|| GpuDataPreparationError::Invalid {
                     operation: "lower current render parameter layout",
                     label: label.to_string(),
-                    cause: crate::plugins::gpu::GpuDataPreparationCause::ArithmeticOverflow,
+                    cause: runen_gpu::GpuDataPreparationCause::ArithmeticOverflow,
                     correction: "reduce the render parameter element count",
                 })?;
         Ok(Self {
@@ -130,10 +130,33 @@ impl<Params: GpuParams + 'static> GpuDataEncoder<StorageData, Params> for Render
     }
 }
 
+struct ProjectedUniformBytes {
+    bytes: Vec<u8>,
+    layout: GpuDataLayout,
+}
+
+struct ProjectedUniformBytesEncoder {
+    diagnostic_type_name: &'static str,
+}
+
+impl GpuDataEncoder<UniformData, ProjectedUniformBytes> for ProjectedUniformBytesEncoder {
+    fn encode(
+        &self,
+        _label: &str,
+        source: &ProjectedUniformBytes,
+    ) -> Result<(Vec<u8>, GpuDataLayout), GpuDataPreparationError> {
+        Ok((source.bytes.clone(), source.layout))
+    }
+
+    fn diagnostic_type_name(&self) -> Option<&'static str> {
+        Some(self.diagnostic_type_name)
+    }
+}
+
 /// Transitional facade lowering into an explicit uniform-purpose encoder.
 ///
 /// ```
-/// use engine::plugins::gpu::{
+/// use runen_gpu::{
 ///     GpuResourceLabel, GpuResourceProvenance, PreparedGpuData, StorageData, UniformData,
 /// };
 /// use engine::plugins::render::{
@@ -176,12 +199,17 @@ pub(crate) fn prepare_projected_uniform_bytes(
     layout: RenderGpuParamsLayout,
     provenance: GpuResourceProvenance,
 ) -> Result<PreparedGpuData<UniformData>, GpuDataPreparationError> {
-    PreparedGpuData::<UniformData>::from_render_adapter(
-        label,
+    let source = ProjectedUniformBytes {
         bytes,
-        layout.gpu_layout(),
+        layout: layout.gpu_layout(),
+    };
+    prepare_gpu_data(
+        label,
+        &source,
         provenance,
-        Some(layout.params_type_name()),
+        &ProjectedUniformBytesEncoder {
+            diagnostic_type_name: layout.params_type_name(),
+        },
     )
 }
 

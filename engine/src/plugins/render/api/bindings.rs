@@ -1,10 +1,10 @@
-use crate::plugins::gpu::{
-    GpuBindingKey, GpuStorageBufferAccess, GpuStorageTextureAccess, GpuWorkResourceId,
-};
 use crate::plugins::render::graph::{RenderPassNode, ResourceGraph};
 use crate::plugins::render::renderer::frame_bindings::RenderFrameDataRegistry;
 use crate::plugins::render::{GpuParams, GpuUniform, RenderPassId};
 use bytemuck::{Pod, Zeroable};
+use runen_gpu::{
+    GpuBindingKey, GpuStorageBufferAccess, GpuStorageTextureAccess, GpuWorkResourceId,
+};
 use std::any::{Any, TypeId, type_name};
 use std::collections::BTreeMap;
 use std::marker::PhantomData;

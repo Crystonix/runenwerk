@@ -1,7 +1,3 @@
-use engine::plugins::gpu::{
-    GpuCapabilityFeature, GpuPrimitiveTopology, GpuTextureFormat, GpuWorkResourceId,
-    GpuWorkResourceIdAllocator,
-};
 use engine::plugins::render::inspect::{
     CaptureStage, CaptureTextureClass, PassTimingSample, PreparedRenderFrameInspection,
     ProductSurfaceDiagnosticInspectionEntry, RenderCaptureIdentity, RenderCapturePointIdentity,
@@ -49,6 +45,10 @@ use product::{
     ProductAuthorityClass, ProductFreshness, ProductIdentity, ProductQueryPolicy, ProductResidency,
     ProductScaleBand, RenderProductSelection, RenderResidencyRequest, RenderSelectedProduct,
     RenderTargetDescriptor,
+};
+use runen_gpu::{
+    GpuCapabilityFeature, GpuPrimitiveTopology, GpuTextureFormat, GpuWorkResourceId,
+    GpuWorkResourceIdAllocator,
 };
 use std::collections::BTreeMap;
 use std::path::PathBuf;

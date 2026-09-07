@@ -1,12 +1,12 @@
 use super::descriptors::ProceduralPassDescriptor;
 use super::lowering::{ProceduralPassLowering, ProceduralUniformBinding, lower_procedural_pass};
 use super::validation::validate_procedural_pass;
-use crate::plugins::gpu::{GpuBindingKey, GpuBufferHandle, GpuWorkResourceId};
 use crate::plugins::render::api::{PassParamBinding, RenderFlow, RenderFlowAuthoringError};
 use crate::plugins::render::{
     DrawIndexedIndirectArgs, DrawIndirectArgs, GpuParams, IndirectDrawArgsBuffer,
     RenderIndirectDrawArgsKind,
 };
+use runen_gpu::{GpuBindingKey, GpuBufferHandle, GpuWorkResourceId};
 
 #[derive(Debug)]
 pub struct ProceduralPassBuilder {

@@ -1,5 +1,5 @@
-use crate::plugins::gpu::GpuWorkResourceId;
 use crate::plugins::render::RenderResourceDeclaration;
+use runen_gpu::GpuWorkResourceId;
 use std::any::{TypeId, type_name};
 
 #[derive(Debug, Clone, PartialEq, Eq)]

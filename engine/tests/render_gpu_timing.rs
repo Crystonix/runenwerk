@@ -1,12 +1,12 @@
-use engine::plugins::gpu::{
-    GpuCapabilities, GpuCapabilityAdmission, GpuCapabilityFeature, GpuCapabilityRequirement,
-    GpuCapabilityRequirements, GpuLimits,
-};
 use engine::plugins::render::inspect::{
     PassTimingSample, RenderDebugTimingsState, RenderGpuTimingCapability,
     RenderGpuTimingDiagnostic, RenderPassTimingEvidence, RenderReadinessBudgetKind,
     RenderReadinessBudgetMeasurements, RenderReadinessBudgetThreshold, RenderTimingSource,
     evaluate_render_readiness_budgets, summarize_gpu_pass_timing_evidence, summarize_pass_timings,
+};
+use runen_gpu::{
+    GpuCapabilities, GpuCapabilityAdmission, GpuCapabilityFeature, GpuCapabilityRequirement,
+    GpuCapabilityRequirements, GpuLimits,
 };
 
 #[test]

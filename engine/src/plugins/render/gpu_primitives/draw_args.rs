@@ -1,8 +1,8 @@
 use super::{GpuPrimitiveValidationError, buffer_capacity, validate_capacity};
-use crate::plugins::gpu::GpuBufferHandle;
 pub use crate::plugins::render::graph::{
     DrawIndexedIndirectArgs, DrawIndirectArgs, IndirectDrawArgsBuffer,
 };
+use runen_gpu::GpuBufferHandle;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GeneratedIndirectDrawArgs {

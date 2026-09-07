@@ -1,9 +1,9 @@
-use engine::plugins::gpu::{GpuTextureFormat, GpuWorkResourceId};
 use engine::plugins::render::{
     RenderFlow, RenderFlowGraph, RenderFlowId, RenderFlowValidationIssue,
     RenderGpuResourceLowering, RenderImportedTextureSemantic, RenderPassId, RenderPassKind,
     RenderPassNode, RenderResourceDeclaration, validate_flow_graph,
 };
+use runen_gpu::{GpuTextureFormat, GpuWorkResourceId};
 
 fn test_resource_ids(count: usize) -> Vec<GpuWorkResourceId> {
     let labels = (0..count)

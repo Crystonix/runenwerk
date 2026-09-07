@@ -1,5 +1,5 @@
 use super::*;
-use crate::plugins::gpu::{
+use runen_gpu::{
     GpuBufferHandle, GpuContext, GpuQuerySetHandle, GpuReadbackBytes, GpuReadbackId,
     GpuSubmissionFailure,
 };
@@ -185,41 +185,6 @@ impl GpuPassTimingFrame {
             .iter()
             .map(|entry| timing_diagnostic(entry, message.clone()))
             .collect()
-    }
-
-    #[cfg(test)]
-    pub(super) fn for_test(
-        readback_id: GpuReadbackId,
-        timestamp_period_ns: f32,
-        query_capacity: u32,
-        entries: impl IntoIterator<
-            Item = (
-                GpuPassTimestampIndices,
-                u64,
-                u64,
-                &'static str,
-                &'static str,
-                &'static str,
-            ),
-        >,
-    ) -> Self {
-        let mut frame = Self {
-            readback_id,
-            timestamp_period_ns,
-            query_capacity,
-            entries: Vec::new(),
-        };
-        for (indices, frame_index, surface_id, flow_id, pass_id, pass_kind) in entries {
-            assert!(frame.register_pass_metadata(
-                indices,
-                frame_index,
-                surface_id,
-                flow_id,
-                pass_id,
-                pass_kind,
-            ));
-        }
-        frame
     }
 }
 

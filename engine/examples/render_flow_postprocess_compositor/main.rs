@@ -1,6 +1,6 @@
 use anyhow::Result;
-use engine::plugins::gpu::GpuBindingKey;
 use engine::plugins::render::{GpuStorage, RenderFlow};
+use runen_gpu::GpuBindingKey;
 
 #[derive(Debug, Clone, Copy, GpuStorage)]
 struct BloomCell {

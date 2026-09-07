@@ -1,8 +1,8 @@
-use crate::plugins::gpu::GpuWorkResourceId;
 use crate::plugins::render::{
     PreparedFlowInvocationId, RenderDynamicTextureTargetKey, RenderFlowId, RenderPassId,
     RenderTargetAliasKey, RenderTargetAliasKind,
 };
+use runen_gpu::GpuWorkResourceId;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum RenderExecutionGraphDiagnosticSeverity {

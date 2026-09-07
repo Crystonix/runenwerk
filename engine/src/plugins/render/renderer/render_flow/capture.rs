@@ -1,5 +1,5 @@
 use super::*;
-use crate::plugins::gpu::{
+use runen_gpu::{
     GpuContext, GpuCopyExtent, GpuReadbackId, GpuReadbackOperation, GpuTextureAspect,
     GpuTextureCopyRegion, GpuTextureHandle, GpuTextureOrigin,
 };
@@ -13,7 +13,7 @@ pub struct PreparedCaptureReadback {
     operation: GpuReadbackOperation,
     pub width: u32,
     pub height: u32,
-    pub source_format: TextureFormat,
+    pub source_format: GpuTextureFormat,
 }
 
 impl PreparedCaptureReadback {
@@ -340,7 +340,7 @@ pub fn prepare_texture_capture_readback(
     identity: RenderCaptureIdentity,
     texture: CaptureTextureSource<'_>,
     size: (u32, u32),
-    source_format: TextureFormat,
+    source_format: GpuTextureFormat,
     _readback_format: TextureReadbackFormat,
 ) -> Result<PreparedCaptureReadback> {
     let width = size.0.max(1);
@@ -381,10 +381,14 @@ fn canonical_capture_readback_operation(
     )?)
 }
 
-pub fn texture_readback_format(format: TextureFormat) -> Option<TextureReadbackFormat> {
+pub fn texture_readback_format(format: GpuTextureFormat) -> Option<TextureReadbackFormat> {
     let mode = match format {
-        TextureFormat::Rgba8Unorm | TextureFormat::Rgba8UnormSrgb => TextureReadbackMode::Rgba8,
-        TextureFormat::Bgra8Unorm | TextureFormat::Bgra8UnormSrgb => TextureReadbackMode::Bgra8,
+        GpuTextureFormat::Rgba8Unorm | GpuTextureFormat::Rgba8UnormSrgb => {
+            TextureReadbackMode::Rgba8
+        }
+        GpuTextureFormat::Bgra8Unorm | GpuTextureFormat::Bgra8UnormSrgb => {
+            TextureReadbackMode::Bgra8
+        }
         _ => return None,
     };
     Some(TextureReadbackFormat { mode })
@@ -393,11 +397,11 @@ pub fn texture_readback_format(format: TextureFormat) -> Option<TextureReadbackF
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::plugins::gpu::{
+    use crate::plugins::render::renderer::resource_descriptors::texture_descriptor;
+    use runen_gpu::{
         GpuResourceLifetime, GpuTextureFormat, GpuTextureUsage, GpuTransferRegion,
         GpuWorkResourceIdAllocator,
     };
-    use crate::plugins::render::renderer::resource_descriptors::texture_descriptor;
 
     #[test]
     fn accepted_pending_capture_is_not_finalized_as_skipped() {

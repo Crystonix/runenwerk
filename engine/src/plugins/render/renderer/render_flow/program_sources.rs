@@ -1,4 +1,4 @@
-use crate::plugins::gpu::{
+use runen_gpu::{
     GpuAdmittedProgramSource, GpuProgramSourceCause, GpuProgramSourceError,
     GpuProgramSourceIdentity, GpuProgramSourceKey, GpuProgramSourceOwnerId,
     GpuProgramSourceProvenance, GpuProgramSourceRegistry, GpuProgramSourceRegistryStats,

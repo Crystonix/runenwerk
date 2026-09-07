@@ -2,7 +2,6 @@ use super::{
     PreparedFrameContext, PreparedFrameContributions, PreparedUiFrameContribution,
     PreparedViewFrame,
 };
-use crate::plugins::gpu::GpuWorkResourceId;
 use crate::plugins::render::{
     RenderDynamicTextureTargetDescriptor, RenderDynamicTextureTargetKey,
     RenderDynamicTextureUploadDescriptor, RenderFlowId, RenderFrameProducerId,
@@ -10,6 +9,7 @@ use crate::plugins::render::{
 };
 use crate::runtime::NativeWindowId;
 use product::RenderProductSelection;
+use runen_gpu::GpuWorkResourceId;
 use std::collections::{BTreeMap, BTreeSet};
 use ui_render_data::ViewportSurfaceBindingRegistry;
 

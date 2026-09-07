@@ -5,7 +5,6 @@ use std::collections::BTreeMap;
 use anyhow::Result;
 
 use drawing::DrawingInkTileProduct;
-use engine::plugins::gpu::GpuBindingKey;
 use engine::plugins::render::inspect::{
     CaptureStage, CaptureTextureClass, RenderCaptureSelector, RenderDebugConfigResource,
     RenderDebugFrameReport, RenderDebugFrameReportState, RenderTextureDiffMetrics,
@@ -19,6 +18,7 @@ use engine::plugins::render::{
     RenderTextureSampleMode, RenderTextureTargetFormat, RenderTextureTargetUsage,
 };
 use engine::runtime::{Res, ResMut};
+use runen_gpu::GpuBindingKey;
 
 use crate::app::{
     DRAWING_INK_TEXTURE_NAMESPACE, DrawingInkGpuValidationMetrics, DrawingInkSurfaceKind,

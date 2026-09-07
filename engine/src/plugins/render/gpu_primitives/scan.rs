@@ -1,5 +1,5 @@
-use crate::plugins::gpu::GpuBufferHandle;
 use crate::plugins::render::GpuStorage;
+use runen_gpu::GpuBufferHandle;
 use thiserror::Error;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, GpuStorage)]
