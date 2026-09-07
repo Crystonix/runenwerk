@@ -18,9 +18,17 @@ fn server_probe(value: u8) -> ServerMessage {
     ))
 }
 
+fn install_pending_endpoint_resources(world: &mut World) {
+    world.insert_resource(NetworkClientInbox::default());
+    world.insert_resource(NetworkServerInbox::default());
+    world.insert_resource(NetworkClientOutbox::default());
+    world.insert_resource(NetworkServerOutbox::default());
+}
+
 #[test]
 fn pending_endpoint_resources_preserve_fifo_order() {
     let mut world = World::new();
+    install_pending_endpoint_resources(&mut world);
     let client_messages = vec![client_probe(1), client_probe(2), client_probe(3)];
     let server_messages = vec![server_probe(4), server_probe(5), server_probe(6)];
 
@@ -64,8 +72,29 @@ fn pending_endpoint_resources_preserve_fifo_order() {
 }
 
 #[test]
+fn pending_endpoint_enqueue_requires_installed_owner_resource_and_recovers_payload() {
+    let mut world = World::new();
+    let rejected = client_probe(254);
+
+    let error = enqueue_client_outbox(&mut world, rejected.clone())
+        .expect_err("enqueue without the endpoint owner resource should fail");
+
+    assert!(world.resource::<NetworkClientOutbox>().is_err());
+    assert_eq!(error.capacity(), None);
+    assert!(matches!(
+        &error,
+        engine::plugins::net::NetworkPendingEnqueueError::Unavailable {
+            endpoint: "NetworkClientOutbox",
+            ..
+        }
+    ));
+    assert_eq!(error.into_message(), rejected);
+}
+
+#[test]
 fn pending_endpoint_backpressure_recovers_rejected_payload() {
     let mut world = World::new();
+    world.insert_resource(NetworkClientOutbox::default());
     for index in 0..4_096usize {
         enqueue_client_outbox(&mut world, client_probe((index % 251) as u8))
             .expect("queue should accept messages through its configured capacity");
@@ -75,7 +104,7 @@ fn pending_endpoint_backpressure_recovers_rejected_payload() {
     let error = enqueue_client_outbox(&mut world, rejected.clone())
         .expect_err("message beyond bounded capacity should be rejected");
 
-    assert_eq!(error.capacity(), 4_096);
+    assert_eq!(error.capacity(), Some(4_096));
     assert_eq!(error.into_message(), rejected);
     assert_eq!(client_outbox_len(&world), 4_096);
 }
