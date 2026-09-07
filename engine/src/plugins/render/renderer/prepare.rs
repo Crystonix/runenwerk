@@ -1,19 +1,17 @@
 use super::resource_descriptors::{
-    gpu_texture_format, repeat_linear_sampler_descriptor, texture_descriptor_with_extent,
-    whole_texture_view_descriptor,
+    repeat_linear_sampler_descriptor, texture_descriptor_with_extent, whole_texture_view_descriptor,
 };
 use super::*;
-use crate::plugins::gpu::{
-    GpuBufferRange, GpuBufferRegion, GpuBufferUsage, GpuCopyExtent, GpuMemoryIntent,
-    GpuResourceLifetime, GpuTextureAspect, GpuTextureCopyRegion, GpuTextureDimension,
-    GpuTextureHandle, GpuTextureOrigin, GpuTextureUsage, GpuUploadOperation, PreparedGpuData,
-    TransferData,
-};
 use crate::plugins::render::features::{
     MATERIAL_RENDER_FEATURE_ID, UI_RENDER_FEATURE_ID, UiFontAtlasResource,
 };
 use crate::plugins::render::texture_upload::load_material_ktx2_upload;
 use crate::plugins::{PreparedUiFrameContribution, RenderFeatureId};
+use runen_gpu::{
+    GpuBufferRange, GpuBufferRegion, GpuBufferUsage, GpuCopyExtent, GpuMemoryIntent,
+    GpuResourceLifetime, GpuTextureAspect, GpuTextureCopyRegion, GpuTextureHandle,
+    GpuTextureOrigin, GpuTextureUsage, GpuUploadOperation, PreparedGpuData, TransferData,
+};
 use std::hash::{Hash, Hasher};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -442,7 +440,7 @@ impl Renderer {
         ui_rect_shader_handle: Option<ShaderHandle>,
         ui_font_atlas: &UiFontAtlasResource,
         viewport_surface_bindings: &ViewportSurfaceBindingRegistry,
-        surface_format: TextureFormat,
+        surface_format: GpuTextureFormat,
     ) -> Result<RendererPreparedPacket> {
         let view = prepared_frame.main_view().cloned().unwrap_or_else(|| {
             crate::plugins::render::PreparedViewFrame::main(prepared_frame.surface.target_size_px)
@@ -598,22 +596,18 @@ impl Renderer {
                     return Ok(None);
                 }
             };
-            let dimension = match upload.dimension {
-                TextureDimension::D2 => GpuTextureDimension::D2,
-                TextureDimension::D3 => GpuTextureDimension::D3,
-                TextureDimension::D1 => GpuTextureDimension::D1,
-            };
+            let dimension = upload.dimension;
             let texture_handle =
                 self.resource_ids
                     .allocate_texture_handle(texture_descriptor_with_extent(
                         "engine_material_resident_texture",
                         dimension,
                         (
-                            upload.size.width,
-                            upload.size.height,
-                            upload.size.depth_or_array_layers,
+                            upload.size.width(),
+                            upload.size.height(),
+                            upload.size.depth_or_layers(),
                         ),
-                        gpu_texture_format(upload.format)?,
+                        upload.format,
                         [GpuTextureUsage::Sampled, GpuTextureUsage::CopyDestination],
                         GpuResourceLifetime::Transient,
                     )?)?;
@@ -1263,7 +1257,6 @@ fn hash_prepared_feature_contribution(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::plugins::gpu::GpuTransferRegion;
     use crate::plugins::render::{
         FeatureContributionStatus, FeatureFallbackPolicy, PreparedFeatureContribution,
         PreparedFeaturePayload, PreparedMaterialBindingTable, PreparedMaterialFeatureContribution,
@@ -1273,6 +1266,7 @@ mod tests {
         PreparedMaterialTextureBinding, PreparedMaterialTextureBindingLocation,
         PreparedMaterialTextureKind,
     };
+    use runen_gpu::{GpuTextureDimension, GpuTransferRegion};
 
     #[test]
     fn pending_buffer_upload_retains_exact_logical_destination_and_payload() {
@@ -1313,7 +1307,7 @@ mod tests {
                     "pending texture upload test",
                     GpuTextureDimension::D2,
                     (2, 1, 1),
-                    crate::plugins::gpu::GpuTextureFormat::Rgba8Unorm,
+                    runen_gpu::GpuTextureFormat::Rgba8Unorm,
                     [GpuTextureUsage::CopyDestination],
                     GpuResourceLifetime::Transient,
                 )
@@ -1505,10 +1499,10 @@ mod tests {
 
         let upload = load_material_ktx2_upload(&binding).expect("ktx2 upload should load");
 
-        assert_eq!(upload.size.width, 2);
-        assert_eq!(upload.size.height, 2);
-        assert_eq!(upload.size.depth_or_array_layers, 1);
-        assert_eq!(upload.format, TextureFormat::Rgba8Unorm);
+        assert_eq!(upload.size.width(), 2);
+        assert_eq!(upload.size.height(), 2);
+        assert_eq!(upload.size.depth_or_layers(), 1);
+        assert_eq!(upload.format, GpuTextureFormat::Rgba8Unorm);
         assert_eq!(&upload.bytes[0..4], &[12, 34, 56, 255]);
         let _ = std::fs::remove_file(path);
     }

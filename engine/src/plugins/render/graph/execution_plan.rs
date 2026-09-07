@@ -1,9 +1,6 @@
 use super::{
     CompiledPassDescriptor, RenderPassKind, RenderPassNode, RenderPassViewScope, ResourceGraph,
 };
-use crate::plugins::gpu::{
-    GpuBindingKey, GpuStorageBufferAccess, GpuStorageTextureAccess, GpuWorkResourceId,
-};
 use crate::plugins::render::RenderImportedTextureSemantic;
 use crate::plugins::render::api::ids::RenderFeatureId;
 use crate::plugins::render::api::{ComputeDispatchDescriptor, RenderShaderBindingResource};
@@ -13,6 +10,9 @@ use crate::plugins::render::{
     RenderPassId, RenderRasterState, RenderResourceDeclaration, RenderShaderConstant,
     RenderShaderReference, RenderTargetAliasKey, RenderTargetAliasKind, RenderVertexAttribute,
     RenderVertexBufferLayout, RenderVertexStepMode,
+};
+use runen_gpu::{
+    GpuBindingKey, GpuStorageBufferAccess, GpuStorageTextureAccess, GpuWorkResourceId,
 };
 use std::any::TypeId;
 use std::collections::BTreeMap;
@@ -712,15 +712,12 @@ fn compile_resource_ref(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::plugins::gpu::GpuWorkResourceIdAllocator;
     use crate::plugins::render::api::{RenderShaderBinding, RenderShaderBindingResource};
     use crate::plugins::render::{RenderPassKind, RenderPassNode};
-    use std::num::NonZeroU64;
+    use runen_gpu::GpuWorkResourceIdAllocator;
 
     fn resource(local: u64) -> GpuWorkResourceId {
-        let mut allocator = GpuWorkResourceIdAllocator::for_owner_scope(
-            NonZeroU64::new(1).expect("test owner scope is nonzero"),
-        );
+        let mut allocator = GpuWorkResourceIdAllocator::new();
         (1..=local)
             .map(|_| {
                 allocator

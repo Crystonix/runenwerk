@@ -10,13 +10,11 @@ use super::{
     logical_timing::LogicalGpuPassTimingPlan,
     occurrences::expand_render_pass_occurrences_in_frame,
 };
-use crate::plugins::gpu::{
-    GpuPresentOperation, GpuResourceLabel, GpuTextureHandle, GpuTextureViewHandle,
-};
 use crate::plugins::render::{
     RenderGpuWorkOccurrenceId, RenderPassId, ResolvedRenderGpuWorkNode,
     prepare_render_gpu_frame_work,
 };
+use runen_gpu::{GpuPresentOperation, GpuResourceLabel, GpuTextureHandle, GpuTextureViewHandle};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FeaturePassAction {
@@ -709,7 +707,7 @@ impl Renderer {
         ui_rect_shader: Option<ShaderHandle>,
         ui_font_atlas: &UiFontAtlasResource,
         viewport_surface_bindings: &ViewportSurfaceBindingRegistry,
-        surface_format: TextureFormat,
+        surface_format: GpuTextureFormat,
         preflight_config: crate::plugins::render::graph::RenderPreflightValidationConfigResource,
         debug_control: &RenderDebugControlResource,
         debug_config: &RenderDebugConfigResource,

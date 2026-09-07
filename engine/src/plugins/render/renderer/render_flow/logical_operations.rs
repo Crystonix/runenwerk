@@ -1,6 +1,8 @@
 use super::logical_timing::LogicalGpuPassTiming;
 use super::*;
-use crate::plugins::gpu::{
+use crate::plugins::render::graph::CompiledDrawSource;
+use crate::plugins::render::{RenderDepthPolicy, RenderIndirectDrawArgsKind};
+use runen_gpu::{
     GpuAttachmentStore, GpuBlendConstant, GpuBufferHandle, GpuBufferRange, GpuBufferRegion,
     GpuColorAttachmentLoad, GpuColorClearValue, GpuComputeOperation, GpuDepthAttachmentLoad,
     GpuDepthClearValue, GpuDepthStencilAccess, GpuDispatchIntent, GpuDispatchSize, GpuDrawIntent,
@@ -10,8 +12,6 @@ use crate::plugins::gpu::{
     GpuUploadOperation, GpuVertexBufferBinding, GpuViewport, GpuWorkOperation, PreparedGpuData,
     TransferData,
 };
-use crate::plugins::render::graph::CompiledDrawSource;
-use crate::plugins::render::{RenderDepthPolicy, RenderIndirectDrawArgsKind};
 
 /// Projects one already-realized compute pass into its execution-complete RunenGPU operation.
 ///
@@ -178,8 +178,8 @@ pub(super) fn project_render_operation(
 fn project_render_draw(
     runtime_resources: &FlowRuntimeResources,
     pass: &CompiledPassExecutionPlan,
-    pipeline: crate::plugins::gpu::GpuRenderPipelineDescriptor,
-    bindings: crate::plugins::gpu::GpuRuntimeBindingSet,
+    pipeline: runen_gpu::GpuRenderPipelineDescriptor,
+    bindings: runen_gpu::GpuRuntimeBindingSet,
     target_size: (u32, u32),
 ) -> Result<GpuRenderDraw> {
     let pass_id = execution_pass_id(pass);
@@ -337,7 +337,7 @@ fn logical_texture_target(
 
 fn compiled_resource_ref_matches_id(
     resource: &CompiledResourceRef,
-    expected: crate::plugins::gpu::GpuWorkResourceId,
+    expected: runen_gpu::GpuWorkResourceId,
 ) -> bool {
     match resource {
         CompiledResourceRef::FlowOwned(id) | CompiledResourceRef::Imported(id) => *id == expected,
@@ -379,7 +379,7 @@ pub(super) struct ProjectedTimingTail {
 
 impl ProjectedTimingTail {
     fn new(
-        query_set: &crate::plugins::gpu::GpuQuerySetHandle,
+        query_set: &runen_gpu::GpuQuerySetHandle,
         query_range: GpuQueryRange,
         resolve_buffer: &GpuBufferHandle,
         readback_id: GpuReadbackId,
@@ -409,7 +409,7 @@ impl ProjectedTimingTail {
 }
 
 pub(super) fn project_timing_tail(
-    query_set: &crate::plugins::gpu::GpuQuerySetHandle,
+    query_set: &runen_gpu::GpuQuerySetHandle,
     query_range: GpuQueryRange,
     resolve_buffer: &GpuBufferHandle,
     readback_id: GpuReadbackId,
@@ -431,18 +431,16 @@ pub(super) fn timestamp_writes(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::plugins::gpu::{
-        GpuResourceLifetime, GpuTextureFormat, GpuTextureUsage, GpuWorkResourceIdAllocator,
-    };
     use crate::plugins::render::renderer::resource_descriptors::{
         texture_descriptor, whole_texture_view_descriptor,
     };
-    use std::num::NonZeroU64;
+    use runen_gpu::{
+        GpuResourceLifetime, GpuTextureFormat, GpuTextureUsage, GpuWorkResourceIdAllocator,
+    };
 
     #[test]
     fn supplied_surface_color_view_is_the_logical_render_target() {
-        let mut allocator =
-            GpuWorkResourceIdAllocator::for_owner_scope(NonZeroU64::new(811).unwrap());
+        let mut allocator = GpuWorkResourceIdAllocator::new();
         let texture = allocator
             .allocate_texture_handle(
                 texture_descriptor(

@@ -1,4 +1,3 @@
-use engine::plugins::gpu::{GpuBindingKey, GpuWorkResourceId};
 use engine::plugins::render::{
     PreparedFlowInputs, PreparedFlowInvocation, PreparedFlowInvocationId,
     PreparedFlowInvocationRequest, PreparedFrameContext, PreparedFrameContributions,
@@ -16,6 +15,7 @@ use engine::plugins::render::{
     compile_flow_plan, current_runtime_gpu_capabilities, prepared_render_frame_preflight_cache_key,
     validate_prepared_render_frame,
 };
+use runen_gpu::{GpuBindingKey, GpuWorkResourceId};
 use std::collections::BTreeMap;
 use ui_render_data::{ProductSurfaceTextureBindingSource, ViewportSurfaceBindingRegistry};
 

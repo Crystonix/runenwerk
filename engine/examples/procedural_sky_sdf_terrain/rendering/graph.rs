@@ -1,6 +1,6 @@
 use crate::rendering::ProceduralSkyTerrainState;
-use engine::plugins::gpu::GpuBindingKey;
 use engine::plugins::render::RenderFlow;
+use runen_gpu::GpuBindingKey;
 
 pub(crate) fn build_render_flow() -> RenderFlow {
     // `procedural_sky_sdf_terrain_compose.wgsl` declares its only resource at

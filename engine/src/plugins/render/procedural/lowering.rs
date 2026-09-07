@@ -4,9 +4,9 @@ use super::descriptors::{
     ProceduralVisualDescriptor,
 };
 use super::validation::validate_procedural_pass;
-use crate::plugins::gpu::GpuBindingKey;
 use crate::plugins::render::api::{PassParamBinding, RenderFlowAuthoringError};
 use crate::plugins::render::{RenderFlow, RenderIndirectDrawResource};
+use runen_gpu::GpuBindingKey;
 
 #[derive(Debug)]
 pub(crate) struct ProceduralUniformBinding {

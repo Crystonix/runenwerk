@@ -1,9 +1,8 @@
 use super::resource_descriptors::{
-    buffer_descriptor, gpu_texture_format, linear_sampler_descriptor, texture_descriptor,
-    whole_texture_view_descriptor,
+    buffer_descriptor, linear_sampler_descriptor, texture_descriptor, whole_texture_view_descriptor,
 };
 use super::*;
-use crate::plugins::gpu::{
+use runen_gpu::{
     GpuBindingKey, GpuBindingLayoutRefinement, GpuBlendConstant, GpuBlendMode, GpuBufferRange,
     GpuBufferUsage, GpuColorTargetStateDescriptor, GpuColorWriteMask, GpuDrawIntent, GpuDrawRange,
     GpuEntryPointName, GpuFragmentOutputStateDescriptor, GpuMemoryIntent,
@@ -212,7 +211,7 @@ impl Renderer {
         &mut self,
         context: &GpuContext,
         kind: UiPipelineKind,
-        format: TextureFormat,
+        format: GpuTextureFormat,
         canonical_wgsl: &str,
         source_key: &'static str,
         source_revision: u64,
@@ -292,7 +291,7 @@ impl Renderer {
     pub(super) fn ensure_rect_pass(
         &mut self,
         context: &GpuContext,
-        format: TextureFormat,
+        format: GpuTextureFormat,
         shader_source: &str,
         shader_revision: u64,
     ) -> Result<()> {
@@ -328,7 +327,7 @@ impl Renderer {
     pub(super) fn ensure_stroke_pass(
         &mut self,
         context: &GpuContext,
-        format: TextureFormat,
+        format: GpuTextureFormat,
     ) -> Result<()> {
         if self.stroke_pass.is_some() && self.stroke_pass_format == Some(format) {
             return Ok(());
@@ -358,7 +357,7 @@ impl Renderer {
     pub(super) fn ensure_glyph_pass(
         &mut self,
         context: &GpuContext,
-        format: TextureFormat,
+        format: GpuTextureFormat,
     ) -> Result<()> {
         if self.glyph_pass.is_some() && self.glyph_pass_format == Some(format) {
             return Ok(());
@@ -390,7 +389,7 @@ impl Renderer {
     pub(super) fn ensure_viewport_embed_pass(
         &mut self,
         context: &GpuContext,
-        format: TextureFormat,
+        format: GpuTextureFormat,
     ) -> Result<()> {
         if self.viewport_embed_pass.is_some() && self.viewport_embed_pass_format == Some(format) {
             return Ok(());
@@ -421,7 +420,7 @@ impl Renderer {
     pub(super) fn ensure_product_surface_pass(
         &mut self,
         context: &GpuContext,
-        format: TextureFormat,
+        format: GpuTextureFormat,
     ) -> Result<()> {
         if self.product_surface_pass.is_some() && self.product_surface_pass_format == Some(format) {
             return Ok(());
@@ -771,7 +770,7 @@ fn ui_runtime_binding_set(
 
 fn ui_render_pipeline_descriptor(
     kind: UiPipelineKind,
-    format: TextureFormat,
+    format: GpuTextureFormat,
     program: GpuProgramDescriptor,
     vertex_entry: GpuEntryPointName,
     fragment_entry: GpuEntryPointName,
@@ -783,11 +782,8 @@ fn ui_render_pipeline_descriptor(
         ui_pipeline_attributes(kind),
     )?;
     let vertex_input = GpuVertexInputStateDescriptor::new([vertex_layout])?;
-    let color_target = GpuColorTargetStateDescriptor::new(
-        gpu_texture_format(format)?,
-        GpuBlendMode::Alpha,
-        GpuColorWriteMask::ALL,
-    )?;
+    let color_target =
+        GpuColorTargetStateDescriptor::new(format, GpuBlendMode::Alpha, GpuColorWriteMask::ALL)?;
     let state = GpuRenderPipelineStateDescriptor::new(
         vertex_input,
         Some(GpuFragmentOutputStateDescriptor::new([color_target])),

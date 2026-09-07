@@ -1,5 +1,5 @@
 use super::*;
-use crate::plugins::gpu::GpuWorkResourceId;
+use runen_gpu::GpuWorkResourceId;
 
 enum ResolvedColorTarget<'a> {
     Surface,
@@ -241,8 +241,8 @@ impl FlowRuntimeResources {
         &self,
         pass_id: RenderPassId,
         targets: &CompiledTargetPlan,
-        surface_format: TextureFormat,
-    ) -> Result<TextureFormat> {
+        surface_format: GpuTextureFormat,
+    ) -> Result<GpuTextureFormat> {
         Ok(match self.resolve_color_target(pass_id, targets)? {
             ResolvedColorTarget::Surface => surface_format,
             ResolvedColorTarget::Texture(texture) => texture.format,
@@ -303,7 +303,7 @@ impl FlowRuntimeResources {
         &self,
         pass_id: RenderPassId,
         targets: &CompiledTargetPlan,
-    ) -> Result<Option<TextureFormat>> {
+    ) -> Result<Option<GpuTextureFormat>> {
         Ok(self
             .resolve_depth_target(pass_id, targets)?
             .map(|texture| texture.format))
@@ -313,7 +313,7 @@ impl FlowRuntimeResources {
         &self,
         pass_id: RenderPassId,
         resource_key: RuntimeResourceKey,
-    ) -> Result<(&GpuTextureViewHandle, TextureFormat, bool)> {
+    ) -> Result<(&GpuTextureViewHandle, GpuTextureFormat, bool)> {
         if resource_key == RuntimeResourceKey::SurfaceColor {
             bail!(
                 "pass '{}' binds '{}' as a shader texture before the exact G7A acquired logical view exists",

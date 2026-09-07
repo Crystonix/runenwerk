@@ -1,5 +1,11 @@
 use super::*;
-use crate::plugins::gpu::{
+use crate::plugins::render::pipelines::FlowPassPipelineDescriptor;
+use crate::plugins::render::renderer::resource_descriptors::linear_sampler_descriptor;
+use crate::plugins::render::{
+    RenderBlendMode, RenderCullMode, RenderDepthPolicy, RenderFeatureId, RenderPassId,
+    RenderPrimitiveTopology, RenderRasterState, RenderVertexFormat, RenderVertexStepMode,
+};
+use runen_gpu::{
     GpuAdmittedProgramSource, GpuBindingKey, GpuBindingLayoutRefinement,
     GpuBlendMode as GpuPipelineBlendMode, GpuColorTargetStateDescriptor, GpuColorWriteMask,
     GpuCompareFunction, GpuComputePipelineDescriptor, GpuCullMode as GpuPipelineCullMode,
@@ -14,18 +20,12 @@ use crate::plugins::gpu::{
     GpuVertexAttribute, GpuVertexBufferLayoutDescriptor, GpuVertexFormat,
     GpuVertexInputStateDescriptor, GpuVertexStepMode,
 };
-use crate::plugins::render::pipelines::FlowPassPipelineDescriptor;
-use crate::plugins::render::renderer::resource_descriptors::linear_sampler_descriptor;
-use crate::plugins::render::{
-    RenderBlendMode, RenderCullMode, RenderDepthPolicy, RenderFeatureId, RenderPassId,
-    RenderPrimitiveTopology, RenderRasterState, RenderVertexFormat, RenderVertexStepMode,
-};
 use std::num::NonZeroU64;
 
 enum RuntimeBindingResource {
     TextureView(GpuTextureViewHandle),
     Buffer {
-        handle: crate::plugins::gpu::GpuBufferHandle,
+        handle: runen_gpu::GpuBufferHandle,
         size: u64,
     },
     Sampler,
@@ -59,8 +59,8 @@ impl Renderer {
         specialization: GpuSpecializationValueSet,
         bindings: &CompiledPassBindings,
         allow_depth_sampling: bool,
-        color_formats: Vec<TextureFormat>,
-        depth_format: Option<TextureFormat>,
+        color_formats: Vec<GpuTextureFormat>,
+        depth_format: Option<GpuTextureFormat>,
         runtime_resources: &FlowRuntimeResources,
     ) -> Result<RealizedFlowProgramBindings> {
         let mut resolved_entries = Vec::<RuntimeBindingResolved>::new();
@@ -220,7 +220,7 @@ impl Renderer {
                         pipeline_key.clone(),
                         linear_sampler_descriptor(
                             "engine_compiled_flow_sampler",
-                            crate::plugins::gpu::GpuResourceLifetime::Retained,
+                            runen_gpu::GpuResourceLifetime::Retained,
                         )?,
                     )?
                     .handle()
@@ -515,8 +515,8 @@ fn gpu_material_binding_refinements(
 fn gpu_render_pipeline_state_for_pass(
     flow: &CompiledRenderFlowPlan,
     pass_id: RenderPassId,
-    color_formats: &[TextureFormat],
-    depth_format: Option<TextureFormat>,
+    color_formats: &[GpuTextureFormat],
+    depth_format: Option<GpuTextureFormat>,
 ) -> Result<Option<GpuRenderPipelineStateDescriptor>> {
     let pass = flow
         .execution
@@ -615,14 +615,13 @@ fn gpu_vertex_input_state_for_execution_pass(
 }
 
 fn gpu_fragment_output_state(
-    color_formats: &[TextureFormat],
+    color_formats: &[GpuTextureFormat],
     blend_mode: RenderBlendMode,
 ) -> Result<GpuFragmentOutputStateDescriptor> {
     let targets = color_formats
         .iter()
         .copied()
         .map(|format| {
-            let format = gpu_texture_format_from_wgpu(format)?;
             let blend = if format == GpuTextureFormat::R32Uint
                 || matches!(blend_mode, RenderBlendMode::Replace)
             {
@@ -663,7 +662,7 @@ fn gpu_primitive_state(state: RenderRasterState) -> Result<GpuPrimitiveStateDesc
 }
 
 fn gpu_depth_stencil_state(
-    depth_format: Option<TextureFormat>,
+    depth_format: Option<GpuTextureFormat>,
     policy: RenderDepthPolicy,
 ) -> Result<Option<GpuDepthStencilStateDescriptor>> {
     let Some(format) = depth_format else {
@@ -673,7 +672,7 @@ fn gpu_depth_stencil_state(
         return Ok(None);
     }
     Ok(Some(GpuDepthStencilStateDescriptor::new(
-        gpu_texture_format_from_wgpu(format)?,
+        format,
         !matches!(policy, RenderDepthPolicy::ReadOnly),
         GpuCompareFunction::LessEqual,
     )?))
@@ -700,21 +699,6 @@ fn gpu_vertex_format(value: RenderVertexFormat) -> GpuVertexFormat {
         RenderVertexFormat::Sint32x2 => GpuVertexFormat::Sint32x2,
         RenderVertexFormat::Sint32x3 => GpuVertexFormat::Sint32x3,
         RenderVertexFormat::Sint32x4 => GpuVertexFormat::Sint32x4,
-    }
-}
-
-fn gpu_texture_format_from_wgpu(format: TextureFormat) -> Result<GpuTextureFormat> {
-    match format {
-        TextureFormat::R8Unorm => Ok(GpuTextureFormat::R8Unorm),
-        TextureFormat::Rgba8Unorm => Ok(GpuTextureFormat::Rgba8Unorm),
-        TextureFormat::Rgba8UnormSrgb => Ok(GpuTextureFormat::Rgba8UnormSrgb),
-        TextureFormat::Bgra8Unorm => Ok(GpuTextureFormat::Bgra8Unorm),
-        TextureFormat::Bgra8UnormSrgb => Ok(GpuTextureFormat::Bgra8UnormSrgb),
-        TextureFormat::R32Uint => Ok(GpuTextureFormat::R32Uint),
-        TextureFormat::Depth32Float => Ok(GpuTextureFormat::Depth32Float),
-        unsupported => bail!(
-            "current render texture format {unsupported:?} has no accepted G4B normalized format"
-        ),
     }
 }
 

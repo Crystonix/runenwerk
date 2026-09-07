@@ -1,4 +1,4 @@
-use crate::plugins::gpu::{GpuResourceAccessIntent, GpuWorkResourceId};
+use runen_gpu::{GpuResourceAccessIntent, GpuWorkResourceId};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ResourceUsageKind {

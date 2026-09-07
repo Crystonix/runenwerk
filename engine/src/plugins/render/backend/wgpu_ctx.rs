@@ -1,11 +1,11 @@
 use super::{build_surface_config, preferred_surface_format};
-use crate::plugins::gpu::{
+use anyhow::Result;
+use pollster::block_on;
+use runen_gpu::{
     GpuAcquiredSurfaceImage, GpuCapabilityFeature, GpuCapabilityProfile, GpuCapabilityRequirement,
     GpuContext, GpuContextDescriptor, GpuFormatRole, GpuPowerPreference, GpuPreferredFallback,
     GpuSurfaceAcquireErrorCategory, GpuSurfaceConfiguration, GpuSurfaceHandle, GpuTextureFormat,
 };
-use anyhow::Result;
-use pollster::block_on;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use winit::window::Window;

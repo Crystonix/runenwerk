@@ -1,11 +1,5 @@
 use super::render_flow::{ResolvedTextureRef, RuntimeResourceKey};
 use super::resource_descriptors::{texture_descriptor, whole_texture_view_descriptor};
-use crate::plugins::gpu::{
-    GpuContext, GpuCopyExtent, GpuResourceLifetime, GpuTextureAspect, GpuTextureCopyRegion,
-    GpuTextureFormat, GpuTextureHandle, GpuTextureOrigin, GpuTextureUsage, GpuTextureViewHandle,
-    GpuTransferRegion, GpuUploadOperation, GpuWorkResourceIdAllocator, PreparedGpuData,
-    TransferData,
-};
 use crate::plugins::render::{
     RenderDynamicTextureRetention, RenderDynamicTextureTargetDescriptor,
     RenderDynamicTextureTargetKey, RenderDynamicTextureTargetSignature,
@@ -13,14 +7,19 @@ use crate::plugins::render::{
     RenderTextureTargetFormat, RenderTextureTargetUsage, RenderTextureUploadAlphaMode,
 };
 use anyhow::{Result, bail};
+use runen_gpu::{
+    GpuContext, GpuCopyExtent, GpuResourceLifetime, GpuTextureAspect, GpuTextureCopyRegion,
+    GpuTextureFormat, GpuTextureHandle, GpuTextureOrigin, GpuTextureUsage, GpuTextureViewHandle,
+    GpuTransferRegion, GpuUploadOperation, GpuWorkResourceIdAllocator, PreparedGpuData,
+    TransferData,
+};
 use std::collections::BTreeMap;
-use wgpu::*;
 
 #[derive(Debug)]
 pub struct RendererDynamicTextureTarget {
     pub _handle: GpuTextureHandle,
     pub view_handle: GpuTextureViewHandle,
-    pub format: TextureFormat,
+    pub format: GpuTextureFormat,
     pub size: (u32, u32),
     pub descriptor: RenderDynamicTextureTargetDescriptor,
     pub signature: RenderDynamicTextureTargetSignature,
@@ -118,7 +117,7 @@ impl RendererDynamicTextureTargetCache {
                     RendererDynamicTextureTarget {
                         _handle: handle,
                         view_handle,
-                        format: dynamic_format_to_wgpu(descriptor.format),
+                        format: dynamic_format_to_gpu(descriptor.format),
                         size: (descriptor.width.max(1), descriptor.height.max(1)),
                         descriptor: descriptor.clone(),
                         signature,
@@ -338,7 +337,7 @@ impl RendererDynamicTextureTargetCache {
         &self,
         pass_id: RenderPassId,
         key: &RenderDynamicTextureTargetKey,
-    ) -> Result<TextureFormat> {
+    ) -> Result<GpuTextureFormat> {
         let target = self.targets.get(key).ok_or_else(|| {
             anyhow::anyhow!(
                 "pass '{}' writes missing dynamic color target '{}'",
@@ -360,7 +359,7 @@ impl RendererDynamicTextureTargetCache {
         &self,
         pass_id: RenderPassId,
         key: &RenderDynamicTextureTargetKey,
-    ) -> Result<TextureFormat> {
+    ) -> Result<GpuTextureFormat> {
         let target = self.targets.get(key).ok_or_else(|| {
             anyhow::anyhow!(
                 "pass '{}' writes missing dynamic depth target '{}'",
@@ -434,15 +433,6 @@ fn canonical_dynamic_texture_upload(
     Ok(GpuUploadOperation::new(region.into(), payload)?)
 }
 
-fn dynamic_format_to_gpu(format: RenderTextureTargetFormat) -> GpuTextureFormat {
-    match format {
-        RenderTextureTargetFormat::Rgba8Unorm => GpuTextureFormat::Rgba8Unorm,
-        RenderTextureTargetFormat::Rgba8UnormSrgb => GpuTextureFormat::Rgba8UnormSrgb,
-        RenderTextureTargetFormat::R32Uint => GpuTextureFormat::R32Uint,
-        RenderTextureTargetFormat::Depth32Float => GpuTextureFormat::Depth32Float,
-    }
-}
-
 fn dynamic_usage_to_gpu(usage: RenderTextureTargetUsage) -> Vec<GpuTextureUsage> {
     let mut out = Vec::new();
     if usage.sampled {
@@ -504,12 +494,12 @@ fn unpremultiply_rgba8(bytes: &[u8]) -> Vec<u8> {
     out
 }
 
-pub fn dynamic_format_to_wgpu(format: RenderTextureTargetFormat) -> TextureFormat {
+pub fn dynamic_format_to_gpu(format: RenderTextureTargetFormat) -> GpuTextureFormat {
     match format {
-        RenderTextureTargetFormat::Rgba8Unorm => TextureFormat::Rgba8Unorm,
-        RenderTextureTargetFormat::Rgba8UnormSrgb => TextureFormat::Rgba8UnormSrgb,
-        RenderTextureTargetFormat::R32Uint => TextureFormat::R32Uint,
-        RenderTextureTargetFormat::Depth32Float => TextureFormat::Depth32Float,
+        RenderTextureTargetFormat::Rgba8Unorm => GpuTextureFormat::Rgba8Unorm,
+        RenderTextureTargetFormat::Rgba8UnormSrgb => GpuTextureFormat::Rgba8UnormSrgb,
+        RenderTextureTargetFormat::R32Uint => GpuTextureFormat::R32Uint,
+        RenderTextureTargetFormat::Depth32Float => GpuTextureFormat::Depth32Float,
     }
 }
 

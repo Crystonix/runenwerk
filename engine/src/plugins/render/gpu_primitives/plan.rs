@@ -3,10 +3,8 @@ use super::{
     IndirectDrawArgsGenerationDescriptor, PrefixScanMode, U32PrefixScanDescriptor,
     U32ScatterDescriptor,
 };
-use crate::plugins::gpu::{
-    GpuBindingKey, GpuBufferHandle, GpuBufferInitialization, GpuStorageBufferAccess,
-};
 use crate::plugins::render::RenderShaderConstant;
+use runen_gpu::{GpuBindingKey, GpuBufferHandle, GpuBufferInitialization, GpuStorageBufferAccess};
 
 pub const GPU_PRIMITIVE_WORKGROUP_SIZE: u32 = 64;
 pub const GPU_PRIMITIVE_COUNTER_RESET_SHADER: &str =
@@ -530,13 +528,13 @@ fn dispatch_for_count(element_count: u32) -> [u32; 3] {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::plugins::gpu::{GpuBufferInitialization, GpuSpecializationValue};
     use crate::plugins::render::{
         CompiledDrawSource, CompiledPassExecutionPlan, CounterResetDescriptor, DrawIndirectArgs,
         IndirectDrawArgsGenerationDescriptor, PrefixScanMode, RenderFlow, RenderShaderReference,
         U32Counter, U32PrefixScanDescriptor, U32ScanElement, U32ScatterDescriptor,
         compile_flow_plan,
     };
+    use runen_gpu::{GpuBufferInitialization, GpuSpecializationValue};
     use std::collections::BTreeSet;
 
     fn dispatch_plan_for_test(plan: &GpuPrimitiveExecutionPlan) -> GpuPrimitiveDispatchPlan {
@@ -645,7 +643,7 @@ mod tests {
         assert_eq!(temporary_ids.len(), 5);
         assert!(compiled.resources.resources.iter().all(|resource| {
             !temporary_ids.contains(resource.id())
-                || resource.lifetime() == crate::plugins::gpu::GpuResourceLifetime::Transient
+                || resource.lifetime() == runen_gpu::GpuResourceLifetime::Transient
         }));
         for suffix in ["block_sums", "block_offsets"] {
             let scratch_handles = compiled
@@ -666,8 +664,7 @@ mod tests {
                 .collect::<Vec<_>>();
             assert!(!scratch_handles.is_empty());
             assert!(scratch_handles.iter().all(|handle| {
-                handle.descriptor().common().lifetime()
-                    == crate::plugins::gpu::GpuResourceLifetime::Transient
+                handle.descriptor().common().lifetime() == runen_gpu::GpuResourceLifetime::Transient
                     && handle.descriptor().initialization() == &GpuBufferInitialization::Zeroed
             }));
         }

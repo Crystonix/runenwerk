@@ -1,7 +1,3 @@
-use crate::plugins::gpu::{
-    GpuBindingKey, GpuBufferHandle, GpuStorageBufferAccess, GpuStorageTextureAccess,
-    GpuWorkResourceId,
-};
 use crate::plugins::render::api::ids::RenderFeatureId;
 use crate::plugins::render::api::{
     ComputeDispatchBinding, ComputeDispatchDescriptor, PassParamBinding, RenderFlow,
@@ -13,6 +9,10 @@ use crate::plugins::render::{
     RenderDrawDescriptor, RenderIndirectDrawResource, RenderPassId, RenderPassKind, RenderPassNode,
     RenderPassShapeIntent, RenderPassViewScope, RenderRasterState, RenderVertexBufferLayout,
     ShaderHandle,
+};
+use runen_gpu::{
+    GpuBindingKey, GpuBufferHandle, GpuStorageBufferAccess, GpuStorageTextureAccess,
+    GpuWorkResourceId,
 };
 
 #[derive(Debug)]

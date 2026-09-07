@@ -1,8 +1,8 @@
-use crate::plugins::gpu::{GpuBufferHandle, GpuWorkResourceId};
 use crate::plugins::render::{
     RenderBlendMode, RenderCullMode, RenderDepthPolicy, RenderPrimitiveTopology, RenderRasterState,
     RenderVertexBufferLayout, ShaderHandle,
 };
+use runen_gpu::{GpuBufferHandle, GpuWorkResourceId};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ProceduralShader {

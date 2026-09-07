@@ -1,6 +1,5 @@
 use crate::rendering::{BoidsRenderState, DEFAULT_BOID_COUNT, build_render_flow};
 use anyhow::Result;
-use engine::plugins::gpu::GpuCapabilities;
 use engine::plugins::render::inspect::{
     RenderGpuTimingDiagnostic, RenderPassTimingEvidence, inspect_compiled_render_flow_plan,
 };
@@ -10,6 +9,7 @@ use engine::plugins::render::{
     PreparedSurfaceInfo, PreparedViewFrame, RenderFixedStepIterationUniform, RenderPassId,
     compile_flow_plan_checked, current_runtime_gpu_capabilities, preflight_prepared_render_frame,
 };
+use runen_gpu::GpuCapabilities;
 use std::time::Instant;
 use ui_render_data::ViewportSurfaceBindingRegistry;
 

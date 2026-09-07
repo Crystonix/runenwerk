@@ -507,7 +507,7 @@ mod tests {
         let mut feature_runtime_signatures = BTreeMap::new();
         feature_runtime_signatures.insert(feature_id, 1);
         RendererPreparedPacket {
-            surface_format: TextureFormat::Rgba8Unorm,
+            surface_format: GpuTextureFormat::Rgba8Unorm,
             surface_size: (1, 1),
             view_id: "main".to_string(),
             feature_gates,

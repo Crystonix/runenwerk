@@ -1,4 +1,4 @@
-use crate::plugins::gpu::{GpuPreparedWorkGraph, GpuResourceAccess, GpuWorkResourceId};
+use runen_gpu::{GpuPreparedWorkGraph, GpuResourceAccess, GpuWorkResourceId};
 use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, PartialEq, Eq)]

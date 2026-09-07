@@ -1,8 +1,3 @@
-use crate::plugins::gpu::{
-    GpuBufferHandle, GpuContext, GpuRealizedRenderPipeline, GpuRuntimeBindingSet,
-    GpuRuntimeBindingValue, GpuSamplerHandle, GpuTextureHandle, GpuTextureViewHandle,
-    GpuWorkResourceIdAllocator,
-};
 use crate::plugins::render::RenderFlowId;
 use crate::plugins::render::backend::WgpuCtx;
 use crate::plugins::render::features::{
@@ -22,6 +17,11 @@ use crate::plugins::render::inspect::{
 use crate::plugins::render::shader::{ShaderHandle, ShaderRegistryResource};
 use anyhow::Result;
 use bytemuck::{Pod, Zeroable};
+use runen_gpu::{
+    GpuBufferHandle, GpuContext, GpuRealizedRenderPipeline, GpuRuntimeBindingSet,
+    GpuRuntimeBindingValue, GpuSamplerHandle, GpuTextureFormat, GpuTextureHandle,
+    GpuTextureViewHandle, GpuWorkResourceIdAllocator,
+};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use std::time::Instant;
@@ -29,7 +29,6 @@ use ui_render_data::{
     ProductSurfaceTextureBindingSource, ViewportSurfaceBindingRegistry,
     ViewportSurfaceBindingSource, ViewportSurfaceEmbedSlotId,
 };
-use wgpu::*;
 use winit::window::Window;
 
 pub const DEFAULT_UI_RECT_SHADER: &str = r#"
@@ -665,8 +664,8 @@ struct UiDynamicBindGroups {
 /// work graph before submission.
 #[derive(Debug, Clone, Default)]
 struct RendererPendingOperations {
-    buffer_uploads: Vec<crate::plugins::gpu::GpuUploadOperation>,
-    texture_uploads: Vec<crate::plugins::gpu::GpuUploadOperation>,
+    buffer_uploads: Vec<runen_gpu::GpuUploadOperation>,
+    texture_uploads: Vec<runen_gpu::GpuUploadOperation>,
 }
 
 #[derive(Debug, Clone)]
@@ -783,7 +782,7 @@ pub(crate) struct PreparedMaterialGpuResources {
 
 #[derive(Debug, Clone)]
 pub(crate) struct RendererPreparedPacket {
-    surface_format: TextureFormat,
+    surface_format: GpuTextureFormat,
     surface_size: (u32, u32),
     view_id: String,
     feature_gates: BTreeMap<RenderFeatureId, FeatureExecutionGate>,
@@ -801,16 +800,16 @@ pub(crate) struct RendererPreparedPacket {
 pub struct Renderer {
     resource_ids: GpuWorkResourceIdAllocator,
     rect_pass: Option<RectPass>,
-    rect_pass_format: Option<TextureFormat>,
+    rect_pass_format: Option<GpuTextureFormat>,
     rect_pass_shader_revision: u64,
     stroke_pass: Option<StrokePass>,
-    stroke_pass_format: Option<TextureFormat>,
+    stroke_pass_format: Option<GpuTextureFormat>,
     glyph_pass: Option<GlyphPass>,
-    glyph_pass_format: Option<TextureFormat>,
+    glyph_pass_format: Option<GpuTextureFormat>,
     viewport_embed_pass: Option<ViewportEmbedPass>,
-    viewport_embed_pass_format: Option<TextureFormat>,
+    viewport_embed_pass_format: Option<GpuTextureFormat>,
     product_surface_pass: Option<ProductSurfacePass>,
-    product_surface_pass_format: Option<TextureFormat>,
+    product_surface_pass_format: Option<GpuTextureFormat>,
     glyph_atlas_gpu: BTreeMap<u64, UiGlyphAtlasGpu>,
     dynamic_texture_targets: dynamic_targets::RendererDynamicTextureTargetCache,
     flow_runtime_cache: BTreeMap<RenderFlowId, render_flow::FlowRuntimeResources>,
@@ -919,7 +918,7 @@ impl Gfx {
             .ctx
             .context()
             .device_facts()
-            .is_enabled(crate::plugins::gpu::GpuCapabilityFeature::TimestampQuery)
+            .is_enabled(runen_gpu::GpuCapabilityFeature::TimestampQuery)
         {
             RenderGpuTimingCapability::Supported
         } else {
@@ -937,12 +936,10 @@ impl Gfx {
             ui_rect_shader,
             ui_font_atlas,
             viewport_surface_bindings,
-            resource_descriptors::wgpu_texture_format(
-                self.ctx
-                    .surface_config(render_surface_id)
-                    .ok_or_else(|| anyhow::anyhow!("render surface is not attached"))?
-                    .format(),
-            ),
+            self.ctx
+                .surface_config(render_surface_id)
+                .ok_or_else(|| anyhow::anyhow!("render surface is not attached"))?
+                .format(),
             preflight_config,
             debug_control,
             debug_config,

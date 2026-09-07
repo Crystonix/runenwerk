@@ -1,10 +1,10 @@
 use super::*;
-use crate::plugins::gpu::{
+use crate::plugins::render::renderer::resource_descriptors::{buffer_descriptor, owned_common};
+use runen_gpu::{
     GpuBufferHandle, GpuBufferUsage, GpuMemoryIntent, GpuQueryKind, GpuQueryRange,
     GpuQuerySetDescriptor, GpuQuerySetHandle, GpuReadbackId, GpuResourceLifetime,
     GpuWorkResourceIdAllocator,
 };
-use crate::plugins::render::renderer::resource_descriptors::{buffer_descriptor, owned_common};
 
 const QUERY_SIZE_BYTES: u64 = 8;
 

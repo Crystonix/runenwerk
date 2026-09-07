@@ -1,7 +1,7 @@
-use crate::plugins::gpu::{GpuWorkResourceId, GpuWorkResourceIdAllocationError};
 use crate::plugins::render::RenderGpuResourceAdapterError;
 use crate::plugins::render::gpu_primitives::GpuPrimitiveValidationError;
 use crate::plugins::render::procedural::ProceduralValidationError;
+use runen_gpu::{GpuWorkResourceId, GpuWorkResourceIdAllocationError};
 use thiserror::Error;
 
 /// Structured failures produced while authoring a render flow.

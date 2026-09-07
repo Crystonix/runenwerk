@@ -1,13 +1,13 @@
-use engine::plugins::gpu::{
-    GpuBufferInitialization, GpuResourceDescriptor, GpuResourceLifetime, GpuTextureFormat,
-    GpuWorkResourceId, GpuWorkResourceIdAllocator,
-};
 use engine::plugins::render::api::RenderPassId;
 use engine::plugins::render::{
     CompiledPassExecutionPlan, CompiledResourceRef, GpuParams, GpuStorage, GpuUniform, RenderFlow,
     RenderGpuParamsLayout, RenderGpuResourceAdapterError, RenderGpuResourceLowering,
     RenderImportedBufferSemantic, RenderImportedTextureSemantic, RenderResourceDeclaration,
     RenderTargetAliasKind, compile_flow_plan, detect_duplicate_resource_ids,
+};
+use runen_gpu::{
+    GpuBufferInitialization, GpuResourceDescriptor, GpuResourceLifetime, GpuTextureFormat,
+    GpuWorkResourceId, GpuWorkResourceIdAllocator,
 };
 
 #[derive(Debug, Clone, Copy, GpuUniform)]

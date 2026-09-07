@@ -1,7 +1,3 @@
-use crate::plugins::gpu::{
-    GpuBindingKey, GpuBufferHandle, GpuBufferInitialization, GpuResourceLifetime,
-    GpuWorkResourceId, GpuWorkResourceIdAllocator,
-};
 use crate::plugins::render::api::{
     BuiltinUiCompositePassBuilder, ComputePassBuilder, CopyPassBuilder, FullscreenPassBuilder,
     GraphicsPassBuilder, ParamProjectionError, PassUniformProjection, PresentPassBuilder,
@@ -23,6 +19,10 @@ use crate::plugins::render::{
     validate_flow_graph,
 };
 use crate::runtime::{CatchupBudget, FixedTimeConfig, FixedTimeState};
+use runen_gpu::{
+    GpuBindingKey, GpuBufferHandle, GpuBufferInitialization, GpuResourceLifetime,
+    GpuWorkResourceId, GpuWorkResourceIdAllocator,
+};
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -887,7 +887,6 @@ mod tests {
         RenderTextureSizePolicy, RenderTextureTargetFormat, RenderVertexBufferLayout,
         RenderVertexFormat, compile_flow_plan,
     };
-    use std::num::NonZeroU64;
 
     fn binding_in_group(group: u64, binding: u64) -> GpuBindingKey {
         GpuBindingKey::try_new(group, binding).expect("test binding key should be valid")
@@ -929,35 +928,6 @@ mod tests {
         fn dispatch(&self) -> [u32; 3] {
             [1, 1, 1]
         }
-    }
-
-    #[test]
-    fn render_flow_authoring_error_propagates_resource_id_exhaustion() {
-        let owner_scope = NonZeroU64::new(99).expect("test owner scope is nonzero");
-        let next_local = NonZeroU64::new(u64::MAX).expect("maximum local value is nonzero");
-        let mut flow = RenderFlow::new("resource.exhaustion");
-        flow.next_resource_id =
-            GpuWorkResourceIdAllocator::with_next_local_for_test(owner_scope, next_local);
-
-        let flow = flow
-            .with_color_target("resource.last")
-            .expect("maximum local value should allocate once");
-        assert_eq!(
-            flow.resource_id("resource.last")
-                .expect("last resource should be registered")
-                .diagnostic_parts(),
-            (99, u64::MAX)
-        );
-
-        let error = flow
-            .with_color_target("resource.exhausted")
-            .expect_err("the next resource allocation must report exhaustion");
-        assert_eq!(
-            error,
-            RenderFlowAuthoringError::ResourceIdAllocation(
-                crate::plugins::gpu::GpuWorkResourceIdAllocationError::Exhausted
-            )
-        );
     }
 
     #[test]

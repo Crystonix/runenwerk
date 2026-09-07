@@ -1,4 +1,3 @@
-use crate::plugins::gpu::{GpuBindingKey, GpuBufferUsage, GpuWorkResourceId};
 use crate::plugins::render::api::{SURFACE_COLOR_RESOURCE_LABEL, SURFACE_DEPTH_RESOURCE_LABEL};
 use crate::plugins::render::graph::{
     RenderDrawSource, RenderFlowGraph, RenderIndirectDrawArgsKind, RenderPassKind, RenderPassNode,
@@ -10,6 +9,7 @@ use crate::plugins::render::{
     RenderTextureDescriptor, RenderTextureFormatPolicy,
 };
 use crate::plugins::render::{RenderPassId, RenderTargetAliasKind, RenderVertexStepMode};
+use runen_gpu::{GpuBindingKey, GpuBufferUsage, GpuWorkResourceId};
 use std::collections::{BTreeMap, BTreeSet};
 use thiserror::Error;
 

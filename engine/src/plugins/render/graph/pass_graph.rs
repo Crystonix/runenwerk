@@ -1,9 +1,9 @@
-use crate::plugins::gpu::{GpuSpecializationValue, GpuWorkResourceId};
 use crate::plugins::render::api::ids::RenderFeatureId;
 use crate::plugins::render::api::{
     ComputeDispatchDescriptor, PassParamBinding, RenderShaderBinding,
 };
 use crate::plugins::render::{GpuParams, GpuStorage, RenderPassId, ShaderHandle};
+use runen_gpu::{GpuSpecializationValue, GpuWorkResourceId};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum RenderPassKind {

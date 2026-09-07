@@ -1,5 +1,4 @@
 use criterion::{Criterion, black_box, criterion_group, criterion_main};
-use engine::plugins::gpu::GpuBindingKey;
 use engine::plugins::render::features::world::sdf_raymarch::{
     RenderSdfDistanceMipLevel, RenderSdfRaymarchAccelerationReport, RenderSdfRaymarchCandidate,
     RenderSdfRaymarchCandidateList,
@@ -43,6 +42,7 @@ use engine::plugins::render::{
     preflight_prepared_render_frame_runtime_guards, prepared_render_frame_preflight_cache_key,
 };
 use engine::prelude::Resource;
+use runen_gpu::GpuBindingKey;
 use ui_render_data::ViewportSurfaceBindingRegistry;
 
 #[derive(Debug, Clone, Copy, GpuStorage)]

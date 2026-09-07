@@ -1,10 +1,10 @@
 use anyhow::Result;
-use engine::plugins::gpu::GpuBindingKey;
 use engine::plugins::render::RenderFlow;
 use engine::plugins::render::inspect::{
     PassTimingSample, dump_flow_graph, inspect_resources, inspect_texture_resources,
     summarize_pass_timings,
 };
+use runen_gpu::GpuBindingKey;
 
 const FLOW_ID: &str = "inspect.flow";
 

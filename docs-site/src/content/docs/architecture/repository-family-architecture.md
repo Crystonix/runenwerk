@@ -45,7 +45,7 @@ product       repository                    package       crate
 RunenSDF      dornglut/runen-sdf            runen-sdf     runen_sdf
 RunenSpatial  dornglut/runen-spatial        existing workspace topology
 RunenECS      target dornglut/runen-ecs     see accepted RunenECS design
-RunenGPU      target dornglut/runen-gpu     runen-gpu     runen_gpu
+RunenGPU      dornglut/runen-gpu            runen-gpu     runen_gpu
 RunenRender   target dornglut/runen-render  runen-render  runen_render
 RunenUI       dornglut/runen-ui             existing workspace topology
 Runenwerk     dornglut/runenwerk            workspace      integration/product
@@ -89,13 +89,15 @@ No dependency cycle is allowed.
 | RunenSDF | standalone authority in `dornglut/runen-sdf`; duplicate Runenwerk source retired through issue `#133` / PR `#157` | standalone roadmap and independently accepted adapters only |
 | RunenSpatial | standalone host-neutral spatial authority in `dornglut/runen-spatial`; downstream integration consumes accepted public contracts | standalone roadmap and independently accepted downstream adapters/integration only |
 | RunenECS | internal ownership and safety repair required | separately bounded investigation, design, and repair |
-| RunenGPU | S0, G1A, G2, G3 planning, operational hardening, and G3 implementation accepted; G3 merged as `39d6fe65a334502bdfba0b1a2ce3b365099fcf28`; exact current accepted main for G4 planning is `6bbd341691a34763ef54c8ca059940cac8981265` | issue `#182` / PR `#185` owns G4 planning only; after acceptance, only G4A may become active; G4B is blocked by accepted G4A and G4C by accepted G4B |
-| RunenRender | architecture corrected to consume RunenGPU; operational/provider/incremental-scene requirements accepted | S0/design only; implementation remains independently owned and waits for accepted RunenGPU cutover plus separately bounded R-phase work |
+| RunenGPU | standalone successor accepted at `77c7c8d5ad6922b6f46c6b25e31b1a224c1314a4`; Runenwerk consumer cutover is pinned to that exact revision | successor repository owns framework implementation and conformance; downstream changes use its public API |
+| RunenRender | current Runenwerk render integration consumes the accepted RunenGPU public API | separately bounded R-phase work remains required before external RunenRender cutover |
 | RunenUI | independent repository/workstream | governed in RunenUI |
 
-The commit between accepted G3 and the G4 planning base changes only verified-head
-validation and workflow authority. It changes no RunenGPU or render architecture,
-source, dependency, manifest, or lockfile.
+RunenGPU semantic authority is already the accepted successor revision. Runenwerk's
+physical consumer cutover is governed separately by issue `#449` and is accepted only
+when the merged Runenwerk revision passes accepted-main validation. The workspace
+manifest and lockfile are implementation evidence, not downstream acceptance on their
+own.
 
 Current source location is implementation evidence, not permanent ownership.
 

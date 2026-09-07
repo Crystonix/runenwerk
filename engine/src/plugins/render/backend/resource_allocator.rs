@@ -1,5 +1,5 @@
-use crate::plugins::gpu::GpuWorkResourceId;
 use crate::plugins::render::RenderPassId;
+use runen_gpu::GpuWorkResourceId;
 use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, PartialEq, Eq)]

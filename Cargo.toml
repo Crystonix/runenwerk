@@ -96,6 +96,7 @@ product = { path = "domain/product" }
 runen-net = { git = "https://github.com/dornglut/runen-net", rev = "2af5700b2889f6503395ffb72ae85f37629f2625" }
 runen-net-quic = { git = "https://github.com/dornglut/runen-net", rev = "2af5700b2889f6503395ffb72ae85f37629f2625" }
 runen-spatial = { git = "https://github.com/dornglut/runen-spatial", rev = "2bb6b2ed89894aefaa39bf0e39d296b703916821" }
+runen-gpu = { git = "https://github.com/dornglut/runen-gpu", rev = "77c7c8d5ad6922b6f46c6b25e31b1a224c1314a4" }
 world_ops = { path = "domain/world_ops" }
 world_sdf = { path = "domain/world_sdf" }
 

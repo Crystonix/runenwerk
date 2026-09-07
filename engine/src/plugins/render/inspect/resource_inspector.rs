@@ -1,8 +1,8 @@
-use crate::plugins::gpu::GpuResourceLifetime;
 use crate::plugins::render::{
     RenderFlow, RenderImportedBufferSemantic, RenderImportedTextureSemantic,
     RenderResourceDeclaration, RenderTargetAliasKind,
 };
+use runen_gpu::GpuResourceLifetime;
 
 #[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
 pub struct RenderDebugOverlayState {

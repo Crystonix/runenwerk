@@ -1,6 +1,6 @@
 use crate::rendering::{Sdf3dRenderState, SdfHistoryProbe};
-use engine::plugins::gpu::GpuBindingKey;
 use engine::plugins::render::RenderFlow;
+use runen_gpu::GpuBindingKey;
 
 pub(crate) fn build_render_flow() -> RenderFlow {
     // The flow's established binding contract is the uniform at binding 0 and
@@ -100,7 +100,7 @@ mod tests {
     fn flow_orders_prepare_compose_history_before_terminal_present() {
         let flow = build_render_flow();
         let order = flow
-            .prepared_pass_order()
+            .lexical_pass_order()
             .expect("sdf_render_flow pass order should validate")
             .into_iter()
             .map(|id| {

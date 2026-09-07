@@ -30,6 +30,7 @@ graph.workspace = true
 material_graph.workspace = true
 procgen.workspace = true
 product.workspace = true
+runen-gpu.workspace = true
 resource_ref.workspace = true
 runen-net.workspace = true
 runen-net-quic.workspace = true

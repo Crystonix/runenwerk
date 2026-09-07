@@ -1,6 +1,6 @@
 use crate::rendering::{DEFAULT_GRID_CELL_COUNT, GameOfLifeCell, GameOfLifeRenderState};
-use engine::plugins::gpu::GpuBindingKey;
 use engine::plugins::render::RenderFlow;
+use runen_gpu::GpuBindingKey;
 
 pub(crate) fn build_render_flow() -> RenderFlow {
     // `game_of_life_{compute,compose}.wgsl` use params at binding 0 and the

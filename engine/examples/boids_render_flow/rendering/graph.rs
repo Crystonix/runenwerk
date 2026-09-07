@@ -1,12 +1,12 @@
 use crate::rendering::{
     BoidAgent, BoidsRenderState, DEFAULT_BOID_COUNT, DEFAULT_GRID_CELLS_X, DEFAULT_GRID_CELLS_Y,
 };
-use engine::plugins::gpu::GpuBindingKey;
 use engine::plugins::render::{
     BoundedUniformGrid2dBuildPlan, BoundedUniformGrid2dConfig, BoundedUniformGrid2dStage,
     ProceduralBufferBinding, ProceduralPassDescriptor, ProceduralTargetDescriptor, RenderFlow,
     RenderVertexBufferLayout, RenderVertexFormat, U32Counter, U32ScanElement,
 };
+use runen_gpu::GpuBindingKey;
 
 pub(crate) fn build_render_flow() -> RenderFlow {
     let grid_cell_count = (DEFAULT_GRID_CELLS_X * DEFAULT_GRID_CELLS_Y) as u64;
@@ -401,7 +401,7 @@ mod tests {
     fn flow_orders_compute_publish_procedural_draw_then_present() {
         let flow = build_render_flow();
         let order = flow
-            .prepared_pass_order()
+            .lexical_pass_order()
             .expect("boids_render_flow pass order should validate")
             .into_iter()
             .map(|id| {

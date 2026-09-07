@@ -1,4 +1,3 @@
-use engine::plugins::gpu::{GpuPrimitiveTopology, GpuTextureFormat};
 use engine::plugins::render::inspect::{
     CaptureStage, CaptureTextureClass, RenderCapturePointIdentity,
     RenderPassMaterialBindingEvidence, RenderPassProvenanceRecord,
@@ -9,6 +8,7 @@ use engine::plugins::render::pipelines::{FlowPassKind, PipelineCacheStats};
 use engine::plugins::render::shader::{
     ShaderRegistryEvent, ShaderRegistryEventKind, ShaderReloadPollReport, ShaderReloadPollStatus,
 };
+use runen_gpu::{GpuPrimitiveTopology, GpuTextureFormat};
 
 #[test]
 fn render_pipeline_fallback_reports_ready_cache_and_prior_valid_shader_failure() {

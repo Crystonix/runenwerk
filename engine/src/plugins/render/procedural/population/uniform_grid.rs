@@ -1,9 +1,9 @@
-use crate::plugins::gpu::{GpuBufferHandle, GpuWorkResourceId};
 use crate::plugins::render::gpu_primitives::{
     CounterResetDescriptor, GpuPrimitiveExecutionPlan, GpuPrimitiveStep,
     GpuPrimitiveValidationError, PrefixScanMode, U32Counter, U32PrefixScanDescriptor,
     U32ScanElement, buffer_capacity, validate_capacity,
 };
+use runen_gpu::{GpuBufferHandle, GpuWorkResourceId};
 use thiserror::Error;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

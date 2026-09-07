@@ -1,11 +1,12 @@
 use anyhow::Result;
-#[cfg(test)]
-use engine::plugins::GpuWorkResourceId;
 use engine::plugins::{
     DiagnosticsConfigResource, RenderFlow, RenderPlugin, ScenePlugin, SchedulerDiagnosticsPlugin,
-    default_plugins, gpu::GpuBindingKey,
+    default_plugins,
 };
 use engine::prelude::*;
+use runen_gpu::GpuBindingKey;
+#[cfg(test)]
+use runen_gpu::GpuWorkResourceId;
 use winit::keyboard::KeyCode;
 
 use crate::runtime::plugin::EditorAppPlugin;

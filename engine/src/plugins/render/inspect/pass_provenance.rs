@@ -1,9 +1,9 @@
-use crate::plugins::gpu::{GpuPrimitiveTopology, GpuTextureFormat};
 use crate::plugins::render::inspect::RenderCapturePointIdentity;
 use crate::plugins::render::pipelines::FlowPassKind;
 use crate::plugins::render::{
     RenderFragmentMergeReport, RenderFragmentProvenanceElementKind, RenderFragmentProvenanceRecord,
 };
+use runen_gpu::{GpuPrimitiveTopology, GpuTextureFormat};
 
 #[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
 pub struct RenderPassProvenanceState {

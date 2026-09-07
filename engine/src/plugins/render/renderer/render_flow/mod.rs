@@ -46,8 +46,8 @@ mod runtime_resources;
 /// Opaque G4C3 pipeline realization retained between the renderer's realization and G5
 /// execution phases. No raw backend pipeline reference crosses this boundary.
 pub(super) enum PreparedFlowPipeline {
-    Compute(crate::plugins::gpu::GpuRealizedComputePipeline),
-    Render(crate::plugins::gpu::GpuRealizedRenderPipeline),
+    Compute(runen_gpu::GpuRealizedComputePipeline),
+    Render(runen_gpu::GpuRealizedRenderPipeline),
 }
 
 /// Complete G4C2/G4C3 shader-pipeline realization carried from the batch's first phase into G5.

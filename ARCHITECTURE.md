@@ -30,13 +30,16 @@ RunenRender -> RunenGPU
 
 ## Current source layout
 
-Until each clean cutover completes:
+The standalone RunenGPU successor is accepted. Runenwerk's exact-revision consumer cutover is a separate repository-local acceptance boundary owned by issue `#449`.
 
 ```text
 foundation -> domain -> engine/runtime -> apps/adapters/tools
+                               |
+                               +--> exact-SHA runen-gpu consumer
 ```
 
-Current file location is implementation fact, not permanent ownership authority. The existing render plugin mixes future RunenGPU, RunenRender, Runenwerk, and source-domain responsibilities and must not be moved unchanged.
+The render plugin remains Runenwerk-owned integration until the separately bounded
+RunenRender extraction. It must consume RunenGPU only through the external public API.
 
 ## Foundation crates
 
@@ -59,7 +62,8 @@ The GPU/render extraction sequence is:
 ```text
 current-source inventory
 -> internal RunenGPU proof
--> external RunenGPU clean cutover
+-> accepted external RunenGPU successor
+-> exact-revision Runenwerk consumer cutover and predecessor deletion
 -> internal RunenRender proof on RunenGPU
 -> external RunenRender clean cutover
 ```

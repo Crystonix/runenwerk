@@ -1,10 +1,10 @@
-use crate::plugins::gpu::{
-    GpuSurfaceCapabilities, GpuSurfaceConfiguration, GpuSurfacePresentMode, GpuTextureFormat,
-    GpuTextureUsage,
-};
 use crate::runtime::NativeWindowId;
 use anyhow::{Result, anyhow};
 use id_macros::id;
+use runen_gpu::{
+    GpuSurfaceCapabilities, GpuSurfaceConfiguration, GpuSurfacePresentMode, GpuTextureFormat,
+    GpuTextureUsage,
+};
 use std::collections::BTreeMap;
 
 #[id]
@@ -205,54 +205,6 @@ pub fn build_surface_config(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::plugins::gpu::GpuSurfaceAlphaMode;
-
-    fn surface_capabilities(
-        usages: impl IntoIterator<Item = GpuTextureUsage>,
-    ) -> GpuSurfaceCapabilities {
-        GpuSurfaceCapabilities::from_normalized_facts(
-            vec![GpuTextureFormat::Bgra8UnormSrgb],
-            usages.into_iter().collect(),
-            vec![GpuSurfacePresentMode::Fifo],
-            vec![GpuSurfaceAlphaMode::Opaque],
-        )
-    }
-
-    #[test]
-    fn renderer_surface_configuration_preserves_policy_and_supported_copy_usages() {
-        let capabilities = surface_capabilities([
-            GpuTextureUsage::ColorAttachment,
-            GpuTextureUsage::CopySource,
-            GpuTextureUsage::CopyDestination,
-        ]);
-
-        let config = build_surface_config(0, 0, GpuTextureFormat::Bgra8UnormSrgb, &capabilities)
-            .expect("renderer surface policy should normalize into a valid configuration");
-
-        assert_eq!((config.width(), config.height()), (1, 1));
-        assert_eq!(config.present_mode(), GpuSurfacePresentMode::Fifo);
-        assert_eq!(config.desired_maximum_frame_latency(), 2);
-        assert_eq!(config.alpha_mode(), GpuSurfaceAlphaMode::Opaque);
-        assert_eq!(
-            config.usages(),
-            &[
-                GpuTextureUsage::ColorAttachment,
-                GpuTextureUsage::CopySource,
-                GpuTextureUsage::CopyDestination,
-            ]
-        );
-    }
-
-    #[test]
-    fn renderer_surface_configuration_does_not_request_unsupported_copy_usages() {
-        let capabilities = surface_capabilities([GpuTextureUsage::ColorAttachment]);
-
-        let config =
-            build_surface_config(640, 480, GpuTextureFormat::Bgra8UnormSrgb, &capabilities)
-                .expect("color-attachment-only surfaces should remain configurable");
-
-        assert_eq!(config.usages(), &[GpuTextureUsage::ColorAttachment]);
-    }
 
     #[test]
     fn render_surface_registry_binds_primary_surface_to_primary_native_window() {

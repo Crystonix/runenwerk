@@ -2,16 +2,16 @@
 //! realization, history, and surface acquisition move to their owning phases.
 
 use super::{RenderGpuParamsLayout, normalized_render_format};
-use crate::plugins::gpu::{
+use crate::plugins::render::{
+    GpuParams, RenderTextureSampleMode, RenderTextureTargetFormat, RenderTextureTargetUsage,
+};
+use runen_gpu::{
     GpuBufferDescriptor, GpuBufferHandle, GpuBufferInitialization, GpuBufferUsage, GpuBufferUsages,
     GpuDataPreparationError, GpuMemoryIntent, GpuReconstruction, GpuResourceCommon,
     GpuResourceDescriptor, GpuResourceDescriptorError, GpuResourceLabel, GpuResourceLifetime,
     GpuResourceProvenance, GpuTextureDescriptor, GpuTextureDimension, GpuTextureExtent,
     GpuTextureFormat, GpuTextureInitialization, GpuTextureUsage, GpuTextureUsages,
     GpuWorkResourceId, GpuWorkResourceIdAllocationError, GpuWorkResourceIdAllocator,
-};
-use crate::plugins::render::{
-    GpuParams, RenderTextureSampleMode, RenderTextureTargetFormat, RenderTextureTargetUsage,
 };
 use std::any::TypeId;
 use std::collections::BTreeSet;

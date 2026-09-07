@@ -7,12 +7,12 @@ use super::logical_operations::{
 };
 use super::logical_timing::LogicalGpuPassTiming;
 use super::*;
-use crate::plugins::gpu::{
+use crate::plugins::render::{RenderGpuWorkOccurrenceId, ResolvedRenderGpuWorkNode};
+use runen_gpu::{
     GpuAttachmentStore, GpuColorAttachmentLoad, GpuExecutionPreference, GpuRenderColorAttachment,
     GpuRenderDraw, GpuRenderOperation, GpuResourceLabel, GpuTextureViewHandle, GpuUploadOperation,
     GpuWorkOperation,
 };
-use crate::plugins::render::{RenderGpuWorkOccurrenceId, ResolvedRenderGpuWorkNode};
 use std::collections::BTreeMap;
 
 /// One execution-complete logical upload in renderer occurrence space.

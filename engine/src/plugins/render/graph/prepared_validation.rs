@@ -1,4 +1,3 @@
-use crate::plugins::gpu::{GpuCapabilities, GpuWorkResourceId};
 use crate::plugins::render::features::FeatureFallbackPolicy;
 use crate::plugins::render::graph::{
     CompiledBindingEntry, CompiledBuiltinImport, CompiledDispatchPlan, CompiledPassBindings,
@@ -12,6 +11,7 @@ use crate::plugins::render::{
     PreparedViewFrame, RenderDynamicTextureTargetDescriptor, RenderDynamicTextureTargetKey,
     RenderResourceDeclaration, RenderTargetAliasKind, validate_compiled_flow_capabilities,
 };
+use runen_gpu::{GpuCapabilities, GpuWorkResourceId};
 use std::collections::hash_map::DefaultHasher;
 use std::collections::{BTreeMap, BTreeSet};
 use std::hash::{Hash, Hasher};

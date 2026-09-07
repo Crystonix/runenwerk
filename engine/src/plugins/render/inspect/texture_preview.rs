@@ -63,7 +63,7 @@ pub fn prepare_texture_preview_upload_proof(
         );
     }
     let upload = load_material_ktx2_upload(&request.binding)?;
-    let depth = upload.size.depth_or_array_layers.max(1);
+    let depth = upload.size.depth_or_layers().max(1);
     if request.selected_slice >= depth {
         anyhow::bail!(
             "texture preview selected slice {} is outside uploaded depth {}",
@@ -72,21 +72,21 @@ pub fn prepare_texture_preview_upload_proof(
         );
     }
     let upload_format = match upload.format {
-        wgpu::TextureFormat::Rgba8Unorm => RenderTextureTargetFormat::Rgba8Unorm,
-        wgpu::TextureFormat::Rgba8UnormSrgb => RenderTextureTargetFormat::Rgba8UnormSrgb,
+        runen_gpu::GpuTextureFormat::Rgba8Unorm => RenderTextureTargetFormat::Rgba8Unorm,
+        runen_gpu::GpuTextureFormat::Rgba8UnormSrgb => RenderTextureTargetFormat::Rgba8UnormSrgb,
         other => anyhow::bail!("texture preview unsupported upload format {other:?}"),
     };
     let rgba8 = slice_rgba8_preview(
         &upload.bytes,
-        upload.size.width,
-        upload.size.height,
+        upload.size.width(),
+        upload.size.height(),
         request.selected_slice,
         request.selected_channel,
     )?;
 
     Ok(TexturePreviewUploadProof {
-        width: upload.size.width,
-        height: upload.size.height,
+        width: upload.size.width(),
+        height: upload.size.height(),
         source_depth: depth,
         upload_format,
         selected_mip: request.selected_mip,

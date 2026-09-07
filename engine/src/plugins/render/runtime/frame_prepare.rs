@@ -1,4 +1,3 @@
-use crate::plugins::gpu::GpuWorkResourceId;
 use crate::plugins::render::backend::{RenderSurfaceLifecycleState, RenderSurfaceRegistryResource};
 use crate::plugins::render::inspect::RenderDebugTimingsState;
 use crate::plugins::render::*;
@@ -6,6 +5,7 @@ use crate::plugins::scene::SceneResource;
 use crate::runtime::{
     CatchupBudget, FixedTimeConfig, FixedTimeState, NativeWindowLifecycleState, WorldMut,
 };
+use runen_gpu::GpuWorkResourceId;
 use std::any::{Any, TypeId};
 use std::collections::{BTreeMap, BTreeSet};
 use std::time::Instant;

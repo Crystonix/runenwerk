@@ -3,9 +3,9 @@ use super::{
     RenderFragmentPackageDescriptor, RenderFragmentPackageId, RenderFragmentRevision,
     validate_fragment_package,
 };
-use crate::plugins::gpu::GpuCapabilities;
 use crate::plugins::render::RenderFlow;
 use crate::plugins::render::graph::{RenderFragmentMergeError, merge_fragment_package_into_flow};
+use runen_gpu::GpuCapabilities;
 use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
