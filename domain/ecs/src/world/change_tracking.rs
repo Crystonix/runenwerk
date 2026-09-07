@@ -1,4 +1,3 @@
-// Owner: ecs World - Change Tracking Types
 use crate::entity::Entity;
 use std::any::TypeId;
 
@@ -59,4 +58,13 @@ pub(super) struct ComponentMeta {
 pub(super) struct ResourceMeta {
     pub(super) id: ResourceTypeKey,
     pub(super) name: &'static str,
+}
+
+impl super::World {
+    /// Advance the frame index used exclusively by component/resource change records.
+    ///
+    /// Runenwerk calls this only after the complete host `FrameEnd` schedule succeeds.
+    pub fn advance_change_frame(&mut self) {
+        self.current_frame_index = self.current_frame_index.saturating_add(1);
+    }
 }
