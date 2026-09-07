@@ -239,13 +239,16 @@ where
                 .copied()
                 .unwrap_or_default();
             let mut lagged = 0u64;
-            for command in decoded {
-                if frame.tick <= current_tick {
-                    lagged = lagged.saturating_add(1);
-                    continue;
-                }
+            {
+                let staging = world
+                    .resource_mut::<NetworkInputStaging<TDriver::Input>>()
+                    .context("NetworkInputStaging should be installed by NetPlugin")?;
+                for command in decoded {
+                    if frame.tick <= current_tick {
+                        lagged = lagged.saturating_add(1);
+                        continue;
+                    }
 
-                if let Ok(staging) = world.resource_mut::<NetworkInputStaging<TDriver::Input>>() {
                     if let Err(NetworkInputStageError::Backpressure { capacity, .. }) =
                         staging.stage(frame.tick, command)
                     {
@@ -255,11 +258,6 @@ where
                             "network input staging backpressure; rejecting remote input"
                         );
                     }
-                } else {
-                    tracing::warn!(
-                        tick = frame.tick.0,
-                        "network input staging resource is unavailable"
-                    );
                 }
             }
             if lagged > 0
