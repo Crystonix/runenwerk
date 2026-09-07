@@ -93,9 +93,11 @@ No dependency cycle is allowed.
 | RunenRender | current Runenwerk render integration consumes the accepted RunenGPU public API | separately bounded R-phase work remains required before external RunenRender cutover |
 | RunenUI | independent repository/workstream | governed in RunenUI |
 
-Runenwerk's GPU consumer cutover is recorded by the accepted issue/PR handoff and
-the exact dependency revision in the workspace manifest and lockfile. The deleted
-in-tree GPU implementation is no longer a second source authority.
+RunenGPU semantic authority is already the accepted successor revision. Runenwerk's
+physical consumer cutover is governed separately by issue `#449` and is accepted only
+when the merged Runenwerk revision passes accepted-main validation. The workspace
+manifest and lockfile are implementation evidence, not downstream acceptance on their
+own.
 
 Current source location is implementation evidence, not permanent ownership.
 
