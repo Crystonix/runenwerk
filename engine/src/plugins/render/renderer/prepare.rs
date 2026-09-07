@@ -9,9 +9,8 @@ use crate::plugins::render::texture_upload::load_material_ktx2_upload;
 use crate::plugins::{PreparedUiFrameContribution, RenderFeatureId};
 use runen_gpu::{
     GpuBufferRange, GpuBufferRegion, GpuBufferUsage, GpuCopyExtent, GpuMemoryIntent,
-    GpuResourceLifetime, GpuTextureAspect, GpuTextureCopyRegion, GpuTextureDimension,
-    GpuTextureHandle, GpuTextureOrigin, GpuTextureUsage, GpuUploadOperation, PreparedGpuData,
-    TransferData,
+    GpuResourceLifetime, GpuTextureAspect, GpuTextureCopyRegion, GpuTextureHandle,
+    GpuTextureOrigin, GpuTextureUsage, GpuUploadOperation, PreparedGpuData, TransferData,
 };
 use std::hash::{Hash, Hasher};
 
@@ -1267,7 +1266,7 @@ mod tests {
         PreparedMaterialTextureBinding, PreparedMaterialTextureBindingLocation,
         PreparedMaterialTextureKind,
     };
-    use runen_gpu::GpuTransferRegion;
+    use runen_gpu::{GpuTextureDimension, GpuTransferRegion};
 
     #[test]
     fn pending_buffer_upload_retains_exact_logical_destination_and_payload() {
