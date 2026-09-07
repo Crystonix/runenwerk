@@ -85,7 +85,8 @@ G1A logical resource identity
                                         -> G6 representative breadth, scale, ergonomics, offscreen proof, and cost characterization
                                             -> G7B complete surface/device loss, generations, reconstruction, and retained-state continuity
                                                 -> G8 operational, diagnostics, browser, backend-neutrality, extension, and no-reach-through conformance
-                                                    -> GX standalone release and transfer to dornglut/runen-gpu (complete; accepted revision `77c7c8d5ad6922b6f46c6b25e31b1a224c1314a4`)
+                                                    -> GX standalone successor acceptance
+                                                        -> exact-revision Runenwerk consumer cutover and predecessor deletion
 ```
 
 `G3R` and `G4R` are corrective predecessor phases discovered by G5 owner review. They are
