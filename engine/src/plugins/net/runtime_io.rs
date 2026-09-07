@@ -151,6 +151,7 @@ pub fn server_receive_system<TDriver>(mut world: WorldMut) -> anyhow::Result<()>
 where
     TDriver: ReplicationDriver + InputDriver + Send + Sync + 'static,
     TDriver::Snapshot: Clone + PartialEq,
+    TDriver::Input: Clone + PartialEq,
 {
     let messages = drain_server_inbox(&mut world);
     if messages.is_empty() {
