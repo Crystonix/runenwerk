@@ -12,13 +12,13 @@ struct WorldGroup<'w> {
 }
 
 #[derive(ecs::SystemParam)]
-struct ReaderGroup<'w, 's> {
-    reader: ecs::BroadcastReader<'w, 's, u32>,
+struct QueryGroup<'w, 's> {
+    query: ecs::Query<'w, 's, ecs::Entity>,
 }
 
 #[derive(ecs::SystemParam)]
-struct NestedReaderGroup<'w, 's> {
-    inner: ReaderGroup<'w, 's>,
+struct NestedQueryGroup<'w, 's> {
+    inner: QueryGroup<'w, 's>,
 }
 
 #[derive(ecs::SystemParam)]
@@ -36,8 +36,8 @@ fn assert_param<P: ecs::SystemParam>() {}
 
 fn main() {
     assert_param::<WorldGroup<'static>>();
-    assert_param::<ReaderGroup<'static, 'static>>();
-    assert_param::<NestedReaderGroup<'static, 'static>>();
+    assert_param::<QueryGroup<'static, 'static>>();
+    assert_param::<NestedQueryGroup<'static, 'static>>();
     assert_param::<GenericConstGroup<'static, Counter, 3>>();
     assert_param::<GeneratedNameCollision<'static, Counter>>();
 }
