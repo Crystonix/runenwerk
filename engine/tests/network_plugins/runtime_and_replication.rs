@@ -1,4 +1,45 @@
 // Owner: Engine Networking Tests - Runtime and Replication
+#[derive(Debug, Copy, Clone, Default, ecs::Resource)]
+struct BackpressureFrameDelta(f32);
+
+fn apply_backpressure_frame_delta(
+    frame_delta: Res<BackpressureFrameDelta>,
+    mut time: ResMut<Time>,
+) {
+    time.delta_seconds = frame_delta.0;
+}
+
+fn install_backpressure_test_clock(app: &mut App) {
+    app.init_resource::<BackpressureFrameDelta>();
+    app.add_systems(
+        PreUpdate,
+        apply_backpressure_frame_delta.after(CoreSet::Time),
+    );
+}
+
+fn run_backpressure_protocol_frame(mut app: App, context: &str) -> App {
+    app.world_mut()
+        .resource_mut::<BackpressureFrameDelta>()
+        .expect("backpressure test clock should be installed")
+        .0 = 0.0;
+    app.run_for_frames(1)
+        .unwrap_or_else(|error| panic!("{context}: {error:#}"))
+}
+
+fn run_backpressure_fixed_tick(mut app: App, context: &str) -> App {
+    let step_seconds = app
+        .world()
+        .resource::<FixedTimeConfig>()
+        .expect("fixed-time config should be installed")
+        .step_seconds;
+    app.world_mut()
+        .resource_mut::<BackpressureFrameDelta>()
+        .expect("backpressure test clock should be installed")
+        .0 = step_seconds;
+    app.run_for_frames(1)
+        .unwrap_or_else(|error| panic!("{context}: {error:#}"))
+}
+
 #[test]
 fn server_replication_emits_scene_snapshot_payloads_for_runennet_connection() {
     let mut app = App::headless();
@@ -161,4 +202,167 @@ fn prediction_replay_updates_prediction_diagnostics_counter() {
     let diagnostics = client.world().resource::<PredictionDiagnostics>().unwrap();
     assert_eq!(diagnostics.corrected, 1);
     assert_eq!(diagnostics.replayed, 1);
+}
+
+#[test]
+fn client_outbox_backpressure_does_not_record_unsent_prediction_frame() {
+    let mut client = App::headless();
+    client.add_plugins(default_plugins());
+    client.add_plugins((ScenePlugin, NetworkClientPlugin));
+    for index in 0..4_096usize {
+        enqueue_client_outbox(client.world_mut(), client_probe((index % 251) as u8))
+            .expect("client outbox should fill through its configured capacity");
+    }
+
+    let command = ClientCommandEnvelope::Ability(AbilityCommand { slot: 41 });
+    client
+        .world_mut()
+        .resource_mut::<PlayerCommandBuffer>()
+        .unwrap()
+        .push(command.clone());
+
+    let client = client
+        .run_for_ticks(1)
+        .expect("client prediction tick should survive outbox backpressure");
+
+    assert_eq!(
+        client
+            .world()
+            .resource::<PredictionState>()
+            .unwrap()
+            .pending_frames_len(),
+        0,
+        "a frame rejected by the client outbox must not enter prediction replay history"
+    );
+    assert_eq!(
+        client.world().resource::<AppliedInputLog>().unwrap().inputs,
+        vec![command],
+        "staging-accepted local input still applies locally"
+    );
+    let outbound = client.world().resource::<NetworkOutboundQueue>().unwrap();
+    assert_eq!(outbound.client_messages().len(), 4_096);
+    assert!(
+        outbound
+            .client_messages()
+            .iter()
+            .all(|message| !matches!(message, ClientMessage::InputFrame(_)))
+    );
+}
+
+#[test]
+fn server_outbox_backpressure_does_not_mark_rejected_snapshot_as_sent() {
+    let mut server = App::headless();
+    server.add_plugins(default_plugins());
+    server.add_plugins((ScenePlugin, NetworkServerPlugin));
+    let connection = ConnectionHandle::new(1);
+    install_runennet_connections(&mut server, &[(connection, ParticipantId::new(1))]);
+    for index in 0..4_096usize {
+        enqueue_server_outbox_broadcast(server.world_mut(), server_probe((index % 251) as u8))
+            .expect("server outbox should fill through its configured capacity");
+    }
+
+    let server = server
+        .run_for_ticks(1)
+        .expect("server replication tick should survive outbox backpressure");
+
+    let state = server.world().resource::<ServerSnapshotState>().unwrap();
+    let checkpoint = state
+        .checkpoints
+        .get(&connection)
+        .expect("replication should establish connection checkpoint state");
+    assert_eq!(checkpoint.last_sent_cursor, SnapshotCursor::default());
+    assert!(checkpoint.sent_cursors.is_empty());
+    assert!(checkpoint.needs_full_resync);
+
+    let streaming = server
+        .world()
+        .resource::<engine::plugins::net::NetStreamingStateResource>()
+        .unwrap();
+    let streaming_state = streaming
+        .per_connection
+        .get(&connection)
+        .expect("streaming state should exist for admitted connection");
+    assert_eq!(streaming_state.last_sent_cursor.0, 0);
+    assert!(streaming_state.pending_cursor_markers.is_empty());
+    assert!(streaming_state.needs_full_resync);
+
+    let diagnostics = server.world().resource::<ReplicationDiagnostics>().unwrap();
+    assert_eq!(diagnostics.last_snapshot_cursor, 1);
+    assert_eq!(diagnostics.emitted_snapshots, 0);
+
+    let outbound = server.world().resource::<NetworkOutboundQueue>().unwrap();
+    assert_eq!(outbound.server_messages().len(), 4_096);
+    assert!(outbound.server_messages().iter().all(
+        |message| matches!(message, OutboundServerMessage::Broadcast(ServerMessage::TypedPayload(_)))
+    ));
+}
+
+#[test]
+fn saturated_input_staging_does_not_send_or_record_rejected_local_input() {
+    let mut host = App::headless();
+    host.add_plugins(default_plugins());
+    host.add_plugins((ScenePlugin, NetworkHostPlugin));
+    install_backpressure_test_clock(&mut host);
+    let connection = ConnectionHandle::new(1);
+    install_runennet_connections(&mut host, &[(connection, ParticipantId::new(1))]);
+
+    let remote_inputs = (0..4_096usize)
+        .map(|index| {
+            ClientCommandEnvelope::Ability(AbilityCommand {
+                slot: (index % 251) as u8,
+            })
+        })
+        .collect::<Vec<_>>();
+    let payload = TestReplicationDriver::encode_input(&remote_inputs)
+        .expect("remote saturation payload should encode");
+    enqueue_server_inbox_from(
+        host.world_mut(),
+        Some(connection),
+        ClientMessage::InputFrame(InputFrame {
+            tick: SimulationTick(2),
+            payload,
+        }),
+    )
+    .expect("future remote saturation frame should enqueue");
+
+    let mut host = run_backpressure_protocol_frame(
+        host,
+        "future remote inputs should saturate private input staging",
+    );
+    assert_eq!(
+        *host.world().resource::<SimulationTick>().unwrap(),
+        SimulationTick(0)
+    );
+
+    host.world_mut()
+        .resource_mut::<PlayerCommandBuffer>()
+        .unwrap()
+        .push(ClientCommandEnvelope::Ability(AbilityCommand { slot: 252 }));
+    let host = run_backpressure_fixed_tick(
+        host,
+        "local input rejected by saturated staging should not escape staging",
+    );
+
+    assert_eq!(
+        *host.world().resource::<SimulationTick>().unwrap(),
+        SimulationTick(1)
+    );
+    assert_eq!(
+        host.world()
+            .resource::<PredictionState>()
+            .unwrap()
+            .pending_frames_len(),
+        0
+    );
+    assert!(
+        host.world().resource::<AppliedInputLog>().is_err(),
+        "staging-rejected local input must not be applied"
+    );
+    let outbound = host.world().resource::<NetworkOutboundQueue>().unwrap();
+    assert!(
+        outbound
+            .client_messages()
+            .iter()
+            .all(|message| !matches!(message, ClientMessage::InputFrame(_)))
+    );
 }
