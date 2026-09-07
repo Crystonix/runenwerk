@@ -314,8 +314,7 @@ Required proof:
 
 - region-relative or view-relative GPU preparation without losing source-space
   provenance;
-- spatial and temporal change evidence expressed through the accepted R2 semantics;
-- dynamic-input generation and availability change evidence;
+- spatial and temporal scene-change evidence expressed through accepted R2 semantics;
 - time-varying input validation;
 - typed GPU-produced simulation input with inferred RunenGPU causality and no CPU
   readback;
@@ -367,7 +366,6 @@ Required proof:
 - deterministic representation selection;
 - stable `RenderObjectId` across `RenderRepresentation` replacement;
 - representation-offer, availability, and residency change evidence;
-- exact change evidence for representation replacement;
 - no per-query dynamic-dispatch requirement in GPU hot paths;
 - protocol-version mismatch and unsupported outcomes;
 - unrelated protocols do not widen existing implementations.
