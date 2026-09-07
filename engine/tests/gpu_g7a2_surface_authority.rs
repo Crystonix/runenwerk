@@ -8,10 +8,9 @@ fn renderer_surface_host_routes_through_public_runengpu_without_a_raw_renderer_b
     let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let host = fs::read_to_string(manifest.join("src/plugins/render/backend/wgpu_ctx.rs"))
         .expect("Runenwerk surface host adapter should remain readable");
-    let execute = fs::read_to_string(
-        manifest.join("src/plugins/render/renderer/render_flow/execute.rs"),
-    )
-    .expect("renderer execution source should remain readable");
+    let execute =
+        fs::read_to_string(manifest.join("src/plugins/render/renderer/render_flow/execute.rs"))
+            .expect("renderer execution source should remain readable");
 
     for required in [
         "GpuContext",
