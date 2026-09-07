@@ -5,7 +5,7 @@ status: active
 owner: render
 layer: engine/render
 canonical: true
-last_reviewed: 2026-08-05
+last_reviewed: 2026-09-07
 related_docs:
   - ./runengpu-architecture-design.md
   - ./runengpu-g3-access-work-graph-design.md
@@ -289,8 +289,8 @@ Required proof:
 
 - equivalent full and incremental construction;
 - deterministic replacement, removal, relationship update, and producer retirement;
-- stable semantic object identity across representation replacement;
-- additions, removals, property, relationship, spatial, temporal, availability, and
+- stable semantic object identity across ordinary R1 object replacement and update;
+- additions, removals, R1-owned property and relationship changes, and
   full-resynchronization change evidence;
 - small-change cost characterized against total scene size;
 - at least two independent producer families;
@@ -314,7 +314,7 @@ Required proof:
 
 - region-relative or view-relative GPU preparation without losing source-space
   provenance;
-- exact/conservative/approximate/invalid transform evidence for field representations;
+- spatial and temporal scene-change evidence expressed through accepted R2 semantics;
 - time-varying input validation;
 - typed GPU-produced simulation input with inferred RunenGPU causality and no CPU
   readback;
@@ -359,9 +359,13 @@ Required proof:
 
 - exact analytic hit;
 - conservative field query with bounded termination/error evidence;
+- exact/conservative/approximate/invalid transform evidence for the field/SDF
+  representation;
 - footprint-driven refinement decision;
 - valid coarse fallback under missing fine residency;
 - deterministic representation selection;
+- stable `RenderObjectId` across `RenderRepresentation` replacement;
+- representation-offer, availability, and residency change evidence;
 - no per-query dynamic-dispatch requirement in GPU hot paths;
 - protocol-version mismatch and unsupported outcomes;
 - unrelated protocols do not widen existing implementations.
