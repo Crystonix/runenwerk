@@ -50,9 +50,6 @@ struct Marker(u32);
 #[derive(Debug, Copy, Clone, PartialEq, Eq, ecs::Component, ecs::Resource)]
 struct Extra(i32);
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, ecs::Component, ecs::Resource)]
-struct Toggle;
-
 #[derive(Debug, Clone, PartialEq, Eq, ecs::Component, ecs::Resource)]
 struct IndexedName(String);
 
@@ -180,9 +177,11 @@ fn runtime_honors_in_set_before_and_after_ordering() {
     fn run_before_set() {
         push_run_order("before");
     }
+
     fn run_in_set() {
         push_run_order("in_set");
     }
+
     fn run_after_set() {
         push_run_order("after");
     }
@@ -196,6 +195,10 @@ fn runtime_honors_in_set_before_and_after_ordering() {
 
     let plan = runtime.plan_for::<Update>().unwrap().clone();
     assert_eq!(plan.stages.len(), 3);
+    assert_eq!(plan.stages[0].system_indices.len(), 1);
+    assert_eq!(plan.stages[1].system_indices.len(), 1);
+    assert_eq!(plan.stages[2].system_indices.len(), 1);
+
     runtime.run_schedule::<Update>(&mut world).unwrap();
     assert_eq!(snapshot_run_order(), vec!["before", "in_set", "after"]);
 }
@@ -213,12 +216,14 @@ fn derived_named_param_group_executes_and_reports_named_children() {
     let mut runtime = Runtime::new();
     runtime.add_systems::<Update, _, _>(&mut world, use_group);
     runtime.run_schedule::<Update>(&mut world).unwrap();
+
     assert_eq!(world.resource::<SeenCount>().unwrap().0, 42);
 
     let system_id = runtime.scheduler().systems()[0].id();
     let slots = runtime.param_slots_for_system(system_id).unwrap();
     assert_eq!(slots.len(), 1);
     assert_eq!(slots[0].kind, "param_group");
+    assert!(slots[0].type_name.contains("CounterParamGroup<'_>"));
     assert_eq!(slots[0].id.path.as_slice(), [0]);
     assert_eq!(slots[0].children.len(), 2);
     assert_eq!(slots[0].children[0].name, Some("step"));
@@ -238,13 +243,18 @@ fn generic_named_param_group_executes_and_reports_named_children() {
     let mut world = World::new();
     world.insert_resource(Step(41));
     world.insert_resource(SeenCount(0));
+
     let mut runtime = Runtime::new();
     runtime.add_systems::<Update, _, _>(&mut world, use_generic_group);
     runtime.run_schedule::<Update>(&mut world).unwrap();
+
     assert_eq!(world.resource::<SeenCount>().unwrap().0, 42);
 
     let system_id = runtime.scheduler().systems()[0].id();
     let slots = runtime.param_slots_for_system(system_id).unwrap();
+    assert_eq!(slots.len(), 1);
+    assert_eq!(slots[0].kind, "param_group");
+    assert!(slots[0].type_name.contains("GenericParamGroup"));
     assert_eq!(slots[0].children[0].name, Some("value"));
     assert_eq!(slots[0].children[0].kind, "res");
     assert_eq!(slots[0].children[1].name, Some("seen"));
@@ -261,9 +271,11 @@ fn derive_handles_user_lifetime_named_w() {
     let mut world = World::new();
     world.insert_resource(Step(41));
     world.insert_resource(SeenCount(0));
+
     let mut runtime = Runtime::new();
     runtime.add_systems::<Update, _, _>(&mut world, use_lifetime_group);
     runtime.run_schedule::<Update>(&mut world).unwrap();
+
     assert_eq!(world.resource::<SeenCount>().unwrap().0, 42);
 }
 
@@ -276,14 +288,23 @@ fn nested_param_group_reports_recursive_child_paths() {
     let mut world = World::new();
     world.insert_resource(Step(40));
     world.insert_resource(SeenCount(0));
+
     let mut runtime = Runtime::new();
     runtime.add_systems::<Update, _, _>(&mut world, use_nested_group);
     runtime.run_schedule::<Update>(&mut world).unwrap();
 
-    let report = runtime.plan_report_for::<Update>().unwrap();
+    assert_eq!(world.resource::<SeenCount>().unwrap().0, 42);
+
+    let report = runtime
+        .plan_report_for::<Update>()
+        .expect("update plan report should exist");
     let slot = &report.stages[0].systems[0].param_slots[0];
     assert_eq!(slot.kind, "param_group");
+    assert_eq!(slot.name, None);
+    assert_eq!(slot.id.path.as_slice(), [0]);
     assert_eq!(slot.children[0].name, Some("inner"));
+    assert_eq!(slot.children[0].kind, "param_group");
+    assert_eq!(slot.children[0].id.path.as_slice(), [0, 0]);
     assert_eq!(slot.children[0].children[0].name, Some("step"));
     assert_eq!(slot.children[0].children[0].id.path.as_slice(), [0, 0, 0]);
     assert_eq!(slot.children[1].name, Some("seen"));
@@ -299,16 +320,22 @@ fn tuple_param_group_reports_indexed_children_and_executes() {
     let mut world = World::new();
     world.insert_resource(Step(39));
     world.insert_resource(SeenCount(0));
+
     let mut runtime = Runtime::new();
     runtime.add_systems::<Update, _, _>(&mut world, use_tuple_group);
     runtime.run_schedule::<Update>(&mut world).unwrap();
+
     assert_eq!(world.resource::<SeenCount>().unwrap().0, 42);
 
     let system_id = runtime.scheduler().systems()[0].id();
     let slots = runtime.param_slots_for_system(system_id).unwrap();
+    assert_eq!(slots.len(), 1);
     assert_eq!(slots[0].kind, "tuple");
+    assert_eq!(slots[0].children.len(), 2);
     assert_eq!(slots[0].children[0].name, Some("0"));
+    assert_eq!(slots[0].children[0].id.path.as_slice(), [0, 0]);
     assert_eq!(slots[0].children[1].name, Some("1"));
+    assert_eq!(slots[0].children[1].id.path.as_slice(), [0, 1]);
 }
 
 #[test]
@@ -338,6 +365,7 @@ fn system_ids_and_param_slot_ids_are_stable_and_skip_failed_registration() {
     let mut world = World::new();
     world.insert_resource(Step(0));
     world.insert_resource(SeenCount(0));
+
     let mut runtime = Runtime::new();
     runtime.add_systems::<Update, _, _>(&mut world, (valid_a, invalid, valid_b));
 
@@ -347,19 +375,34 @@ fn system_ids_and_param_slot_ids_are_stable_and_skip_failed_registration() {
         .iter()
         .map(|system| system.id().as_raw())
         .collect();
-    assert_eq!(ids, vec![0, 1]);
+    assert_eq!(
+        ids,
+        vec![0, 1],
+        "failed registration must not consume system IDs"
+    );
+
+    let plan = runtime.plan_for::<Update>().unwrap().clone();
+    let planned_ids: Vec<u64> = plan
+        .stages
+        .iter()
+        .flat_map(|stage| stage.system_ids.iter().map(|id| id.as_raw()))
+        .collect();
+    assert_eq!(planned_ids, vec![0, 1]);
 
     let first_id = runtime.scheduler().systems()[0].id();
     let first_slots = runtime.param_slots_for_system(first_id).unwrap();
-    assert_eq!(first_slots[0].kind, "res");
+    assert_eq!(first_slots.len(), 1);
+    assert_eq!(first_slots[0].id.system_id.as_raw(), first_id.as_raw());
     assert_eq!(first_slots[0].id.path.as_slice(), [0]);
+    assert_eq!(first_slots[0].kind, "res");
 
     let second_id = runtime.scheduler().systems()[1].id();
     let second_slots = runtime.param_slots_for_system(second_id).unwrap();
     assert_eq!(second_slots.len(), 2);
+    assert_eq!(second_slots[0].id.path.as_slice(), [0]);
+    assert_eq!(second_slots[1].id.path.as_slice(), [1]);
     assert_eq!(second_slots[0].kind, "res");
     assert_eq!(second_slots[1].kind, "res");
-    assert_eq!(second_slots[1].id.path.as_slice(), [1]);
 }
 
 #[test]
@@ -367,11 +410,13 @@ fn runtime_plan_report_exposes_system_slots_and_product_barriers() {
     fn stage_product(_step: Res<Step>, mut seen: ResMut<SeenCount>) {
         seen.0 = seen.0.saturating_add(1);
     }
+
     fn consume_product(_seen: Res<SeenCount>) {}
 
     let mut world = World::new();
     world.insert_resource(Step(0));
     world.insert_resource(SeenCount(0));
+
     let mut runtime = Runtime::new();
     runtime.add_systems::<Update, _, _>(&mut world, stage_product.in_set(GameplaySet));
     runtime.add_systems::<Update, _, _>(
@@ -379,17 +424,31 @@ fn runtime_plan_report_exposes_system_slots_and_product_barriers() {
         consume_product.in_set(PostGameplaySet).after(GameplaySet),
     );
 
-    let report = runtime.plan_report_for::<Update>().unwrap();
+    let report = runtime
+        .plan_report_for::<Update>()
+        .expect("update plan report should exist");
+
     assert_eq!(report.schedule_label, "Update");
     assert_eq!(report.phase.kind, ExecutionPhaseKind::Update);
     assert_eq!(report.stages.len(), 2);
     assert_eq!(report.waves.len(), 2);
+    assert!(report.stages[0].missing_system_indices.is_empty());
+    assert!(report.waves[0].missing_system_indices.is_empty());
 
     let producer = &report.stages[0].systems[0];
+    assert_eq!(producer.system_id.as_raw(), 0);
+    assert!(producer.name.contains("stage_product"));
     assert_eq!(producer.param_slots.len(), 2);
     assert_eq!(producer.param_slots[0].kind, "res");
+    assert_eq!(producer.param_slots[0].id.system_id, producer.system_id);
+    assert_eq!(producer.param_slots[0].id.path.as_slice(), [0]);
     assert_eq!(producer.param_slots[1].kind, "res_mut");
+    assert_eq!(producer.param_slots[1].id.system_id, producer.system_id);
+    assert_eq!(producer.param_slots[1].id.path.as_slice(), [1]);
+
     let consumer = &report.stages[1].systems[0];
+    assert_eq!(consumer.system_id.as_raw(), 1);
+    assert!(consumer.name.contains("consume_product"));
     assert_eq!(consumer.param_slots.len(), 1);
     assert_eq!(consumer.param_slots[0].kind, "res");
 
@@ -399,6 +458,18 @@ fn runtime_plan_report_exposes_system_slots_and_product_barriers() {
         assert_eq!(wave.barriers[1].kind, BarrierKind::ProductPublication);
         assert_eq!(wave.barriers[2].kind, BarrierKind::QuerySnapshotPublication);
     }
+
+    let product_barrier_waves = report
+        .product_publication_barriers()
+        .map(|barrier| barrier.after_wave_index)
+        .collect::<Vec<_>>();
+    assert_eq!(product_barrier_waves, vec![Some(0), Some(1)]);
+
+    let query_snapshot_barrier_waves = report
+        .query_snapshot_publication_barriers()
+        .map(|barrier| barrier.after_wave_index)
+        .collect::<Vec<_>>();
+    assert_eq!(query_snapshot_barrier_waves, vec![Some(0), Some(1)]);
 }
 
 #[test]
@@ -411,9 +482,14 @@ fn runtime_plan_report_exposes_conflict_diagnostics_with_access_labels() {
     let mut runtime = Runtime::new();
     runtime.add_systems::<Update, _, _>(&mut world, (read_seen, write_seen));
 
-    let report = runtime.plan_report_for::<Update>().unwrap();
+    let report = runtime
+        .plan_report_for::<Update>()
+        .expect("update plan report should exist");
     assert_eq!(report.conflicts.len(), 1);
+
     let conflict = &report.conflicts[0];
+    assert_eq!(conflict.first_system_id.as_raw(), 0);
+    assert_eq!(conflict.second_system_id.as_raw(), 1);
     assert!(conflict.first_system.contains("read_seen"));
     assert!(conflict.second_system.contains("write_seen"));
     assert_eq!(conflict.access_domain, AccessDomain::Resource);
@@ -428,24 +504,31 @@ fn structural_command_systems_share_stage_and_merge_deterministically() {
     fn enqueue_first(mut commands: Commands) {
         commands.spawn(Marker(1));
     }
+
     fn enqueue_second(mut commands: Commands) {
         commands.spawn(Marker(2));
     }
+
     fn observe_stage_visibility(mut seen: ResMut<SeenCount>, mut query: Query<&Marker>) {
         seen.0 = query.iter().count() as u32;
     }
 
     let mut world = World::new();
     world.insert_resource(SeenCount(99));
+
     let mut runtime = Runtime::new();
     runtime.add_systems::<Update, _, _>(
         &mut world,
         (enqueue_first, enqueue_second, observe_stage_visibility),
     );
+
     let plan = runtime.plan_for::<Update>().unwrap().clone();
     assert_eq!(plan.conflicts.len(), 0);
     assert_eq!(plan.stages.len(), 1);
+    assert_eq!(plan.stages[0].system_indices.len(), 3);
+
     runtime.run_schedule::<Update>(&mut world).unwrap();
+
     assert_eq!(world.resource::<SeenCount>().unwrap().0, 0);
     let values: Vec<_> = world
         .query_state::<&Marker, ()>()
@@ -460,12 +543,14 @@ fn command_flush_occurs_at_stage_boundary() {
     fn enqueue_stage(mut commands: Commands) {
         commands.spawn(Marker(7));
     }
+
     fn observe_followup_stage(mut seen: ResMut<SeenCount>, mut query: Query<&Marker>) {
         seen.0 = query.iter().count() as u32;
     }
 
     let mut world = World::new();
     world.insert_resource(SeenCount(0));
+
     let mut runtime = Runtime::new();
     runtime.add_systems::<Update, _, _>(&mut world, enqueue_stage.in_set(GameplaySet));
     runtime.add_systems::<Update, _, _>(
@@ -474,12 +559,24 @@ fn command_flush_occurs_at_stage_boundary() {
             .in_set(PostGameplaySet)
             .after(GameplaySet),
     );
+
     let plan = runtime.plan_for::<Update>().unwrap().clone();
     assert_eq!(plan.stages.len(), 2);
+    assert_eq!(plan.waves.len(), 2);
     assert_eq!(plan.barriers.len(), 6);
     assert_eq!(plan.barriers[0].kind, BarrierKind::ApplyDeferredCommands);
+    assert_eq!(plan.barriers[0].after_wave_index, Some(0));
     assert_eq!(plan.barriers[1].kind, BarrierKind::ProductPublication);
+    assert_eq!(plan.barriers[1].after_wave_index, Some(0));
     assert_eq!(plan.barriers[2].kind, BarrierKind::QuerySnapshotPublication);
+    assert_eq!(plan.barriers[2].after_wave_index, Some(0));
+    assert_eq!(plan.barriers[3].kind, BarrierKind::ApplyDeferredCommands);
+    assert_eq!(plan.barriers[3].after_wave_index, Some(1));
+    assert_eq!(plan.barriers[4].kind, BarrierKind::ProductPublication);
+    assert_eq!(plan.barriers[4].after_wave_index, Some(1));
+    assert_eq!(plan.barriers[5].kind, BarrierKind::QuerySnapshotPublication);
+    assert_eq!(plan.barriers[5].after_wave_index, Some(1));
+
     runtime.run_schedule::<Update>(&mut world).unwrap();
     assert_eq!(world.resource::<SeenCount>().unwrap().0, 1);
 }
@@ -491,6 +588,7 @@ fn registered_product_publication_barrier_handler_runs_after_each_wave() {
 
     let mut world = World::new();
     world.insert_resource(BarrierLog(Vec::new()));
+
     let mut runtime = Runtime::new();
     runtime.add_barrier_handler(BarrierKind::ProductPublication, |barrier, world| {
         world
@@ -502,7 +600,9 @@ fn registered_product_publication_barrier_handler_runs_after_each_wave() {
     runtime.add_systems::<Update, _, _>(&mut world, before.in_set(GameplaySet));
     runtime
         .add_systems::<Update, _, _>(&mut world, after.in_set(PostGameplaySet).after(GameplaySet));
+
     runtime.run_schedule::<Update>(&mut world).unwrap();
+
     assert_eq!(
         world.resource::<BarrierLog>().unwrap().0,
         vec![
@@ -520,7 +620,10 @@ fn closure_commands_queue_api_remains_functional() {
         let _ = world.spawn(Marker(33))?;
         Ok(())
     });
+
+    assert_eq!(world.query_state::<&Marker, ()>().iter(&world).count(), 0);
     commands.apply(&mut world).unwrap();
+
     let values: Vec<_> = world
         .query_state::<&Marker, ()>()
         .iter(&world)
@@ -534,7 +637,10 @@ fn typed_deferred_commands_apply_correctly() {
     let mut world = World::new();
     let mut commands = world.commands();
     commands.defer(SpawnMarkerDeferred(77));
+
+    assert_eq!(world.query_state::<&Marker, ()>().iter(&world).count(), 0);
     commands.apply(&mut world).unwrap();
+
     let values: Vec<_> = world
         .query_state::<&Marker, ()>()
         .iter(&world)
@@ -554,7 +660,9 @@ fn mixed_legacy_and_typed_commands_apply_in_deterministic_order() {
         Ok(())
     });
     commands.defer(SpawnMarkerDeferred(4));
+
     commands.apply(&mut world).unwrap();
+
     let values: Vec<_> = world
         .query_state::<&Marker, ()>()
         .iter(&world)
@@ -575,7 +683,9 @@ fn batch_commands_apply_in_deterministic_insertion_order() {
             Ok(())
         });
     });
+
     commands.apply(&mut world).unwrap();
+
     let values: Vec<_> = world
         .query_state::<&Marker, ()>()
         .iter(&world)
@@ -587,19 +697,51 @@ fn batch_commands_apply_in_deterministic_insertion_order() {
 #[test]
 fn batch_commands_do_not_mutate_before_stage_flush() {
     fn enqueue_batch(mut commands: Commands) {
-        commands.batch(|batch| batch.spawn(Marker(9)));
+        commands.batch(|batch| {
+            batch.spawn(Marker(9));
+        });
     }
+
     fn observe_same_stage(mut seen: ResMut<SeenCount>, mut query: Query<&Marker>) {
         seen.0 = query.iter().count() as u32;
     }
 
     let mut world = World::new();
     world.insert_resource(SeenCount(99));
+
     let mut runtime = Runtime::new();
     runtime.add_systems::<Update, _, _>(&mut world, (enqueue_batch, observe_same_stage));
+
     runtime.run_schedule::<Update>(&mut world).unwrap();
+
     assert_eq!(world.resource::<SeenCount>().unwrap().0, 0);
     assert_eq!(world.query_state::<&Marker, ()>().iter(&world).count(), 1);
+}
+
+#[test]
+fn batch_and_non_batch_commands_share_queue_order_deterministically() {
+    let mut world = World::new();
+    let mut commands = world.commands();
+    commands.spawn(Marker(1));
+    commands.batch(|batch| {
+        batch.spawn(Marker(2));
+    });
+    commands.queue(|world| {
+        let _ = world.spawn(Marker(3))?;
+        Ok(())
+    });
+    commands.batch(|batch| {
+        batch.defer(SpawnMarkerDeferred(4));
+    });
+
+    commands.apply(&mut world).unwrap();
+
+    let values: Vec<_> = world
+        .query_state::<&Marker, ()>()
+        .iter(&world)
+        .map(|marker| marker.0)
+        .collect();
+    assert_eq!(values, vec![1, 2, 3, 4]);
 }
 
 #[test]
@@ -615,6 +757,7 @@ fn batch_supports_mixed_command_kinds() {
         batch.defer(InsertExtraDeferred { entity, value: 6 });
         batch.remove::<Extra>(entity);
     });
+
     commands.apply(&mut world).unwrap();
     assert!(world.get::<Extra>(entity).is_none());
 }
@@ -629,6 +772,7 @@ fn batch_stops_on_first_error_and_keeps_earlier_mutations() {
         batch.remove::<Extra>(target);
         batch.spawn(Marker(11));
     });
+
     let result = commands.apply(&mut world);
     assert!(matches!(
         result,
@@ -636,6 +780,7 @@ fn batch_stops_on_first_error_and_keeps_earlier_mutations() {
             ecs::EntityError::MissingComponent { .. }
         ))
     ));
+
     let values: Vec<_> = world
         .query_state::<&Marker, ()>()
         .iter(&world)
@@ -652,20 +797,47 @@ fn multiple_batches_in_one_stage_keep_deterministic_system_order() {
             batch.spawn(Marker(2));
         });
     }
+
     fn enqueue_batch_b(mut commands: Commands) {
-        commands.batch(|batch| batch.spawn(Marker(3)));
+        commands.batch(|batch| {
+            batch.spawn(Marker(3));
+        });
     }
 
     let mut world = World::new();
     let mut runtime = Runtime::new();
     runtime.add_systems::<Update, _, _>(&mut world, (enqueue_batch_a, enqueue_batch_b));
+
     runtime.run_schedule::<Update>(&mut world).unwrap();
+
     let values: Vec<_> = world
         .query_state::<&Marker, ()>()
         .iter(&world)
         .map(|marker| marker.0)
         .collect();
     assert_eq!(values, vec![1, 2, 3]);
+}
+
+#[test]
+fn typed_commands_do_not_mutate_before_stage_flush() {
+    fn enqueue_typed(mut commands: Commands) {
+        commands.defer(SpawnMarkerDeferred(9));
+    }
+
+    fn observe_same_stage(mut seen: ResMut<SeenCount>, mut query: Query<&Marker>) {
+        seen.0 = query.iter().count() as u32;
+    }
+
+    let mut world = World::new();
+    world.insert_resource(SeenCount(99));
+
+    let mut runtime = Runtime::new();
+    runtime.add_systems::<Update, _, _>(&mut world, (enqueue_typed, observe_same_stage));
+
+    runtime.run_schedule::<Update>(&mut world).unwrap();
+
+    assert_eq!(world.resource::<SeenCount>().unwrap().0, 0);
+    assert_eq!(world.query_state::<&Marker, ()>().iter(&world).count(), 1);
 }
 
 #[test]
@@ -676,6 +848,7 @@ fn typed_commands_follow_stage_boundary_visibility_contract() {
             value: 17,
         });
     }
+
     fn observe_followup_stage(mut seen: ResMut<SeenCount>, mut query: Query<&Extra>) {
         seen.0 = query.iter().count() as u32;
     }
@@ -684,6 +857,7 @@ fn typed_commands_follow_stage_boundary_visibility_contract() {
     let target = world.spawn(Marker(1)).expect("spawn should succeed");
     world.insert_resource(TargetEntity(target));
     world.insert_resource(SeenCount(0));
+
     let mut runtime = Runtime::new();
     runtime.add_systems::<Update, _, _>(&mut world, enqueue_stage_typed.in_set(GameplaySet));
     runtime.add_systems::<Update, _, _>(
@@ -692,7 +866,9 @@ fn typed_commands_follow_stage_boundary_visibility_contract() {
             .in_set(PostGameplaySet)
             .after(GameplaySet),
     );
+
     runtime.run_schedule::<Update>(&mut world).unwrap();
+
     assert_eq!(world.resource::<SeenCount>().unwrap().0, 1);
     assert_eq!(world.require::<Extra>(target).unwrap().0, 17);
 }
@@ -705,24 +881,29 @@ fn borrowed_command_owner_is_stable_across_repeated_runs() {
         let id = NEXT_MARKER_ID.fetch_add(1, Ordering::SeqCst);
         commands.spawn(Marker(id));
     }
+
     fn enqueue_b(mut commands: Commands) {
         let id = NEXT_MARKER_ID.fetch_add(1, Ordering::SeqCst);
         commands.spawn(Marker(id));
     }
 
     NEXT_MARKER_ID.store(0, Ordering::SeqCst);
+
     let mut world = World::new();
     let mut runtime = Runtime::new();
     runtime.add_systems::<Update, _, _>(&mut world, (enqueue_a, enqueue_b));
+
     for _ in 0..20 {
         runtime.run_schedule::<Update>(&mut world).unwrap();
     }
+
     let mut ids: Vec<u32> = world
         .query_state::<&Marker, ()>()
         .iter(&world)
         .map(|marker| marker.0)
         .collect();
     ids.sort_unstable();
+    assert_eq!(ids.len(), 40);
     assert_eq!(ids, (0..40).collect::<Vec<_>>());
 }
 
@@ -742,10 +923,13 @@ fn failed_schedule_drops_stage_deferred_commands_instead_of_replaying_next_run()
 
     let mut world = World::new();
     world.insert_resource(SpawnGate(false));
+
     let mut runtime = Runtime::new();
     runtime.add_systems::<Update, _, _>(&mut world, enqueue_then_fail_once);
+
     assert!(runtime.run_schedule::<Update>(&mut world).is_err());
     assert_eq!(world.query_state::<&Marker, ()>().iter(&world).count(), 0);
+
     runtime.run_schedule::<Update>(&mut world).unwrap();
     assert_eq!(world.query_state::<&Marker, ()>().iter(&world).count(), 0);
 }
@@ -787,13 +971,17 @@ fn cached_system_param_state_reuse_is_stable_over_many_runs() {
 
     let init_before = PARAM_INIT_CALLS.load(Ordering::SeqCst);
     let extract_before = PARAM_EXTRACT_CALLS.load(Ordering::SeqCst);
+
     let mut world = World::new();
     world.insert_resource(SeenCount(0));
+
     let mut runtime = Runtime::new();
     runtime.add_systems::<Update, _, _>(&mut world, accumulate_state);
+
     for _ in 0..5 {
         runtime.run_schedule::<Update>(&mut world).unwrap();
     }
+
     assert_eq!(PARAM_INIT_CALLS.load(Ordering::SeqCst) - init_before, 1);
     assert_eq!(
         PARAM_EXTRACT_CALLS.load(Ordering::SeqCst) - extract_before,
@@ -813,6 +1001,7 @@ fn flush_stage_structural_migration_is_visible_in_followup_stage() {
         }
         step.0 = step.0.saturating_add(1);
     }
+
     fn observe_marker_extra(
         mut history: ResMut<CountHistory>,
         mut query: Query<(&Marker, &Extra)>,
@@ -825,6 +1014,7 @@ fn flush_stage_structural_migration_is_visible_in_followup_stage() {
     world.insert_resource(TargetEntity(target));
     world.insert_resource(Step(0));
     world.insert_resource(CountHistory(Vec::new()));
+
     let mut runtime = Runtime::new();
     runtime.add_systems::<Update, _, _>(&mut world, queue_migration.in_set(GameplaySet));
     runtime.add_systems::<Update, _, _>(
@@ -833,9 +1023,11 @@ fn flush_stage_structural_migration_is_visible_in_followup_stage() {
             .in_set(PostGameplaySet)
             .after(GameplaySet),
     );
+
     runtime.run_schedule::<Update>(&mut world).unwrap();
     runtime.run_schedule::<Update>(&mut world).unwrap();
     runtime.run_schedule::<Update>(&mut world).unwrap();
+
     assert_eq!(world.resource::<CountHistory>().unwrap().0, vec![1, 0, 1]);
     assert_eq!(world.require::<Extra>(target).unwrap().0, 11);
 }
@@ -849,11 +1041,13 @@ fn system_order_controls_added_and_changed_visibility() {
         commands.spawn(Marker(5));
         gate.0 = true;
     }
+
     fn mutate_markers(mut query: Query<&mut Marker>) {
         for marker in query.iter() {
             marker.0 = marker.0.saturating_add(1);
         }
     }
+
     fn observe_added_changed(
         mut added: Query<&Marker, Added<Marker>>,
         mut changed: Query<&Marker, Changed<Marker>>,
@@ -867,6 +1061,7 @@ fn system_order_controls_added_and_changed_visibility() {
     let mut world = World::new();
     world.insert_resource(SpawnGate(false));
     world.insert_resource(AddedChangedHistory(Vec::new()));
+
     let mut runtime = Runtime::new();
     runtime.add_systems::<Update, _, _>(&mut world, queue_spawn_once.in_set(GameplaySet));
     runtime.add_systems::<Update, _, _>(
@@ -879,8 +1074,10 @@ fn system_order_controls_added_and_changed_visibility() {
             .in_set(LateObserveSet)
             .after(PostGameplaySet),
     );
+
     runtime.run_schedule::<Update>(&mut world).unwrap();
     runtime.run_schedule::<Update>(&mut world).unwrap();
+
     assert_eq!(
         world.resource::<AddedChangedHistory>().unwrap().0,
         vec![(1, 1), (0, 1)]
@@ -913,6 +1110,7 @@ fn deferred_commands_keep_secondary_indexes_correct_after_apply() {
         .expect("spawn should succeed");
     world.insert_resource(TargetEntity(target));
     world.insert_resource(Step(0));
+
     let mut runtime = Runtime::new();
     runtime.add_systems::<Update, _, _>(&mut world, queue_index_updates);
 
@@ -920,6 +1118,10 @@ fn deferred_commands_keep_secondary_indexes_correct_after_apply() {
     assert_eq!(
         world.find_entity_by_index::<IndexedName, String>(&"renamed".to_string()),
         Some(target)
+    );
+    assert_eq!(
+        world.find_entity_by_index::<IndexedName, String>(&"initial".to_string()),
+        None
     );
     assert_eq!(
         world.find_entity_by_index::<IndexedName, String>(&"other".to_string()),
@@ -930,6 +1132,10 @@ fn deferred_commands_keep_secondary_indexes_correct_after_apply() {
     assert_eq!(
         world.find_entity_by_index::<IndexedName, String>(&"renamed".to_string()),
         None
+    );
+    assert_eq!(
+        world.find_entity_by_index::<IndexedName, String>(&"other".to_string()),
+        Some(other)
     );
 
     runtime.run_schedule::<Update>(&mut world).unwrap();
