@@ -178,10 +178,6 @@ mod tests {
             Err(EntityError::StaleGeneration { .. })
         ));
         assert!(matches!(
-            first_world_placeholder(),
-            None
-        ));
-        assert!(matches!(
             world.require_mut::<Value>(first),
             Err(EntityError::StaleGeneration { .. })
         ));
@@ -214,9 +210,5 @@ mod tests {
                 .0,
             9
         );
-    }
-
-    fn first_world_placeholder() -> Option<()> {
-        None
     }
 }
