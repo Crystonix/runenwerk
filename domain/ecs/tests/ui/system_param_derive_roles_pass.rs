@@ -1,6 +1,6 @@
 #![allow(non_camel_case_types)]
 
-#[derive(ecs::Resource)]
+#[derive(ecs::Component, ecs::Resource)]
 struct Counter;
 
 #[derive(ecs::Resource)]
@@ -13,7 +13,7 @@ struct WorldGroup<'w> {
 
 #[derive(ecs::SystemParam)]
 struct QueryGroup<'w, 's> {
-    query: ecs::Query<'w, 's, ecs::Entity>,
+    query: ecs::Query<'w, 's, &'static Counter>,
 }
 
 #[derive(ecs::SystemParam)]
