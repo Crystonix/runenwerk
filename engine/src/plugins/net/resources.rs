@@ -319,6 +319,18 @@ where
     }
 
     pub(crate) fn drain_tick(&mut self, tick: SimulationTick) -> Vec<TInput> {
+        let stale_ticks = self
+            .by_tick
+            .keys()
+            .copied()
+            .take_while(|staged_tick| *staged_tick < tick)
+            .collect::<Vec<_>>();
+        for stale_tick in stale_ticks {
+            if let Some(stale) = self.by_tick.remove(&stale_tick) {
+                self.pending = self.pending.saturating_sub(stale.len());
+            }
+        }
+
         let drained = self.by_tick.remove(&tick).unwrap_or_default();
         self.pending = self.pending.saturating_sub(drained.len());
         drained
@@ -818,6 +830,49 @@ pub struct NetDiagnosticsView {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn network_input_staging_capacity_is_total_across_ticks_and_recovers_after_stale_cleanup() {
+        let mut staging = NetworkInputStaging::<u16>::default();
+        for index in 0..NETWORK_MESSAGE_QUEUE_CAPACITY {
+            let tick = SimulationTick(1 + (index % 4) as u64);
+            staging
+                .stage(tick, index as u16)
+                .expect("staging should accept inputs through its total capacity");
+        }
+
+        assert_eq!(staging.pending_len(), NETWORK_MESSAGE_QUEUE_CAPACITY);
+        let rejected = 5_000u16;
+        assert_eq!(
+            staging.stage(SimulationTick(6), rejected),
+            Err(NetworkInputStageError::Backpressure {
+                capacity: NETWORK_MESSAGE_QUEUE_CAPACITY,
+                input: rejected,
+            })
+        );
+
+        assert!(staging.drain_tick(SimulationTick(5)).is_empty());
+        assert_eq!(staging.pending_len(), 0);
+        staging
+            .stage(SimulationTick(6), rejected)
+            .expect("stale cleanup should recover staging capacity");
+        assert_eq!(staging.pending_len(), 1);
+    }
+
+    #[test]
+    fn network_input_staging_discards_skipped_ticks_and_preserves_current_and_future_order() {
+        let mut staging = NetworkInputStaging::<u8>::default();
+        staging.stage(SimulationTick(2), 20).unwrap();
+        staging.stage(SimulationTick(5), 50).unwrap();
+        staging.stage(SimulationTick(5), 51).unwrap();
+        staging.stage(SimulationTick(6), 60).unwrap();
+
+        assert_eq!(staging.pending_len(), 4);
+        assert_eq!(staging.drain_tick(SimulationTick(5)), vec![50, 51]);
+        assert_eq!(staging.pending_len(), 1);
+        assert_eq!(staging.drain_tick(SimulationTick(6)), vec![60]);
+        assert_eq!(staging.pending_len(), 0);
+    }
 
     #[test]
     fn checkpoint_accepts_only_sent_and_available_baselines() {
