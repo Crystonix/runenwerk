@@ -1,5 +1,6 @@
 use super::*;
 use crate::WorldMut;
+use anyhow::Context;
 use ecs::{OwnerRole, World};
 use engine_net::replication::{InputDriver, ReplicationDriver, SnapshotApplyDriver};
 use engine_net::*;
@@ -34,14 +35,20 @@ where
     TDriver: ReplicationDriver + Send + Sync + 'static,
     TDriver::Snapshot: Clone + PartialEq,
 {
-    if let Ok(diagnostics) = world.resource_mut::<ReplicationDiagnostics>() {
-        diagnostics.fixed_steps_observed = diagnostics.fixed_steps_observed.saturating_add(1);
-    }
-
     let authority = world
         .resource::<SimulationProfileConfig>()
         .map(|config| config.authority)
         .unwrap_or(AuthorityRole::Local);
+
+    if matches!(authority, AuthorityRole::Server | AuthorityRole::Peer) {
+        world
+            .resource::<NetworkServerOutbox>()
+            .context("NetworkServerOutbox should be installed by the server network role")?;
+    }
+
+    if let Ok(diagnostics) = world.resource_mut::<ReplicationDiagnostics>() {
+        diagnostics.fixed_steps_observed = diagnostics.fixed_steps_observed.saturating_add(1);
+    }
 
     if !matches!(authority, AuthorityRole::Server | AuthorityRole::Peer) {
         let cursor = world
@@ -186,8 +193,17 @@ where
     }
 
     for message in &outbound {
-        if let Err(error) = enqueue_server_outbox(&mut world, message.clone()) {
-            tracing::warn!(error = ?error, "failed to enqueue replication server outbox message");
+        match enqueue_server_outbox(&mut world, message.clone()) {
+            Ok(()) => {}
+            Err(NetworkPendingEnqueueError::Unavailable { endpoint, .. }) => {
+                anyhow::bail!("{endpoint} should be installed by NetPlugin");
+            }
+            Err(NetworkPendingEnqueueError::Backpressure { capacity, .. }) => {
+                tracing::warn!(
+                    capacity,
+                    "failed to enqueue replication server outbox message"
+                );
+            }
         }
     }
 
@@ -206,6 +222,20 @@ where
     TDriver: ReplicationDriver + InputDriver + Send + Sync + 'static,
     TDriver::Input: Clone + PartialEq,
 {
+    world
+        .resource::<NetworkInputStaging<TDriver::Input>>()
+        .context("NetworkInputStaging should be installed by NetPlugin")?;
+
+    let authority = world
+        .resource::<SimulationProfileConfig>()
+        .map(|config| config.authority)
+        .unwrap_or(AuthorityRole::Local);
+    if matches!(authority, AuthorityRole::Client | AuthorityRole::Peer) {
+        world
+            .resource::<NetworkClientOutbox>()
+            .context("NetworkClientOutbox should be installed by the client network role")?;
+    }
+
     if let Ok(diagnostics) = world.resource_mut::<PredictionDiagnostics>() {
         diagnostics.fixed_steps_observed = diagnostics.fixed_steps_observed.saturating_add(1);
     }
@@ -214,11 +244,6 @@ where
         .resource::<SimulationTick>()
         .copied()
         .unwrap_or_default();
-
-    let authority = world
-        .resource::<SimulationProfileConfig>()
-        .map(|config| config.authority)
-        .unwrap_or(AuthorityRole::Local);
 
     let commands = TDriver::take_local_input(&mut world)
         .map_err(|error| map_driver_error::<TDriver>(error, "take local input"))?;
@@ -249,11 +274,17 @@ where
         let payload = TDriver::encode_input(&commands)
             .map_err(|error| map_driver_error::<TDriver>(error, "encode input"))?;
 
-        if let Err(error) = enqueue_client_outbox(
+        match enqueue_client_outbox(
             &mut world,
             ClientMessage::InputFrame(InputFrame { tick, payload }),
         ) {
-            tracing::warn!(error = ?error, "failed to enqueue local input frame");
+            Ok(()) => {}
+            Err(NetworkPendingEnqueueError::Unavailable { endpoint, .. }) => {
+                anyhow::bail!("{endpoint} should be installed by NetPlugin");
+            }
+            Err(NetworkPendingEnqueueError::Backpressure { capacity, .. }) => {
+                tracing::warn!(capacity, "failed to enqueue local input frame");
+            }
         }
 
         if let Ok(prediction) = world.resource_mut::<PredictionState<TDriver::Input>>() {
