@@ -149,11 +149,19 @@ fn renderer_program_source_admission_has_one_cache_gateway_without_lifetime_pins
         "pipeline_realization.rs",
     );
     assert!(execution_gateway.contains(") -> Result<GpuAdmittedProgramSource>"));
-    assert_eq!(execution_gateway.matches("cache.admit_program_source(").count(), 1);
+    assert_eq!(
+        execution_gateway
+            .matches("cache.admit_program_source(")
+            .count(),
+        1
+    );
     assert!(!pipeline.contains("RendererProgramSourceAuthority::new("));
     assert!(!pipeline.contains(".admit_wgsl("));
 
-    assert_eq!(cache.matches("pub(crate) fn admit_program_source(").count(), 1);
+    assert_eq!(
+        cache.matches("pub(crate) fn admit_program_source(").count(),
+        1
+    );
     let cache_gateway = section(
         &cache,
         "pub(crate) fn admit_program_source(",
@@ -161,7 +169,12 @@ fn renderer_program_source_admission_has_one_cache_gateway_without_lifetime_pins
         PIPELINE_CACHE,
     );
     assert_eq!(cache_gateway.matches(".admit_wgsl(").count(), 1);
-    assert_eq!(cache.matches("RendererProgramSourceAuthority::new(").count(), 1);
+    assert_eq!(
+        cache
+            .matches("RendererProgramSourceAuthority::new(")
+            .count(),
+        1
+    );
     for forbidden in [
         "admit_and_retain_wgsl",
         "retained_sources",
@@ -181,7 +194,12 @@ fn builtin_program_sources_use_the_same_cache_gateway() {
         "impl FlowPipelineArtifactCache",
         PIPELINE_CACHE,
     );
-    assert_eq!(default_impl.matches("admit_builtin_program_source(").count(), 3);
+    assert_eq!(
+        default_impl
+            .matches("admit_builtin_program_source(")
+            .count(),
+        3
+    );
 
     let builtin_gateway = section(
         &cache,
