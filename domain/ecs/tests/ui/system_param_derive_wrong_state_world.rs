@@ -1,6 +1,6 @@
 #[derive(ecs::SystemParam)]
 struct WrongOrder<'w, 's> {
-    reader: ecs::BroadcastReader<'s, 'w, u32>,
+    query: ecs::Query<'s, 'w, ecs::Entity>,
 }
 
 fn main() {}
