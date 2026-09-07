@@ -42,6 +42,7 @@ fn is_cutover_guard_source(relative: &Path) -> bool {
         "engine/tests/gpu_cutover_nonproduction_guards.rs",
         "engine/tests/gpu_g4c1_cutover_guards.rs",
         "engine/tests/gpu_g7a2_surface_authority.rs",
+        "engine/tests/render_cutoff_guard.rs",
         "engine/tests/runengpu_g5a_execution_authority.rs",
         "engine/tests/runengpu_g5a_execution_authority/renderer_timing_boundary.rs",
         "engine/tests/runengpu_g5c2_observation_authority.rs",
