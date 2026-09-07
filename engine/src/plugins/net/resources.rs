@@ -14,19 +14,27 @@ const MAX_TRACKED_SENT_BASELINE_CURSORS: usize = 256;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum NetworkPendingEnqueueError<T> {
-    Backpressure { capacity: usize, message: T },
+    Unavailable {
+        endpoint: &'static str,
+        message: T,
+    },
+    Backpressure {
+        capacity: usize,
+        message: T,
+    },
 }
 
 impl<T> NetworkPendingEnqueueError<T> {
-    pub fn capacity(&self) -> usize {
+    pub fn capacity(&self) -> Option<usize> {
         match self {
-            Self::Backpressure { capacity, .. } => *capacity,
+            Self::Unavailable { .. } => None,
+            Self::Backpressure { capacity, .. } => Some(*capacity),
         }
     }
 
     pub fn into_message(self) -> T {
         match self {
-            Self::Backpressure { message, .. } => message,
+            Self::Unavailable { message, .. } | Self::Backpressure { message, .. } => message,
         }
     }
 }
@@ -114,12 +122,15 @@ pub fn enqueue_client_inbox(
     world: &mut World,
     message: ServerMessage,
 ) -> Result<(), NetworkPendingEnqueueError<ServerMessage>> {
-    if world.resource::<NetworkClientInbox>().is_err() {
-        world.insert_resource(NetworkClientInbox::default());
-    }
-    let inbox = world
-        .resource_mut::<NetworkClientInbox>()
-        .expect("NetworkClientInbox should exist after initialization");
+    let inbox = match world.resource_mut::<NetworkClientInbox>() {
+        Ok(inbox) => inbox,
+        Err(_) => {
+            return Err(NetworkPendingEnqueueError::Unavailable {
+                endpoint: "NetworkClientInbox",
+                message,
+            });
+        }
+    };
     enqueue_pending(&mut inbox.0, "NetworkClientInbox", message)
 }
 
@@ -153,20 +164,20 @@ pub fn enqueue_server_inbox_from(
     connection: Option<ConnectionHandle>,
     message: ClientMessage,
 ) -> Result<(), NetworkPendingEnqueueError<InboundClientMessage>> {
-    if world.resource::<NetworkServerInbox>().is_err() {
-        world.insert_resource(NetworkServerInbox::default());
-    }
-    let inbox = world
-        .resource_mut::<NetworkServerInbox>()
-        .expect("NetworkServerInbox should exist after initialization");
-    enqueue_pending(
-        &mut inbox.0,
-        "NetworkServerInbox",
-        InboundClientMessage {
-            connection,
-            message,
-        },
-    )
+    let message = InboundClientMessage {
+        connection,
+        message,
+    };
+    let inbox = match world.resource_mut::<NetworkServerInbox>() {
+        Ok(inbox) => inbox,
+        Err(_) => {
+            return Err(NetworkPendingEnqueueError::Unavailable {
+                endpoint: "NetworkServerInbox",
+                message,
+            });
+        }
+    };
+    enqueue_pending(&mut inbox.0, "NetworkServerInbox", message)
 }
 
 pub fn server_inbox_len(world: &World) -> usize {
@@ -191,12 +202,15 @@ pub fn enqueue_client_outbox(
     world: &mut World,
     message: ClientMessage,
 ) -> Result<(), NetworkPendingEnqueueError<ClientMessage>> {
-    if world.resource::<NetworkClientOutbox>().is_err() {
-        world.insert_resource(NetworkClientOutbox::default());
-    }
-    let outbox = world
-        .resource_mut::<NetworkClientOutbox>()
-        .expect("NetworkClientOutbox should exist after initialization");
+    let outbox = match world.resource_mut::<NetworkClientOutbox>() {
+        Ok(outbox) => outbox,
+        Err(_) => {
+            return Err(NetworkPendingEnqueueError::Unavailable {
+                endpoint: "NetworkClientOutbox",
+                message,
+            });
+        }
+    };
     enqueue_pending(&mut outbox.0, "NetworkClientOutbox", message)
 }
 
@@ -222,12 +236,15 @@ pub fn enqueue_server_outbox(
     world: &mut World,
     message: OutboundServerMessage,
 ) -> Result<(), NetworkPendingEnqueueError<OutboundServerMessage>> {
-    if world.resource::<NetworkServerOutbox>().is_err() {
-        world.insert_resource(NetworkServerOutbox::default());
-    }
-    let outbox = world
-        .resource_mut::<NetworkServerOutbox>()
-        .expect("NetworkServerOutbox should exist after initialization");
+    let outbox = match world.resource_mut::<NetworkServerOutbox>() {
+        Ok(outbox) => outbox,
+        Err(_) => {
+            return Err(NetworkPendingEnqueueError::Unavailable {
+                endpoint: "NetworkServerOutbox",
+                message,
+            });
+        }
+    };
     enqueue_pending(&mut outbox.0, "NetworkServerOutbox", message)
 }
 
