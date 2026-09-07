@@ -14,14 +14,8 @@ const MAX_TRACKED_SENT_BASELINE_CURSORS: usize = 256;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum NetworkPendingEnqueueError<T> {
-    Unavailable {
-        endpoint: &'static str,
-        message: T,
-    },
-    Backpressure {
-        capacity: usize,
-        message: T,
-    },
+    Unavailable { endpoint: &'static str, message: T },
+    Backpressure { capacity: usize, message: T },
 }
 
 impl<T> NetworkPendingEnqueueError<T> {
