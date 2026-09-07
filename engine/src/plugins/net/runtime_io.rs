@@ -1,9 +1,10 @@
 use super::*;
 use crate::WorldMut;
 use anyhow::Context;
-use ecs::{OwnerRole, WorkQueueEnqueueError, World};
+use ecs::{OwnerRole, World};
 use engine_net::replication::{InputDriver, ReplicationDriver, SnapshotApplyDriver};
 use engine_net::*;
+use engine_sim::SimulationTick;
 use runen_net::identity::ConnectionHandle;
 use std::collections::HashSet;
 use world_ops::SyncCursor;
@@ -17,29 +18,13 @@ where
     anyhow::Error::new(error).context(context)
 }
 
-fn enqueue_work_queue_with_backpressure<T: 'static>(
-    world: &mut World,
-    work_queue_name: &'static str,
-    message: T,
-) -> Result<(), WorkQueueEnqueueError> {
-    let result = world.work_queue_enqueue(message);
-    if let Err(WorkQueueEnqueueError::Backpressure { capacity, .. }) = &result {
-        tracing::warn!(
-            work_queue = work_queue_name,
-            capacity = *capacity,
-            "network queue backpressure; dropping newest message"
-        );
-    }
-    result
-}
-
 pub fn client_receive_system<TDriver>(mut world: WorldMut) -> anyhow::Result<()>
 where
     TDriver: ReplicationDriver + SnapshotApplyDriver + InputDriver + Send + Sync + 'static,
     TDriver::Snapshot: Clone + PartialEq,
     TDriver::Input: Clone + PartialEq,
 {
-    let messages = world.work_queue_drain::<ServerMessage>();
+    let messages = drain_client_inbox(&mut world);
     if messages.is_empty() {
         return Ok(());
     }
@@ -76,9 +61,8 @@ where
 
                 match result {
                     Ok(corrected) => {
-                        if let Err(error) = enqueue_work_queue_with_backpressure(
+                        if let Err(error) = enqueue_client_outbox(
                             &mut world,
-                            "NetworkClientOutbox",
                             ClientMessage::Ack(Ack {
                                 cursor: snapshot.cursor,
                                 last_received_tick: snapshot.tick,
@@ -119,9 +103,8 @@ where
 
                 match result {
                     Ok(corrected) => {
-                        if let Err(error) = enqueue_work_queue_with_backpressure(
+                        if let Err(error) = enqueue_client_outbox(
                             &mut world,
-                            "NetworkClientOutbox",
                             ClientMessage::Ack(Ack {
                                 cursor: snapshot.cursor,
                                 last_received_tick: snapshot.tick,
@@ -169,7 +152,7 @@ where
     TDriver: ReplicationDriver + InputDriver + Send + Sync + 'static,
     TDriver::Snapshot: Clone + PartialEq,
 {
-    let messages = world.work_queue_drain::<InboundClientMessage>();
+    let messages = drain_server_inbox(&mut world);
     if messages.is_empty() {
         return Ok(());
     }
@@ -248,22 +231,34 @@ where
         {
             let decoded = TDriver::decode_input(&frame.payload)
                 .map_err(|error| map_driver_error::<TDriver>(error, "decode remote input"))?;
-            let controller = ensure_owner_for_connection(&mut world, connection, OwnerRole::Active);
+            let _ = ensure_owner_for_connection(&mut world, connection, OwnerRole::Active);
 
+            let current_tick = world
+                .resource::<SimulationTick>()
+                .copied()
+                .unwrap_or_default();
             let mut lagged = 0u64;
-            let current_tick = world.current_buffer_tick();
             for command in decoded {
-                if frame.tick.0 < current_tick {
+                if frame.tick <= current_tick {
                     lagged = lagged.saturating_add(1);
                     continue;
                 }
 
-                if let Err(error) = world.push_buffer_message_for_tick::<TDriver::Input>(
-                    frame.tick.0,
-                    owner_tick_buffer_provenance(controller),
-                    command,
-                ) {
-                    tracing::warn!(?error, "failed to enqueue remote input into tick buffer");
+                if let Ok(staging) = world.resource_mut::<NetworkInputStaging<TDriver::Input>>() {
+                    if let Err(NetworkInputStageError::Backpressure { capacity, .. }) =
+                        staging.stage(frame.tick, command)
+                    {
+                        tracing::warn!(
+                            capacity,
+                            tick = frame.tick.0,
+                            "network input staging backpressure; rejecting remote input"
+                        );
+                    }
+                } else {
+                    tracing::warn!(
+                        tick = frame.tick.0,
+                        "network input staging resource is unavailable"
+                    );
                 }
             }
             if lagged > 0
@@ -407,7 +402,7 @@ pub fn sync_net_diagnostics_view_system(mut world: WorldMut) {
 }
 
 pub fn client_flush_system(mut world: WorldMut) -> anyhow::Result<()> {
-    let messages = world.work_queue_drain::<ClientMessage>();
+    let messages = drain_client_outbox(&mut world);
     if messages.is_empty() {
         return Ok(());
     }
@@ -428,7 +423,7 @@ pub fn client_flush_system(mut world: WorldMut) -> anyhow::Result<()> {
 }
 
 pub fn server_flush_system(mut world: WorldMut) -> anyhow::Result<()> {
-    let messages = world.work_queue_drain::<OutboundServerMessage>();
+    let messages = drain_server_outbox(&mut world);
     if messages.is_empty() {
         return Ok(());
     }
