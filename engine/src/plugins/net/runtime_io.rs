@@ -29,6 +29,10 @@ where
         return Ok(());
     }
 
+    world
+        .resource::<NetworkClientOutbox>()
+        .context("NetworkClientOutbox should be installed by the client network role")?;
+
     if let Ok(diagnostics) = world.resource_mut::<NetworkDiagnostics>() {
         diagnostics.processed_server_messages_last_frame = messages.len();
     }
@@ -61,14 +65,20 @@ where
 
                 match result {
                     Ok(corrected) => {
-                        if let Err(error) = enqueue_client_outbox(
+                        match enqueue_client_outbox(
                             &mut world,
                             ClientMessage::Ack(Ack {
                                 cursor: snapshot.cursor,
                                 last_received_tick: snapshot.tick,
                             }),
                         ) {
-                            tracing::warn!(error = ?error, "failed to enqueue snapshot ack");
+                            Ok(()) => {}
+                            Err(NetworkPendingEnqueueError::Unavailable { endpoint, .. }) => {
+                                anyhow::bail!("{endpoint} should be installed by NetPlugin");
+                            }
+                            Err(NetworkPendingEnqueueError::Backpressure { capacity, .. }) => {
+                                tracing::warn!(capacity, "failed to enqueue snapshot ack");
+                            }
                         }
                         if corrected
                             && let Ok(diagnostics) = world.resource_mut::<PredictionDiagnostics>()
@@ -103,17 +113,20 @@ where
 
                 match result {
                     Ok(corrected) => {
-                        if let Err(error) = enqueue_client_outbox(
+                        match enqueue_client_outbox(
                             &mut world,
                             ClientMessage::Ack(Ack {
                                 cursor: snapshot.cursor,
                                 last_received_tick: snapshot.tick,
                             }),
                         ) {
-                            tracing::warn!(
-                                error = ?error,
-                                "failed to enqueue delta snapshot ack"
-                            );
+                            Ok(()) => {}
+                            Err(NetworkPendingEnqueueError::Unavailable { endpoint, .. }) => {
+                                anyhow::bail!("{endpoint} should be installed by NetPlugin");
+                            }
+                            Err(NetworkPendingEnqueueError::Backpressure { capacity, .. }) => {
+                                tracing::warn!(capacity, "failed to enqueue delta snapshot ack");
+                            }
                         }
                         if corrected
                             && let Ok(diagnostics) = world.resource_mut::<PredictionDiagnostics>()
@@ -230,6 +243,10 @@ where
         if let ClientMessage::InputFrame(frame) = &message
             && let Some(connection) = connection
         {
+            world
+                .resource::<NetworkInputStaging<TDriver::Input>>()
+                .context("NetworkInputStaging should be installed by NetPlugin")?;
+
             let decoded = TDriver::decode_input(&frame.payload)
                 .map_err(|error| map_driver_error::<TDriver>(error, "decode remote input"))?;
             let _ = ensure_owner_for_connection(&mut world, connection, OwnerRole::Active);
@@ -401,6 +418,9 @@ pub fn sync_net_diagnostics_view_system(mut world: WorldMut) {
 }
 
 pub fn client_flush_system(mut world: WorldMut) -> anyhow::Result<()> {
+    world
+        .resource::<NetworkClientOutbox>()
+        .context("NetworkClientOutbox should be installed by the client network role")?;
     let messages = drain_client_outbox(&mut world);
     if messages.is_empty() {
         return Ok(());
@@ -422,6 +442,9 @@ pub fn client_flush_system(mut world: WorldMut) -> anyhow::Result<()> {
 }
 
 pub fn server_flush_system(mut world: WorldMut) -> anyhow::Result<()> {
+    world
+        .resource::<NetworkServerOutbox>()
+        .context("NetworkServerOutbox should be installed by the server network role")?;
     let messages = drain_server_outbox(&mut world);
     if messages.is_empty() {
         return Ok(());
