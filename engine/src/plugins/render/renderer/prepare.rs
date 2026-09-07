@@ -597,11 +597,7 @@ impl Renderer {
                     return Ok(None);
                 }
             };
-            let dimension = match upload.dimension {
-                GpuTextureDimension::D2 => GpuTextureDimension::D2,
-                GpuTextureDimension::D3 => GpuTextureDimension::D3,
-                GpuTextureDimension::D1 => GpuTextureDimension::D1,
-            };
+            let dimension = upload.dimension;
             let texture_handle =
                 self.resource_ids
                     .allocate_texture_handle(texture_descriptor_with_extent(
