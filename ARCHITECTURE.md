@@ -30,7 +30,7 @@ RunenRender -> RunenGPU
 
 ## Current source layout
 
-After the accepted RunenGPU cutover:
+The standalone RunenGPU successor is accepted. Runenwerk's exact-revision consumer cutover is owned and accepted separately under its repository-local cutover authority.
 
 ```text
 foundation -> domain -> engine/runtime -> apps/adapters/tools
@@ -62,7 +62,8 @@ The GPU/render extraction sequence is:
 ```text
 current-source inventory
 -> internal RunenGPU proof
--> external RunenGPU clean cutover (complete for the accepted revision)
+-> accepted external RunenGPU successor
+-> exact-revision Runenwerk consumer cutover and predecessor deletion
 -> internal RunenRender proof on RunenGPU
 -> external RunenRender clean cutover
 ```
