@@ -24,14 +24,16 @@ where
     TDriver::Snapshot: Clone + PartialEq,
     TDriver::Input: Clone + PartialEq,
 {
+    if world.resource::<NetworkClientInbox>().is_ok() {
+        world
+            .resource::<NetworkClientOutbox>()
+            .context("NetworkClientOutbox should be installed by the client network role")?;
+    }
+
     let messages = drain_client_inbox(&mut world);
     if messages.is_empty() {
         return Ok(());
     }
-
-    world
-        .resource::<NetworkClientOutbox>()
-        .context("NetworkClientOutbox should be installed by the client network role")?;
 
     if let Ok(diagnostics) = world.resource_mut::<NetworkDiagnostics>() {
         diagnostics.processed_server_messages_last_frame = messages.len();
@@ -166,6 +168,12 @@ where
     TDriver::Snapshot: Clone + PartialEq,
     TDriver::Input: Clone + PartialEq,
 {
+    if world.resource::<NetworkServerInbox>().is_ok() {
+        world
+            .resource::<NetworkInputStaging<TDriver::Input>>()
+            .context("NetworkInputStaging should be installed by NetPlugin")?;
+    }
+
     let messages = drain_server_inbox(&mut world);
     if messages.is_empty() {
         return Ok(());
@@ -243,10 +251,6 @@ where
         if let ClientMessage::InputFrame(frame) = &message
             && let Some(connection) = connection
         {
-            world
-                .resource::<NetworkInputStaging<TDriver::Input>>()
-                .context("NetworkInputStaging should be installed by NetPlugin")?;
-
             let decoded = TDriver::decode_input(&frame.payload)
                 .map_err(|error| map_driver_error::<TDriver>(error, "decode remote input"))?;
             let _ = ensure_owner_for_connection(&mut world, connection, OwnerRole::Active);
