@@ -9,8 +9,8 @@ fn read(manifest: &Path, relative: &str) -> String {
 }
 
 fn collect_rust_sources(root: &Path, paths: &mut Vec<PathBuf>) {
-    let entries =
-        fs::read_dir(root).unwrap_or_else(|error| panic!("cannot read {}: {error}", root.display()));
+    let entries = fs::read_dir(root)
+        .unwrap_or_else(|error| panic!("cannot read {}: {error}", root.display()));
     for entry in entries {
         let path = entry.expect("source entry should be readable").path();
         if path.is_dir() {
