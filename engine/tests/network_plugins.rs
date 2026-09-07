@@ -63,6 +63,11 @@ impl PlayerCommandBuffer {
     }
 }
 
+#[derive(Debug, Clone, Default, PartialEq, ecs::Resource)]
+struct AppliedInputLog {
+    inputs: Vec<ClientCommandEnvelope>,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct TestSnapshot {
     context: TestSnapshotContext,
@@ -154,7 +159,15 @@ impl InputDriver for TestReplicationDriver {
             .unwrap_or_default())
     }
 
-    fn apply_input(_world: &mut World, _input: &[Self::Input]) -> Result<(), Self::Error> {
+    fn apply_input(world: &mut World, input: &[Self::Input]) -> Result<(), Self::Error> {
+        if world.resource::<AppliedInputLog>().is_err() {
+            world.insert_resource(AppliedInputLog::default());
+        }
+        world
+            .resource_mut::<AppliedInputLog>()
+            .expect("applied-input log should exist after initialization")
+            .inputs
+            .extend_from_slice(input);
         Ok(())
     }
 }
