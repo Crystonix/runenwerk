@@ -1,7 +1,14 @@
+const LIB_RS: &str = include_str!("../src/lib.rs");
 const PRELUDE_RS: &str = include_str!("../src/prelude.rs");
 const QUERY_MOD_RS: &str = include_str!("../src/query/mod.rs");
 const QUERY_TRAITS_RS: &str = include_str!("../src/query/traits_and_state.rs");
+const QUERY_ACCESS_RS: &str = include_str!("../src/query/access_and_filters.rs");
 const SYSTEM_EXTRACT_RS: &str = include_str!("../src/system/extract.rs");
+const SYSTEM_PARAMS_RS: &str = include_str!("../src/system/params.rs");
+const WORLD_MOD_RS: &str = include_str!("../src/world/mod.rs");
+const WORLD_STATE_RS: &str = include_str!("../src/world/state.rs");
+const WORLD_CAPABILITY_RS: &str = include_str!("../src/world/capability.rs");
+const TELEMETRY_RS: &str = include_str!("../src/telemetry.rs");
 const BUNDLE_RS: &str = include_str!("../src/bundle.rs");
 const COMPONENT_ACCESS_RS: &str = include_str!("../src/world/component/access.rs");
 const COMPONENT_REGISTRATION_RS: &str = include_str!("../src/world/component/registration.rs");
@@ -21,6 +28,50 @@ fn prelude_remains_gameplay_focused() {
     assert!(!PRELUDE_RS.contains("QuerySpec"));
     assert!(!PRELUDE_RS.contains("SystemParam"));
     assert!(!PRELUDE_RS.contains("SystemParamError"));
+}
+
+#[test]
+fn c6_messaging_authority_is_absent_from_ecs_surfaces() {
+    const REMOVED: &[&str] = &[
+        "BroadcastReader",
+        "BroadcastWriter",
+        "BroadcastStream",
+        "WorkQueueReader",
+        "WorkQueueWriter",
+        "WorkQueueDrainer",
+        "WorkQueueConfig",
+        "TickBufferReader",
+        "TickBufferWriter",
+        "TickBufferDrainer",
+        "TickBufferConfig",
+        "TickBufferProvenance",
+        "MessagingCapability",
+        "MessagingFinalizationCounters",
+        "current_buffer_tick",
+        "finalized_buffer_tick",
+        "set_current_buffer_tick",
+        "finalize_tick_boundary",
+        "finalize_frame_boundary",
+    ];
+
+    for source in [
+        LIB_RS,
+        PRELUDE_RS,
+        SYSTEM_EXTRACT_RS,
+        SYSTEM_PARAMS_RS,
+        WORLD_MOD_RS,
+        WORLD_STATE_RS,
+        WORLD_CAPABILITY_RS,
+        QUERY_ACCESS_RS,
+        TELEMETRY_RS,
+    ] {
+        for removed in REMOVED {
+            assert!(
+                !source.contains(removed),
+                "deleted C6 messaging authority leaked through source surface: {removed}"
+            );
+        }
+    }
 }
 
 #[test]
