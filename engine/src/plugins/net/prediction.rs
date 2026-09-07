@@ -248,9 +248,10 @@ where
         let payload = TDriver::encode_input(&commands)
             .map_err(|error| map_driver_error::<TDriver>(error, "encode input"))?;
 
-        if let Err(error) =
-            enqueue_client_outbox(&mut world, ClientMessage::InputFrame(InputFrame { tick, payload }))
-        {
+        if let Err(error) = enqueue_client_outbox(
+            &mut world,
+            ClientMessage::InputFrame(InputFrame { tick, payload }),
+        ) {
             tracing::warn!(error = ?error, "failed to enqueue local input frame");
         }
 
