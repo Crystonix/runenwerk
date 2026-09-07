@@ -1619,11 +1619,6 @@ fn renderer_uniform_uploads_are_invocation_scoped() {
     let logical_operations = read_workspace_source(
         "engine/src/plugins/render/renderer/render_flow/logical_operations.rs",
     );
-    let g4c2_registry = read_workspace_source(
-        "engine/src/plugins/gpu/backend/wgpu/program_binding_realization/registry.rs",
-    );
-    let runtime_binding_values =
-        read_workspace_source("engine/src/plugins/gpu/api/program/runtime_binding/value.rs");
 
     assert!(
         execute.contains("set_active_invocation_uniform_scope")
@@ -1639,15 +1634,14 @@ fn renderer_uniform_uploads_are_invocation_scoped() {
     );
     assert!(
         resolve.contains("RuntimeResourceKey::InvocationUniform")
-            && bindings.contains("GpuRuntimeBindingValue")
+            && bindings.contains("handle: runen_gpu::GpuBufferHandle")
+            && bindings.contains("GpuRuntimeBufferBinding::new(")
+            && bindings.contains("GpuRuntimeBindingValue::new(value.key, [resource])")
+            && bindings.contains("GpuRuntimeBindingSet::new(")
             && bindings.contains("runtime_bindings,")
             && !bindings.contains("context.realize_bind_group(")
-            && logical_operations.contains("pipeline.bindings.runtime_bindings.clone()")
-            && g4c2_registry.contains("struct BindGroupRequestKey")
-            && g4c2_registry.contains("values: Vec<GpuRuntimeBindingValue>")
-            && runtime_binding_values.contains("handle: GpuBufferHandle")
-            && runtime_binding_values.contains("Hash"),
-        "canonical G5 operations must preserve invocation-local typed handles until generalized bind-group realization so another invocation cannot reuse the wrong bind group",
+            && logical_operations.contains("pipeline.bindings.runtime_bindings.clone()"),
+        "canonical G5 operations must preserve invocation-local typed handles through public RunenGPU runtime bindings so another invocation cannot reuse the wrong binding state",
     );
 }
 
