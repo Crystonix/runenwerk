@@ -74,8 +74,7 @@ where
 
     let active_connections = active_connections(&world);
 
-    let mut outbound = Vec::<OutboundServerMessage>::new();
-    let mut world_streaming_updates = Vec::<(ConnectionHandle, SyncCursor, bool)>::new();
+    let mut outbound = Vec::<(OutboundServerMessage, ConnectionHandle, bool)>::new();
     if !active_connections.is_empty() {
         let mut snapshots_for_connections = Vec::<(ConnectionHandle, TDriver::Snapshot)>::new();
         for connection in &active_connections {
@@ -164,17 +163,14 @@ where
                 })
             };
 
-            state
-                .checkpoints
-                .entry(connection)
-                .or_default()
-                .mark_snapshot_sent(cursor, tick, send_full);
-            world_streaming_updates.push((connection, SyncCursor(cursor.0), send_full));
-
-            outbound.push(OutboundServerMessage::ToConnection {
+            outbound.push((
+                OutboundServerMessage::ToConnection {
+                    connection,
+                    message,
+                },
                 connection,
-                message,
-            });
+                send_full,
+            ));
         }
 
         if let Some(snapshot) = first_snapshot_for_tick {
@@ -184,17 +180,10 @@ where
         }
     }
 
-    if !world_streaming_updates.is_empty()
-        && let Ok(streaming_state) = world.resource_mut::<NetStreamingStateResource>()
-    {
-        for (connection, cursor, sent_full_snapshot) in world_streaming_updates {
-            streaming_state.mark_snapshot_sent(connection, cursor, sent_full_snapshot);
-        }
-    }
-
-    for message in &outbound {
-        match enqueue_server_outbox(&mut world, message.clone()) {
-            Ok(()) => {}
+    let mut accepted_outbound = Vec::<(ConnectionHandle, bool)>::new();
+    for (message, connection, sent_full_snapshot) in outbound {
+        match enqueue_server_outbox(&mut world, message) {
+            Ok(()) => accepted_outbound.push((connection, sent_full_snapshot)),
             Err(NetworkPendingEnqueueError::Unavailable { endpoint, .. }) => {
                 anyhow::bail!("{endpoint} should be installed by NetPlugin");
             }
@@ -207,11 +196,34 @@ where
         }
     }
 
+    if !accepted_outbound.is_empty() {
+        let state = world.resource_mut::<ServerSnapshotReplicationState<TDriver::Snapshot>>()?;
+        for (connection, sent_full_snapshot) in &accepted_outbound {
+            state
+                .checkpoints
+                .entry(*connection)
+                .or_default()
+                .mark_snapshot_sent(cursor, tick, *sent_full_snapshot);
+        }
+    }
+
+    if !accepted_outbound.is_empty()
+        && let Ok(streaming_state) = world.resource_mut::<NetStreamingStateResource>()
+    {
+        for (connection, sent_full_snapshot) in &accepted_outbound {
+            streaming_state.mark_snapshot_sent(
+                *connection,
+                SyncCursor(cursor.0),
+                *sent_full_snapshot,
+            );
+        }
+    }
+
     if let Ok(diagnostics) = world.resource_mut::<ReplicationDiagnostics>() {
         diagnostics.last_snapshot_cursor = cursor.0;
         diagnostics.emitted_snapshots = diagnostics
             .emitted_snapshots
-            .saturating_add(outbound.len() as u64);
+            .saturating_add(accepted_outbound.len() as u64);
     }
 
     Ok(())
@@ -247,6 +259,7 @@ where
 
     let commands = TDriver::take_local_input(&mut world)
         .map_err(|error| map_driver_error::<TDriver>(error, "take local input"))?;
+    let mut staged_commands = Vec::with_capacity(commands.len());
     if !commands.is_empty() {
         if matches!(authority, AuthorityRole::Client | AuthorityRole::Peer)
             && let Some(connection) = sole_active_connection(&world)
@@ -254,12 +267,11 @@ where
             let _ = ensure_owner_for_connection(&mut world, connection, OwnerRole::Active);
         }
 
-        {
-            let staging = world.resource_mut::<NetworkInputStaging<TDriver::Input>>()?;
-            for command in &commands {
-                if let Err(NetworkInputStageError::Backpressure { capacity, .. }) =
-                    staging.stage(tick, command.clone())
-                {
+        let staging = world.resource_mut::<NetworkInputStaging<TDriver::Input>>()?;
+        for command in commands {
+            match staging.stage(tick, command.clone()) {
+                Ok(()) => staged_commands.push(command),
+                Err(NetworkInputStageError::Backpressure { capacity, .. }) => {
                     tracing::warn!(
                         capacity,
                         tick = tick.0,
@@ -270,27 +282,32 @@ where
         }
     }
 
-    if matches!(authority, AuthorityRole::Client | AuthorityRole::Peer) && !commands.is_empty() {
-        let payload = TDriver::encode_input(&commands)
+    if matches!(authority, AuthorityRole::Client | AuthorityRole::Peer)
+        && !staged_commands.is_empty()
+    {
+        let payload = TDriver::encode_input(&staged_commands)
             .map_err(|error| map_driver_error::<TDriver>(error, "encode input"))?;
 
-        match enqueue_client_outbox(
+        let frame_enqueued = match enqueue_client_outbox(
             &mut world,
             ClientMessage::InputFrame(InputFrame { tick, payload }),
         ) {
-            Ok(()) => {}
+            Ok(()) => true,
             Err(NetworkPendingEnqueueError::Unavailable { endpoint, .. }) => {
                 anyhow::bail!("{endpoint} should be installed by NetPlugin");
             }
             Err(NetworkPendingEnqueueError::Backpressure { capacity, .. }) => {
                 tracing::warn!(capacity, "failed to enqueue local input frame");
+                false
             }
-        }
+        };
 
-        if let Ok(prediction) = world.resource_mut::<PredictionState<TDriver::Input>>() {
+        if frame_enqueued
+            && let Ok(prediction) = world.resource_mut::<PredictionState<TDriver::Input>>()
+        {
             prediction.pending_frames.push(PendingInputFrame {
                 tick,
-                commands: commands.clone(),
+                commands: staged_commands.clone(),
             });
         }
     }
