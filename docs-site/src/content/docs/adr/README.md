@@ -39,7 +39,7 @@ Architectural decision records capture long-term decisions, rejected alternative
 - [0019: Batteries-Included Application Composition](accepted/0019-batteries-included-application-composition.md)
 - [0021: Ratify RunenRender Semantic Rendering Architecture](accepted/0021-ratify-runenrender-semantic-rendering-architecture.md)
 
-Accepted ADR identifiers are not required to be contiguous; this index lists the files that currently exist in the accepted lifecycle folder. ADR 0020 remains intentionally absent from `main` while draft PR #282 is unaccepted.
+Accepted ADR identifiers are not required to be contiguous; this index lists the files that currently exist in the accepted lifecycle folder.
 
 ## Superseded ADRs
 
