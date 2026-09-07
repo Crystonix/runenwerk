@@ -1,4 +1,186 @@
 // Owner: Engine Networking Tests - Basic Flow
+
+fn client_probe(value: u8) -> ClientMessage {
+    ClientMessage::TypedPayload(TypedPayloadMessage::new(
+        "test/client",
+        "ClientProbe",
+        1,
+        vec![value],
+    ))
+}
+
+fn server_probe(value: u8) -> ServerMessage {
+    ServerMessage::TypedPayload(TypedPayloadMessage::new(
+        "test/server",
+        "ServerProbe",
+        1,
+        vec![value],
+    ))
+}
+
+#[test]
+fn pending_endpoint_resources_preserve_fifo_order() {
+    let mut world = World::new();
+    let client_messages = vec![client_probe(1), client_probe(2), client_probe(3)];
+    let server_messages = vec![server_probe(4), server_probe(5), server_probe(6)];
+
+    for message in server_messages.iter().cloned() {
+        enqueue_client_inbox(&mut world, message).expect("client inbox enqueue should succeed");
+    }
+    for message in client_messages.iter().cloned() {
+        enqueue_server_inbox(&mut world, message).expect("server inbox enqueue should succeed");
+    }
+    for message in client_messages.iter().cloned() {
+        enqueue_client_outbox(&mut world, message).expect("client outbox enqueue should succeed");
+    }
+    for message in server_messages.iter().cloned() {
+        enqueue_server_outbox_broadcast(&mut world, message)
+            .expect("server outbox enqueue should succeed");
+    }
+
+    assert_eq!(
+        engine::plugins::net::drain_client_inbox(&mut world),
+        server_messages
+    );
+    let drained_server_inbox = engine::plugins::net::drain_server_inbox(&mut world);
+    assert_eq!(
+        drained_server_inbox
+            .into_iter()
+            .map(|incoming| incoming.message)
+            .collect::<Vec<_>>(),
+        client_messages
+    );
+    assert_eq!(
+        engine::plugins::net::drain_client_outbox(&mut world),
+        client_messages
+    );
+    assert_eq!(
+        engine::plugins::net::drain_server_outbox(&mut world),
+        server_messages
+            .into_iter()
+            .map(OutboundServerMessage::Broadcast)
+            .collect::<Vec<_>>()
+    );
+}
+
+#[test]
+fn pending_endpoint_backpressure_recovers_rejected_payload() {
+    let mut world = World::new();
+    for index in 0..4_096usize {
+        enqueue_client_outbox(&mut world, client_probe((index % 251) as u8))
+            .expect("queue should accept messages through its configured capacity");
+    }
+
+    let rejected = client_probe(255);
+    let error = enqueue_client_outbox(&mut world, rejected.clone())
+        .expect_err("message beyond bounded capacity should be rejected");
+
+    assert_eq!(error.capacity(), 4_096);
+    assert_eq!(error.into_message(), rejected);
+    assert_eq!(client_outbox_len(&world), 4_096);
+}
+
+#[test]
+fn client_pending_resources_are_distinct_from_processed_and_flushed_projections() {
+    let mut app = App::headless();
+    app.add_plugin(NetworkClientPlugin);
+    let inbound = server_probe(10);
+    let outbound = client_probe(11);
+
+    enqueue_client_inbox(app.world_mut(), inbound.clone())
+        .expect("client inbox enqueue should succeed");
+    enqueue_client_outbox(app.world_mut(), outbound.clone())
+        .expect("client outbox enqueue should succeed");
+
+    assert!(!client_inbox_is_empty(app.world()));
+    assert_eq!(client_outbox_len(app.world()), 1);
+    assert!(
+        app.world()
+            .resource::<engine::plugins::net::NetworkInboundQueue>()
+            .unwrap()
+            .server_messages()
+            .is_empty()
+    );
+    assert!(
+        app.world()
+            .resource::<NetworkOutboundQueue>()
+            .unwrap()
+            .client_messages()
+            .is_empty()
+    );
+
+    let app = app
+        .run_for_frames(1)
+        .expect("client network frame should process pending endpoint state");
+
+    assert!(client_inbox_is_empty(app.world()));
+    assert_eq!(client_outbox_len(app.world()), 0);
+    assert_eq!(
+        app.world()
+            .resource::<engine::plugins::net::NetworkInboundQueue>()
+            .unwrap()
+            .server_messages(),
+        &[inbound]
+    );
+    assert_eq!(
+        app.world()
+            .resource::<NetworkOutboundQueue>()
+            .unwrap()
+            .client_messages(),
+        &[outbound]
+    );
+}
+
+#[test]
+fn server_pending_resources_are_distinct_from_processed_and_flushed_projections() {
+    let mut app = App::headless();
+    app.add_plugin(NetworkServerPlugin);
+    let inbound = client_probe(12);
+    let outbound = server_probe(13);
+
+    enqueue_server_inbox(app.world_mut(), inbound.clone())
+        .expect("server inbox enqueue should succeed");
+    enqueue_server_outbox_broadcast(app.world_mut(), outbound.clone())
+        .expect("server outbox enqueue should succeed");
+
+    assert!(!server_inbox_is_empty(app.world()));
+    assert_eq!(server_outbox_len(app.world()), 1);
+    assert!(
+        app.world()
+            .resource::<engine::plugins::net::NetworkInboundQueue>()
+            .unwrap()
+            .client_messages()
+            .is_empty()
+    );
+    assert!(
+        app.world()
+            .resource::<NetworkOutboundQueue>()
+            .unwrap()
+            .server_messages()
+            .is_empty()
+    );
+
+    let app = app
+        .run_for_frames(1)
+        .expect("server network frame should process pending endpoint state");
+
+    assert!(server_inbox_is_empty(app.world()));
+    assert_eq!(server_outbox_len(app.world()), 0);
+    let inbound_projection = app
+        .world()
+        .resource::<engine::plugins::net::NetworkInboundQueue>()
+        .unwrap();
+    assert_eq!(inbound_projection.client_messages().len(), 1);
+    assert_eq!(inbound_projection.client_messages()[0].message, inbound);
+    assert_eq!(
+        app.world()
+            .resource::<NetworkOutboundQueue>()
+            .unwrap()
+            .server_messages(),
+        &[OutboundServerMessage::Broadcast(outbound)]
+    );
+}
+
 #[test]
 fn network_client_plugin_drains_server_messages_and_flushes_client_messages() {
     let mut app = App::headless();
