@@ -67,9 +67,11 @@ impl RenderObjectParticipation {
             .windows(2)
             .find(|pair| pair[0].id() == pair[1].id())
         {
-            return Err(RenderParticipationValidationError::DuplicateRepresentationId {
-                representation_id: pair[0].id(),
-            });
+            return Err(
+                RenderParticipationValidationError::DuplicateRepresentationId {
+                    representation_id: pair[0].id(),
+                },
+            );
         }
         Ok(Self {
             representations,
@@ -163,9 +165,11 @@ mod tests {
                 None,
                 None,
             ),
-            Err(RenderParticipationValidationError::DuplicateRepresentationId {
-                representation_id: duplicate,
-            })
+            Err(
+                RenderParticipationValidationError::DuplicateRepresentationId {
+                    representation_id: duplicate,
+                }
+            )
         );
     }
 }
