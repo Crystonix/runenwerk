@@ -4,40 +4,25 @@
 //! ray and non-negative distance, so callers cannot publish a hit whose position contradicts the
 //! query. Dispatch/provider topology remains outside R3.
 
-use super::representation::{
-    RenderRepresentationValidationError, RenderSurfaceHit, RenderSurfaceQuery,
-};
+use super::representation::{RenderRepresentationValidationError, RenderSurfaceQuery};
+use super::space_time::CanonicalF64;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct RenderSurfaceQueryResult {
-    kind: RenderSurfaceQueryResultKind,
+pub struct RenderSurfaceHit {
+    distance_meters: CanonicalF64,
+    position_scene_meters: [CanonicalF64; 3],
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-enum RenderSurfaceQueryResultKind {
-    Miss,
-    Hit(RenderSurfaceHit),
-}
-
-impl RenderSurfaceQueryResult {
-    pub const fn miss() -> Self {
-        Self {
-            kind: RenderSurfaceQueryResultKind::Miss,
-        }
-    }
-
-    pub fn hit_at_distance(
+impl RenderSurfaceHit {
+    fn from_query_distance(
         query: RenderSurfaceQuery,
         distance_meters: f64,
     ) -> Result<Self, RenderRepresentationValidationError> {
-        let origin = query.origin_scene_meters();
-        let direction = query.direction_scene();
-        let position = [
-            origin[0] + direction[0] * distance_meters,
-            origin[1] + direction[1] * distance_meters,
-            origin[2] + direction[2] * distance_meters,
-        ];
-        let hit = RenderSurfaceHit::new(distance_meters, position)?;
+        let distance_meters = CanonicalF64::new(distance_meters, "surface_hit_distance_meters")?;
+        if distance_meters.get() < 0.0 {
+            return Err(RenderRepresentationValidationError::NegativeSurfaceHitDistance);
+        }
+        let hit = RenderSurfaceHit::from_query_distance(query, distance_meters)?;
         Ok(Self {
             kind: RenderSurfaceQueryResultKind::Hit(hit),
         })

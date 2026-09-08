@@ -414,39 +414,6 @@ impl RenderSurfaceQuery {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct RenderSurfaceHit {
-    distance_meters: CanonicalF64,
-    position_scene_meters: [CanonicalF64; 3],
-}
-
-impl RenderSurfaceHit {
-    pub fn new(
-        distance_meters: f64,
-        position_scene_meters: [f64; 3],
-    ) -> Result<Self, RenderRepresentationValidationError> {
-        let distance_meters = CanonicalF64::new(distance_meters, "surface_hit_distance_meters")?;
-        if distance_meters.get() < 0.0 {
-            return Err(RenderRepresentationValidationError::NegativeSurfaceHitDistance);
-        }
-        Ok(Self {
-            distance_meters,
-            position_scene_meters: canonical_point(
-                position_scene_meters,
-                "surface_hit_position_scene_meters",
-            )?,
-        })
-    }
-
-    pub fn distance_meters(self) -> f64 {
-        self.distance_meters.get()
-    }
-
-    pub fn position_scene_meters(self) -> [f64; 3] {
-        self.position_scene_meters.map(CanonicalF64::get)
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct RenderFieldDistanceQuery {
     position_scene_meters: [CanonicalF64; 3],
     time: RenderTimePoint,
@@ -720,6 +687,8 @@ mod tests {
 
     #[test]
     fn exact_analytic_surface_protocol_has_narrow_query_and_result() {
+        use crate::plugins::render::surface_result::RenderSurfaceQueryResult;
+
         let record = representation(
             1,
             Some(
@@ -741,12 +710,9 @@ mod tests {
         let b = origin[0] * direction[0] + origin[1] * direction[1] + origin[2] * direction[2];
         let c = origin[0] * origin[0] + origin[1] * origin[1] + origin[2] * origin[2] - 1.0;
         let distance = -b - (b * b - c).sqrt();
-        let position = [
-            origin[0] + direction[0] * distance,
-            origin[1] + direction[1] * distance,
-            origin[2] + direction[2] * distance,
-        ];
-        let hit = RenderSurfaceHit::new(distance, position).expect("valid exact hit");
+        let result = RenderSurfaceQueryResult::hit_at_distance(query, distance)
+            .expect("valid exact hit result");
+        let hit = result.hit().expect("surface should hit");
         assert_eq!(hit.distance_meters(), 2.0);
         assert_eq!(hit.position_scene_meters(), [0.0, 0.0, 1.0]);
     }
