@@ -370,7 +370,10 @@ impl fmt::Display for RenderSceneCommitError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::ConflictingOperations { object_id } => {
-                write!(f, "RenderSceneUpdate contains conflicting operations for {object_id:?}")
+                write!(
+                    f,
+                    "RenderSceneUpdate contains conflicting operations for {object_id:?}"
+                )
             }
             Self::ObjectAlreadyPresent { object_id } => {
                 write!(f, "RenderObjectId {object_id:?} is already present")
@@ -541,8 +544,12 @@ mod tests {
     #[test]
     fn allocation_is_monotonic_non_reusing_and_does_not_advance_scene_revision() {
         let mut store = RenderSceneStore::new();
-        let first = store.allocate_object_id().expect("first ID should allocate");
-        let second = store.allocate_object_id().expect("second ID should allocate");
+        let first = store
+            .allocate_object_id()
+            .expect("first ID should allocate");
+        let second = store
+            .allocate_object_id()
+            .expect("second ID should allocate");
 
         assert_eq!(first.raw(), 1);
         assert_eq!(second.raw(), 2);
@@ -553,7 +560,9 @@ mod tests {
         remove.remove(first);
         store.commit(remove).expect("remove should commit");
 
-        let third = store.allocate_object_id().expect("third ID should allocate");
+        let third = store
+            .allocate_object_id()
+            .expect("third ID should allocate");
         assert_eq!(third.raw(), 3);
         assert_ne!(third, first);
     }
@@ -650,7 +659,9 @@ mod tests {
 
         let mut update = RenderSceneUpdate::new();
         update.remove(first).insert(second).insert(third);
-        let commit = store.commit(update).expect("multi-operation update should commit");
+        let commit = store
+            .commit(update)
+            .expect("multi-operation update should commit");
 
         assert_eq!(commit.revision().raw(), 2);
         assert_eq!(commit.snapshot().object_ids(), vec![second, third]);
@@ -685,20 +696,30 @@ mod tests {
         for object_id in full_ids {
             full_update.insert(object_id);
         }
-        full.commit(full_update).expect("full construction should commit");
+        full.commit(full_update)
+            .expect("full construction should commit");
 
         let mut incremental = RenderSceneStore::new();
         let incremental_ids = [
-            incremental.allocate_object_id().expect("ID should allocate"),
-            incremental.allocate_object_id().expect("ID should allocate"),
-            incremental.allocate_object_id().expect("ID should allocate"),
+            incremental
+                .allocate_object_id()
+                .expect("ID should allocate"),
+            incremental
+                .allocate_object_id()
+                .expect("ID should allocate"),
+            incremental
+                .allocate_object_id()
+                .expect("ID should allocate"),
         ];
         for object_id in incremental_ids {
             insert_one(&mut incremental, object_id);
         }
 
         assert!(full.snapshot().membership_eq(&incremental.snapshot()));
-        assert_eq!(full.snapshot().object_ids(), incremental.snapshot().object_ids());
+        assert_eq!(
+            full.snapshot().object_ids(),
+            incremental.snapshot().object_ids()
+        );
         assert_ne!(full.revision(), incremental.revision());
     }
 

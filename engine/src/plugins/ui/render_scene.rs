@@ -124,7 +124,10 @@ mod tests {
 
         assert_eq!(adapter.len(), 2);
         assert_ne!(first_object, second_object);
-        assert_eq!(insert.change_set().inserted(), Some(&[first_object, second_object][..]));
+        assert_eq!(
+            insert.change_set().inserted(),
+            Some(&[first_object, second_object][..])
+        );
 
         source.unmount_surface(first);
         let removal = adapter

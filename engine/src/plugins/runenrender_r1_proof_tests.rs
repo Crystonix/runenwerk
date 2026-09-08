@@ -1,8 +1,6 @@
 use runen_spatial::{ChunkCoord3, ChunkId, WorldId};
 
-use crate::plugins::render::scene::{
-    RenderSceneCommitError, RenderSceneStore, RenderSceneUpdate,
-};
+use crate::plugins::render::scene::{RenderSceneCommitError, RenderSceneStore, RenderSceneUpdate};
 use crate::plugins::ui::render_scene::UiSurfaceRenderSceneAdapter;
 use crate::plugins::ui::{UiMountRequest, UiMountRequestsResource, UiMountSource};
 use crate::plugins::world::adapters::render_scene::WorldChunkRenderSceneAdapter;
@@ -112,7 +110,10 @@ fn world_and_ui_share_one_renderer_identity_and_scene_authority() {
         .synchronize(&world_source, &mut scene)
         .expect("world retirement should commit atomically");
 
-    assert_eq!(retirement.change_set().removed().map(|ids| ids.len()), Some(2));
+    assert_eq!(
+        retirement.change_set().removed().map(|ids| ids.len()),
+        Some(2)
+    );
     assert!(!retirement.snapshot().contains(first_object));
     assert!(!retirement.snapshot().contains(second_object));
     assert!(retirement.snapshot().contains(ui_object));
