@@ -35,7 +35,10 @@ impl fmt::Display for RenderSemanticValueError {
             Self::InvalidBounds => write!(f, "spatial bounds minimum must not exceed maximum"),
             Self::InvalidInterval => write!(f, "time interval start must not exceed end"),
             Self::MotionOutsideValidity => {
-                write!(f, "motion interval must be contained by temporal validity")
+                write!(
+                    f,
+                    "motion interval must be contained by temporal validity"
+                )
             }
         }
     }
@@ -49,6 +52,10 @@ pub enum RenderHandedness {
     Right,
 }
 
+/// Unit scale and handedness for one renderer-semantic local coordinate frame.
+///
+/// Source coordinate systems remain source-owned. Adapters project their conventions into this
+/// renderer-local vocabulary rather than leaking source spatial types into RunenRender.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct RenderSpaceSpec {
     meters_per_unit: CanonicalF64,
@@ -81,6 +88,11 @@ impl RenderSpaceSpec {
     }
 }
 
+/// A finite semantic affine transform from one renderer-local frame into another.
+///
+/// The 3x4 matrix is row-major. R2 validates finiteness but deliberately does not require
+/// invertibility: a semantic source projection may be degenerate without implying a GPU numeric
+/// realization or a representation-specific transform-validity guarantee.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct RenderAffineTransform3 {
     row_major_3x4: [CanonicalF64; 12],
@@ -89,8 +101,8 @@ pub struct RenderAffineTransform3 {
 impl RenderAffineTransform3 {
     pub fn from_row_major_3x4(values: [f64; 12]) -> Result<Self, RenderSemanticValueError> {
         let mut row_major_3x4 = [CanonicalF64(0); 12];
-        for (index, value) in values.into_iter().enumerate() {
-            row_major_3x4[index] = CanonicalF64::new(value, "affine_transform")?;
+        for (slot, value) in row_major_3x4.iter_mut().zip(values) {
+            *slot = CanonicalF64::new(value, "affine_transform")?;
         }
         Ok(Self { row_major_3x4 })
     }
@@ -119,6 +131,7 @@ impl RenderAffineTransform3 {
     }
 }
 
+/// Renderer-semantic spatial support expressed in scene coordinates.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RenderSpatialCoverage {
     kind: RenderSpatialCoverageKind,
@@ -144,14 +157,22 @@ impl RenderSpatialCoverage {
         min: [f64; 3],
         max: [f64; 3],
     ) -> Result<Self, RenderSemanticValueError> {
-        let mut canonical_min = [CanonicalF64(0); 3];
-        let mut canonical_max = [CanonicalF64(0); 3];
-        for index in 0..3 {
-            canonical_min[index] = CanonicalF64::new(min[index], "spatial_bounds_min")?;
-            canonical_max[index] = CanonicalF64::new(max[index], "spatial_bounds_max")?;
-            if canonical_min[index].get() > canonical_max[index].get() {
-                return Err(RenderSemanticValueError::InvalidBounds);
-            }
+        let canonical_min = [
+            CanonicalF64::new(min[0], "spatial_bounds_min")?,
+            CanonicalF64::new(min[1], "spatial_bounds_min")?,
+            CanonicalF64::new(min[2], "spatial_bounds_min")?,
+        ];
+        let canonical_max = [
+            CanonicalF64::new(max[0], "spatial_bounds_max")?,
+            CanonicalF64::new(max[1], "spatial_bounds_max")?,
+            CanonicalF64::new(max[2], "spatial_bounds_max")?,
+        ];
+        if canonical_min
+            .iter()
+            .zip(canonical_max.iter())
+            .any(|(min, max)| min.get() > max.get())
+        {
+            return Err(RenderSemanticValueError::InvalidBounds);
         }
         Ok(Self {
             kind: RenderSpatialCoverageKind::AxisAlignedBounds {
@@ -254,7 +275,8 @@ impl RenderTemporalSupport {
     }
 
     pub fn contains_interval(self, interval: RenderTimeInterval) -> bool {
-        self.interval.map_or(true, |validity| validity.contains(interval))
+        self.interval
+            .is_none_or(|validity| validity.contains(interval))
     }
 }
 
@@ -262,19 +284,19 @@ impl RenderTemporalSupport {
 pub struct RenderObjectSpatialState {
     local_space: RenderSpaceSpec,
     local_to_scene: RenderAffineTransform3,
-    coverage: RenderSpatialCoverage,
+    scene_coverage: RenderSpatialCoverage,
 }
 
 impl RenderObjectSpatialState {
     pub fn new(
         local_space: RenderSpaceSpec,
         local_to_scene: RenderAffineTransform3,
-        coverage: RenderSpatialCoverage,
+        scene_coverage: RenderSpatialCoverage,
     ) -> Self {
         Self {
             local_space,
             local_to_scene,
-            coverage,
+            scene_coverage,
         }
     }
 
@@ -286,8 +308,8 @@ impl RenderObjectSpatialState {
         self.local_to_scene
     }
 
-    pub const fn coverage(&self) -> &RenderSpatialCoverage {
-        &self.coverage
+    pub const fn scene_coverage(&self) -> &RenderSpatialCoverage {
+        &self.scene_coverage
     }
 }
 
@@ -336,7 +358,18 @@ mod tests {
         );
         assert!(matches!(
             RenderAffineTransform3::from_row_major_3x4([
-                f64::NAN, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0,
+                f64::NAN,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
             ]),
             Err(RenderSemanticValueError::NonFinite { .. })
         ));
@@ -369,11 +402,25 @@ mod tests {
         )
         .expect("ordered interval");
         assert_eq!(
-            RenderObjectTemporalState::new(
-                RenderTemporalSupport::interval(validity),
-                Some(motion)
-            ),
+            RenderObjectTemporalState::new(RenderTemporalSupport::interval(validity), Some(motion)),
             Err(RenderSemanticValueError::MotionOutsideValidity)
         );
+    }
+
+    #[test]
+    fn object_spatial_coverage_is_explicitly_scene_space() {
+        let coverage = RenderSpatialCoverage::axis_aligned_bounds(
+            [-2.0, -1.0, -1.0],
+            [2.0, 1.0, 1.0],
+        )
+        .expect("valid bounds");
+        let state = RenderObjectSpatialState::new(
+            RenderSpaceSpec::new(0.01, RenderHandedness::Left).expect("valid local space"),
+            RenderAffineTransform3::identity(),
+            coverage.clone(),
+        );
+        assert_eq!(state.scene_coverage(), &coverage);
+        assert_eq!(state.local_space().meters_per_unit(), 0.01);
+        assert_eq!(state.local_space().handedness(), RenderHandedness::Left);
     }
 }
