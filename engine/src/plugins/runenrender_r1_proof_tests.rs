@@ -1,6 +1,8 @@
 use runen_spatial::{ChunkCoord3, ChunkId, WorldId};
 
-use crate::plugins::render::scene::RenderSceneStore;
+use crate::plugins::render::scene::{
+    RenderSceneCommitError, RenderSceneStore, RenderSceneUpdate,
+};
 use crate::plugins::ui::render_scene::UiSurfaceRenderSceneAdapter;
 use crate::plugins::ui::{UiMountRequest, UiMountRequestsResource, UiMountSource};
 use crate::plugins::world::adapters::render_scene::WorldChunkRenderSceneAdapter;
@@ -17,6 +19,41 @@ fn mount(source: &mut UiMountRequestsResource, screen: &str) -> ui_surface::Surf
         .last()
         .expect("accepted mount request should create a mounted session")
         .surface_instance_id()
+}
+
+#[test]
+fn duplicate_same_kind_operations_are_same_object_conflicts() {
+    let mut scene = RenderSceneStore::new();
+    let insert_id = scene
+        .allocate_object_id()
+        .expect("renderer identity should allocate");
+
+    let mut duplicate_insert = RenderSceneUpdate::new();
+    duplicate_insert.insert(insert_id).insert(insert_id);
+    assert_eq!(
+        scene.commit(duplicate_insert),
+        Err(RenderSceneCommitError::ConflictingOperations {
+            object_id: insert_id,
+        })
+    );
+    assert!(scene.snapshot().is_empty());
+
+    let mut insert = RenderSceneUpdate::new();
+    insert.insert(insert_id);
+    scene
+        .commit(insert)
+        .expect("test setup insertion should succeed");
+    let before_duplicate_remove = scene.snapshot();
+
+    let mut duplicate_remove = RenderSceneUpdate::new();
+    duplicate_remove.remove(insert_id).remove(insert_id);
+    assert_eq!(
+        scene.commit(duplicate_remove),
+        Err(RenderSceneCommitError::ConflictingOperations {
+            object_id: insert_id,
+        })
+    );
+    assert_eq!(scene.snapshot(), before_duplicate_remove);
 }
 
 #[test]
@@ -75,7 +112,7 @@ fn world_and_ui_share_one_renderer_identity_and_scene_authority() {
         .synchronize(&world_source, &mut scene)
         .expect("world retirement should commit atomically");
 
-    assert_eq!(retirement.change_set().removed().map(<[_]>::len), Some(2));
+    assert_eq!(retirement.change_set().removed().map(|ids| ids.len()), Some(2));
     assert!(!retirement.snapshot().contains(first_object));
     assert!(!retirement.snapshot().contains(second_object));
     assert!(retirement.snapshot().contains(ui_object));

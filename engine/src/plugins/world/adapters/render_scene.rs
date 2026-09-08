@@ -147,7 +147,7 @@ mod tests {
             .expect("retiring chunks should synchronize atomically");
 
         assert!(adapter.is_empty());
-        assert_eq!(retirement.change_set().removed().map(<[_]>::len), Some(2));
+        assert_eq!(retirement.change_set().removed().map(|ids| ids.len()), Some(2));
         assert!(retirement.snapshot().is_empty());
         assert!(retained.contains(first_object));
         assert!(retained.contains(second_object));
