@@ -19,6 +19,7 @@ pub enum RenderRequestValidationError {
     OutputObservationOutOfRange { observation_index: usize },
     ObservationOutsideRenderInterval { observation_index: usize },
     ProbeRequiresScalarTopology { observation_index: usize },
+    PerspectiveRequiresSampleLatticeTopology { observation_index: usize },
     ObservationHasNoOutputs { observation_index: usize },
 }
 
@@ -71,6 +72,10 @@ impl fmt::Display for RenderRequestValidationError {
             Self::ProbeRequiresScalarTopology { observation_index } => write!(
                 f,
                 "probe observation index {observation_index} requires scalar result topology"
+            ),
+            Self::PerspectiveRequiresSampleLatticeTopology { observation_index } => write!(
+                f,
+                "perspective observation index {observation_index} requires 2D sample-lattice result topology"
             ),
             Self::ObservationHasNoOutputs { observation_index } => write!(
                 f,
@@ -394,9 +399,13 @@ impl RenderResultTopology {
 
 /// Semantic acceptance tolerance, independent of physical numeric storage and packing.
 ///
-/// Absolute tolerance is expressed in the semantic units of the requested output value. Relative
-/// tolerance is dimensionless. Neither chooses an `f16`/`f32`/`f64`, texture format, quantization,
-/// or execution method.
+/// For scalar R2 outputs, `Exact` permits no deviation from the exact semantic quantity;
+/// `Absolute(max_error)` permits absolute error no greater than `max_error` in that output's
+/// semantic units; and `Relative(max_fraction)` permits absolute error no greater than
+/// `max_fraction * abs(exact_value)`. A zero exact value therefore requires zero absolute error
+/// under relative tolerance. Object identity is categorical and consequently accepts only `Exact`.
+/// None of these choices selects an `f16`/`f32`/`f64`, texture format, packing, quantization, or
+/// execution method.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct RenderSemanticTolerance {
     kind: RenderSemanticToleranceKind,
@@ -566,6 +575,15 @@ impl RenderRequest {
                     observation_index,
                 });
             }
+            if matches!(observation, RenderObservationSpec::Perspective(_))
+                && output.spec().topology().is_scalar()
+            {
+                return Err(
+                    RenderRequestValidationError::PerspectiveRequiresSampleLatticeTopology {
+                        observation_index,
+                    },
+                );
+            }
             output_counts[observation_index] += 1;
         }
 
@@ -616,6 +634,19 @@ mod tests {
                 RenderSamplingSupport::ideal_ray(),
             )
             .expect("valid probe"),
+        )
+    }
+
+    fn perspective_observation(shutter: RenderTimeInterval) -> RenderObservationSpec {
+        RenderObservationSpec::Perspective(
+            RenderPerspectiveObservation::new(
+                RenderAffineTransform3::identity(),
+                std::f64::consts::FRAC_PI_2,
+                1.0,
+                shutter,
+                RenderSamplingSupport::ideal_ray(),
+            )
+            .expect("valid perspective"),
         )
     }
 
@@ -718,16 +749,7 @@ mod tests {
     #[test]
     fn coordinated_observations_support_distinct_result_topologies() {
         let render_interval = interval(0.0, 1.0);
-        let perspective = RenderObservationSpec::Perspective(
-            RenderPerspectiveObservation::new(
-                RenderAffineTransform3::identity(),
-                std::f64::consts::FRAC_PI_2,
-                1.0,
-                interval(0.0, 0.5),
-                RenderSamplingSupport::ideal_ray(),
-            )
-            .expect("valid perspective"),
-        );
+        let perspective = perspective_observation(interval(0.0, 0.5));
         let probe = probe_observation(interval(0.5, 0.5));
         let lattice = RenderResultTopology::sample_lattice_2d(640, 480).expect("valid lattice");
         let request = RenderRequest::new(
@@ -750,7 +772,7 @@ mod tests {
     }
 
     #[test]
-    fn probe_rejects_image_lattice_and_observation_shutter_must_fit_request() {
+    fn observation_topologies_and_shutter_support_reject_incoherent_requests() {
         let outside_probe = probe_observation(interval(2.0, 2.0));
         let lattice = RenderResultTopology::sample_lattice_2d(4, 4).expect("valid lattice");
         assert_eq!(
@@ -776,6 +798,23 @@ mod tests {
             Err(RenderRequestValidationError::ProbeRequiresScalarTopology {
                 observation_index: 0
             })
+        );
+
+        let perspective = perspective_observation(interval(0.5, 0.5));
+        assert_eq!(
+            RenderRequest::new(
+                interval(0.0, 1.0),
+                vec![perspective],
+                vec![RenderRequestedOutput::new(
+                    0,
+                    radiance(RenderResultTopology::scalar()),
+                )]
+            ),
+            Err(
+                RenderRequestValidationError::PerspectiveRequiresSampleLatticeTopology {
+                    observation_index: 0
+                }
+            )
         );
     }
 
