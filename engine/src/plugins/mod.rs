@@ -19,6 +19,8 @@ pub mod world;
 
 #[cfg(test)]
 mod runenrender_r1_proof_tests;
+#[cfg(test)]
+mod runenrender_r3_proof_tests;
 
 pub use debug_metrics::*;
 pub use diagnostics::{

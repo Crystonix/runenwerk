@@ -1,5 +1,6 @@
 pub mod adapters;
 pub mod api;
+pub mod appearance;
 pub mod backend;
 pub mod composition;
 pub mod features;
@@ -9,15 +10,18 @@ pub mod graph;
 pub mod inspect;
 pub mod material_compiler;
 pub mod params;
+pub mod participation;
 pub mod pipelines;
 pub mod procedural;
 pub mod renderer;
+pub mod representation;
 pub mod request;
 pub mod residency;
 pub mod resource;
 pub mod scene;
 pub mod shader;
 pub mod space_time;
+pub mod surface_result;
 mod texture_upload;
 
 mod plugin;
