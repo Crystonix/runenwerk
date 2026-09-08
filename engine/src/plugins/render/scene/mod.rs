@@ -774,11 +774,8 @@ mod tests {
             RenderTimePoint::from_seconds(temporal_end).expect("finite time"),
         )
         .expect("ordered interval");
-        let temporal = RenderObjectTemporalState::new(
-            RenderTemporalSupport::interval(validity),
-            Some(validity),
-        )
-        .expect("valid temporal state");
+        let temporal =
+            RenderObjectTemporalState::new(RenderTemporalSupport::interval(validity));
         RenderObjectState::new(spatial, temporal)
     }
 
@@ -1110,6 +1107,31 @@ mod tests {
             Err(RenderSceneCommitError::ConflictingOperations { object_id: missing })
         );
         assert_eq!(store.snapshot(), before);
+    }
+
+    #[test]
+    fn invalid_operation_in_multi_object_r2_update_rejects_without_partial_replacement() {
+        let mut store = RenderSceneStore::new();
+        let present = store.allocate_object_id().expect("ID should allocate");
+        let missing = store.allocate_object_id().expect("ID should allocate");
+        let initial = object_state(0.0, 1.0);
+        let mut insert = RenderSceneUpdate::new();
+        insert.insert_with_state(present, initial.clone());
+        store.commit(insert).expect("stateful insert should commit");
+        let before = store.snapshot();
+        let revision = store.revision();
+
+        let mut update = RenderSceneUpdate::new();
+        update
+            .replace_state(present, object_state(4.0, 2.0))
+            .remove(missing);
+        assert_eq!(
+            store.commit(update),
+            Err(RenderSceneCommitError::ObjectMissing { object_id: missing })
+        );
+        assert_eq!(store.revision(), revision);
+        assert_eq!(store.snapshot(), before);
+        assert_eq!(store.snapshot().object_state(present), Some(&initial));
     }
 
     #[test]
