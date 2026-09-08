@@ -31,61 +31,18 @@ jobs:
         shell: python
         run: |
           from pathlib import Path
+          import base64
           import re
 
           representation_path = Path("engine/src/plugins/render/representation.rs")
           representation = representation_path.read_text()
-
-          hit_pattern = re.compile(
-              r"\n#\[derive\(Debug, Clone, Copy, PartialEq, Eq, Hash\)\]\n"
-              r"pub struct RenderSurfaceHit \{.*?\n\}\n\n"
-              r"impl RenderSurfaceHit \{.*?\n\}\n"
-              r"(?=\n#\[derive\(Debug, Clone, Copy, PartialEq, Eq, Hash\)\]\n"
-              r"pub struct RenderFieldDistanceQuery)",
-              re.S,
-          )
+          hit_pattern = re.compile(r"\n#\[derive\(Debug, Clone, Copy, PartialEq, Eq, Hash\)\]\npub struct RenderSurfaceHit \{.*?\n\}\n\nimpl RenderSurfaceHit \{.*?\n\}\n(?=\n#\[derive\(Debug, Clone, Copy, PartialEq, Eq, Hash\)\]\npub struct RenderFieldDistanceQuery)", re.S)
           representation, count = hit_pattern.subn("\n", representation, count=1)
           if count != 1:
               raise SystemExit("RenderSurfaceHit authority block did not match exactly once")
-
-          test_pattern = re.compile(
-              r"    #\[test\]\n"
-              r"    fn exact_analytic_surface_protocol_has_narrow_query_and_result\(\) \{.*?"
-              r"(?=\n    #\[test\]\n    fn conservative_field_protocol_exposes_bounded_safe_distance_evidence)",
-              re.S,
-          )
-          replacement = '''    #[test]
-    fn exact_analytic_surface_protocol_has_narrow_query_and_result() {
-        use crate::plugins::render::surface_result::RenderSurfaceQueryResult;
-
-        let record = representation(
-            1,
-            Some(
-                RenderSurfaceProtocolEvidence::exact(RENDER_SURFACE_QUERY_PROTOCOL_REVISION)
-                    .expect("valid protocol"),
-            ),
-            None,
-        );
-        record
-            .surface_query_protocol(RENDER_SURFACE_QUERY_PROTOCOL_REVISION)
-            .expect("surface protocol should be supported");
-        let query = RenderSurfaceQuery::new([0.0, 0.0, 3.0], [0.0, 0.0, -2.0], instant())
-            .expect("valid query");
-
-        // R3 protocol proof fixture: exact unit sphere at the scene origin. The fixture is deliberately
-        // test-local; the public protocol is not named after or coupled to the founding primitive.
-        let origin = query.origin_scene_meters();
-        let direction = query.direction_scene();
-        let b = origin[0] * direction[0] + origin[1] * direction[1] + origin[2] * direction[2];
-        let c = origin[0] * origin[0] + origin[1] * origin[1] + origin[2] * origin[2] - 1.0;
-        let distance = -b - (b * b - c).sqrt();
-        let result = RenderSurfaceQueryResult::hit_at_distance(query, distance)
-            .expect("valid exact hit result");
-        let hit = result.hit().expect("surface should hit");
-        assert_eq!(hit.distance_meters(), 2.0);
-        assert_eq!(hit.position_scene_meters(), [0.0, 0.0, 1.0]);
-    }
-'''
+          test_pattern = re.compile(r"    #\[test\]\n    fn exact_analytic_surface_protocol_has_narrow_query_and_result\(\) \{.*?(?=\n    #\[test\]\n    fn conservative_field_protocol_exposes_bounded_safe_distance_evidence)", re.S)
+          test_b64 = "ICAgICNbdGVzdF0KICAgIGZuIGV4YWN0X2FuYWx5dGljX3N1cmZhY2VfcHJvdG9jb2xfaGFzX25hcnJvd19xdWVyeV9hbmRfcmVzdWx0KCkgewogICAgICAgIHVzZSBjcmF0ZTo6cGx1Z2luczo6cmVuZGVyOjpzdXJmYWNlX3Jlc3VsdDo6UmVuZGVyU3VyZmFjZVF1ZXJ5UmVzdWx0OwoKICAgICAgICBsZXQgcmVjb3JkID0gcmVwcmVzZW50YXRpb24oCiAgICAgICAgICAgIDEsCiAgICAgICAgICAgIFNvbWUoCiAgICAgICAgICAgICAgICBSZW5kZXJTdXJmYWNlUHJvdG9jb2xFdmlkZW5jZTo6ZXhhY3QoUkVOREVSX1NVUkZBQ0VfUVVFUllfUFJPVE9DT0xfUkVWSVNJT04pCiAgICAgICAgICAgICAgICAgICAgLmV4cGVjdCgidmFsaWQgcHJvdG9jb2wiKSwKICAgICAgICAgICAgKSwKICAgICAgICAgICAgTm9uZSwKICAgICAgICApOwogICAgICAgIHJlY29yZAogICAgICAgICAgICAuc3VyZmFjZV9xdWVyeV9wcm90b2NvbChSRU5ERVJfU1VSRkFDRV9RVUVSWV9QUk9UT0NPTF9SRVZJU0lPTikKICAgICAgICAgICAgLmV4cGVjdCgic3VyZmFjZSBwcm90b2NvbCBzaG91bGQgYmUgc3VwcG9ydGVkIik7CiAgICAgICAgbGV0IHF1ZXJ5ID0gUmVuZGVyU3VyZmFjZVF1ZXJ5OjpuZXcoWzAuMCwgMC4wLCAzLjBdLCBbMC4wLCAwLjAsIC0yLjBdLCBpbnN0YW50KCkpCiAgICAgICAgICAgIC5leHBlY3QoInZhbGlkIHF1ZXJ5Iik7CgogICAgICAgIC8vIFIzIHByb3RvY29sIHByb29mIGZpeHR1cmU6IGV4YWN0IHVuaXQgc3BoZXJlIGF0IHRoZSBzY2VuZSBvcmlnaW4uIFRoZSBmaXh0dXJlIGlzIGRlbGliZXJhdGVseQogICAgICAgIC8vIHRlc3QtbG9jYWw7IHRoZSBwdWJsaWMgcHJvdG9jb2wgaXMgbm90IG5hbWVkIGFmdGVyIG9yIGNvdXBsZWQgdG8gdGhlIGZvdW5kaW5nIHByaW1pdGl2ZS4KICAgICAgICBsZXQgb3JpZ2luID0gcXVlcnkub3JpZ2luX3NjZW5lX21ldGVycygpOwogICAgICAgIGxldCBkaXJlY3Rpb24gPSBxdWVyeS5kaXJlY3Rpb25fc2NlbmUoKTsKICAgICAgICBsZXQgYiA9IG9yaWdpblswXSAqIGRpcmVjdGlvblswXSArIG9yaWdpblsxXSAqIGRpcmVjdGlvblsxXSArIG9yaWdpblsyXSAqIGRpcmVjdGlvblsyXTsKICAgICAgICBsZXQgYyA9IG9yaWdpblswXSAqIG9yaWdpblswXSArIG9yaWdpblsxXSAqIG9yaWdpblsxXSArIG9yaWdpblsyXSAqIG9yaWdpblsyXSAtIDEuMDsKICAgICAgICBsZXQgZGlzdGFuY2UgPSAtYiAtIChiICogYiAtIGMpLnNxcnQoKTsKICAgICAgICBsZXQgcmVzdWx0ID0gUmVuZGVyU3VyZmFjZVF1ZXJ5UmVzdWx0OjpoaXRfYXRfZGlzdGFuY2UocXVlcnksIGRpc3RhbmNlKQogICAgICAgICAgICAuZXhwZWN0KCJ2YWxpZCBleGFjdCBoaXQgcmVzdWx0Iik7CiAgICAgICAgbGV0IGhpdCA9IHJlc3VsdC5oaXQoKS5leHBlY3QoInN1cmZhY2Ugc2hvdWxkIGhpdCIpOwogICAgICAgIGFzc2VydF9lcSEoaGl0LmRpc3RhbmNlX21ldGVycygpLCAyLjApOwogICAgICAgIGFzc2VydF9lcSEoaGl0LnBvc2l0aW9uX3NjZW5lX21ldGVycygpLCBbMC4wLCAwLjAsIDEuMF0pOwogICAgfQo="
+          replacement = base64.b64decode(test_b64).decode()
           representation, count = test_pattern.subn(replacement, representation, count=1)
           if count != 1:
               raise SystemExit("analytic surface proof did not match exactly once")
@@ -93,75 +50,21 @@ jobs:
 
           result_path = Path("engine/src/plugins/render/surface_result.rs")
           result = result_path.read_text()
-          result = result.replace(
-              "use super::representation::{\n    RenderRepresentationValidationError, RenderSurfaceHit, RenderSurfaceQuery,\n};\n",
-              "use super::representation::{RenderRepresentationValidationError, RenderSurfaceQuery};\nuse super::space_time::CanonicalF64;\n",
-              1,
-          )
+          old_import = "use super::representation::{\n    RenderRepresentationValidationError, RenderSurfaceHit, RenderSurfaceQuery,\n};\n"
+          new_import = "use super::representation::{RenderRepresentationValidationError, RenderSurfaceQuery};\nuse super::space_time::CanonicalF64;\n"
+          if result.count(old_import) != 1:
+              raise SystemExit("surface result import block did not match exactly once")
+          result = result.replace(old_import, new_import, 1)
           marker = "#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]\npub struct RenderSurfaceQueryResult {"
           if result.count(marker) != 1:
               raise SystemExit("surface result insertion marker was not unique")
-          hit_type = '''#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct RenderSurfaceHit {
-    distance_meters: CanonicalF64,
-    position_scene_meters: [CanonicalF64; 3],
-}
-
-impl RenderSurfaceHit {
-    fn from_query_distance(
-        query: RenderSurfaceQuery,
-        distance_meters: f64,
-    ) -> Result<Self, RenderRepresentationValidationError> {
-        let distance_meters = CanonicalF64::new(distance_meters, "surface_hit_distance_meters")?;
-        if distance_meters.get() < 0.0 {
-            return Err(RenderRepresentationValidationError::NegativeSurfaceHitDistance);
-        }
-        let origin = query.origin_scene_meters();
-        let direction = query.direction_scene();
-        let distance = distance_meters.get();
-        let position = [
-            origin[0] + direction[0] * distance,
-            origin[1] + direction[1] * distance,
-            origin[2] + direction[2] * distance,
-        ];
-        Ok(Self {
-            distance_meters,
-            position_scene_meters: [
-                CanonicalF64::new(position[0], "surface_hit_position_scene_meters")?,
-                CanonicalF64::new(position[1], "surface_hit_position_scene_meters")?,
-                CanonicalF64::new(position[2], "surface_hit_position_scene_meters")?,
-            ],
-        })
-    }
-
-    pub fn distance_meters(self) -> f64 {
-        self.distance_meters.get()
-    }
-
-    pub fn position_scene_meters(self) -> [f64; 3] {
-        self.position_scene_meters.map(CanonicalF64::get)
-    }
-}
-
-'''
+          hit_b64 = "I1tkZXJpdmUoRGVidWcsIENsb25lLCBDb3B5LCBQYXJ0aWFsRXEsIEVxLCBIYXNoKV0KcHViIHN0cnVjdCBSZW5kZXJTdXJmYWNlSGl0IHsKICAgIGRpc3RhbmNlX21ldGVyczogQ2Fub25pY2FsRjY0LAogICAgcG9zaXRpb25fc2NlbmVfbWV0ZXJzOiBbQ2Fub25pY2FsRjY0OyAzXSwKfQoKaW1wbCBSZW5kZXJTdXJmYWNlSGl0IHsKICAgIGZuIGZyb21fcXVlcnlfZGlzdGFuY2UoCiAgICAgICAgcXVlcnk6IFJlbmRlclN1cmZhY2VRdWVyeSwKICAgICAgICBkaXN0YW5jZV9tZXRlcnM6IGY2NCwKICAgICkgLT4gUmVzdWx0PFNlbGYsIFJlbmRlclJlcHJlc2VudGF0aW9uVmFsaWRhdGlvbkVycm9yPiB7CiAgICAgICAgbGV0IGRpc3RhbmNlX21ldGVycyA9IENhbm9uaWNhbEY2NDo6bmV3KGRpc3RhbmNlX21ldGVycywgInN1cmZhY2VfaGl0X2Rpc3RhbmNlX21ldGVycyIpPzsKICAgICAgICBpZiBkaXN0YW5jZV9tZXRlcnMuZ2V0KCkgPCAwLjAgewogICAgICAgICAgICByZXR1cm4gRXJyKFJlbmRlclJlcHJlc2VudGF0aW9uVmFsaWRhdGlvbkVycm9yOjpOZWdhdGl2ZVN1cmZhY2VIaXREaXN0YW5jZSk7CiAgICAgICAgfQogICAgICAgIGxldCBvcmlnaW4gPSBxdWVyeS5vcmlnaW5fc2NlbmVfbWV0ZXJzKCk7CiAgICAgICAgbGV0IGRpcmVjdGlvbiA9IHF1ZXJ5LmRpcmVjdGlvbl9zY2VuZSgpOwogICAgICAgIGxldCBkaXN0YW5jZSA9IGRpc3RhbmNlX21ldGVycy5nZXQoKTsKICAgICAgICBsZXQgcG9zaXRpb24gPSBbCiAgICAgICAgICAgIG9yaWdpblswXSArIGRpcmVjdGlvblswXSAqIGRpc3RhbmNlLAogICAgICAgICAgICBvcmlnaW5bMV0gKyBkaXJlY3Rpb25bMV0gKiBkaXN0YW5jZSwKICAgICAgICAgICAgb3JpZ2luWzJdICsgZGlyZWN0aW9uWzJdICogZGlzdGFuY2UsCiAgICAgICAgXTsKICAgICAgICBPayhTZWxmIHsKICAgICAgICAgICAgZGlzdGFuY2VfbWV0ZXJzLAogICAgICAgICAgICBwb3NpdGlvbl9zY2VuZV9tZXRlcnM6IFsKICAgICAgICAgICAgICAgIENhbm9uaWNhbEY2NDo6bmV3KHBvc2l0aW9uWzBdLCAic3VyZmFjZV9oaXRfcG9zaXRpb25fc2NlbmVfbWV0ZXJzIik/LAogICAgICAgICAgICAgICAgQ2Fub25pY2FsRjY0OjpuZXcocG9zaXRpb25bMV0sICJzdXJmYWNlX2hpdF9wb3NpdGlvbl9zY2VuZV9tZXRlcnMiKT8sCiAgICAgICAgICAgICAgICBDYW5vbmljYWxGNjQ6Om5ldyhwb3NpdGlvblsyXSwgInN1cmZhY2VfaGl0X3Bvc2l0aW9uX3NjZW5lX21ldGVycyIpPywKICAgICAgICAgICAgXSwKICAgICAgICB9KQogICAgfQoKICAgIHB1YiBmbiBkaXN0YW5jZV9tZXRlcnMoc2VsZikgLT4gZjY0IHsKICAgICAgICBzZWxmLmRpc3RhbmNlX21ldGVycy5nZXQoKQogICAgfQoKICAgIHB1YiBmbiBwb3NpdGlvbl9zY2VuZV9tZXRlcnMoc2VsZikgLT4gW2Y2NDsgM10gewogICAgICAgIHNlbGYucG9zaXRpb25fc2NlbmVfbWV0ZXJzLm1hcChDYW5vbmljYWxGNjQ6OmdldCkKICAgIH0KfQoK"
+          hit_type = base64.b64decode(hit_b64).decode()
           result = result.replace(marker, hit_type + marker, 1)
-
-          old_hit = '''        let origin = query.origin_scene_meters();
-        let direction = query.direction_scene();
-        let position = [
-            origin[0] + direction[0] * distance_meters,
-            origin[1] + direction[1] * distance_meters,
-            origin[2] + direction[2] * distance_meters,
-        ];
-        let hit = RenderSurfaceHit::new(distance_meters, position)?;
-'''
-          if result.count(old_hit) != 1:
+          old_hit_pattern = re.compile(r"        let origin = query\.origin_scene_meters\(\);.*?        let hit = RenderSurfaceHit::new\(distance_meters, position\)\?;\n", re.S)
+          result, count = old_hit_pattern.subn("        let hit = RenderSurfaceHit::from_query_distance(query, distance_meters)?;\n", result, count=1)
+          if count != 1:
               raise SystemExit("old surface hit construction did not match exactly once")
-          result = result.replace(
-              old_hit,
-              "        let hit = RenderSurfaceHit::from_query_distance(query, distance_meters)?;\n",
-              1,
-          )
           result_path.write_text(result)
 
       - name: Verify and publish focused repair
@@ -172,10 +75,11 @@ impl RenderSurfaceHit {
           cargo +stable fmt --all
           cargo +stable fmt --all --check
           git diff --check
-          names="$(git diff --name-only)"
-          test "$names" = $'engine/src/plugins/render/representation.rs\nengine/src/plugins/render/surface_result.rs'
-          ! grep -q "pub fn new(.*position_scene_meters" engine/src/plugins/render/representation.rs
+          test "$(git diff --name-only | wc -l)" -eq 2
+          git diff --name-only | grep -Fx "engine/src/plugins/render/representation.rs"
+          git diff --name-only | grep -Fx "engine/src/plugins/render/surface_result.rs"
           grep -q "pub struct RenderSurfaceHit" engine/src/plugins/render/surface_result.rs
+          ! grep -q "pub struct RenderSurfaceHit" engine/src/plugins/render/representation.rs
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add engine/src/plugins/render/representation.rs engine/src/plugins/render/surface_result.rs
