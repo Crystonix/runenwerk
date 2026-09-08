@@ -9,11 +9,10 @@ use super::method::{
     RenderMotionInputPolicy, RenderObservationKind, RenderRepresentationProtocolRequirement,
 };
 use super::representation::{
-    RenderProtocolCompatibilityError, RenderRepresentationId, RenderRepresentationProtocol,
+    RenderFieldDistanceProtocolEvidence, RenderProtocolCompatibilityError, RenderRepresentationId,
+    RenderRepresentationProtocol, RenderRepresentationRecord,
 };
-use super::request::{
-    RenderOutputValue, RenderRequest, RenderRequestedOutput, RenderSemanticTolerance,
-};
+use super::request::{RenderOutputValue, RenderRequest, RenderRequestedOutput, RenderSemanticTolerance};
 use super::scene::{RenderObjectId, RenderSceneRevision, RenderSceneSnapshot};
 use super::space_time::{CanonicalF64, RenderTimeInterval};
 use std::error::Error;
@@ -161,7 +160,7 @@ impl RenderPlanCandidate {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RenderPlan {
     scene_revision: RenderSceneRevision,
-    outputs: Vec<RenderRequestedOutput>,
+    request: RenderRequest,
     candidates: Vec<RenderPlanCandidate>,
     rejected_methods: Vec<RenderMethodRejection>,
 }
@@ -171,8 +170,13 @@ impl RenderPlan {
         self.scene_revision
     }
 
+    /// The complete accepted R2 semantic request whose obligations this plan preserves.
+    pub const fn request(&self) -> &RenderRequest {
+        &self.request
+    }
+
     pub fn outputs(&self) -> &[RenderRequestedOutput] {
-        &self.outputs
+        self.request.outputs()
     }
 
     pub fn candidates(&self) -> &[RenderPlanCandidate] {
@@ -333,7 +337,7 @@ pub fn plan_render(
 
     Ok(RenderPlan {
         scene_revision: scene.revision(),
-        outputs: request.outputs().to_vec(),
+        request: request.clone(),
         candidates,
         rejected_methods,
     })
@@ -433,8 +437,32 @@ fn plan_method(
 fn evaluate_representation(
     request: &RenderRequest,
     method: &RenderMethodContract,
-    representation: &super::representation::RenderRepresentationRecord,
+    representation: &RenderRepresentationRecord,
 ) -> Result<RenderRepresentationApproximation, RenderRepresentationRejectionReason> {
+    match method.representation_requirement() {
+        RenderRepresentationProtocolRequirement::SurfaceQuery { revision } => {
+            representation
+                .surface_query_protocol(revision)
+                .map_err(protocol_rejection)?;
+            validate_temporal_coverage(request, representation)?;
+            validate_refinement(method, representation)?;
+            Ok(RenderRepresentationApproximation::Exact)
+        }
+        RenderRepresentationProtocolRequirement::FieldDistance { revision } => {
+            let evidence = representation
+                .field_distance_protocol(revision)
+                .map_err(protocol_rejection)?;
+            validate_temporal_coverage(request, representation)?;
+            validate_refinement(method, representation)?;
+            evaluate_field_distance(request, evidence)
+        }
+    }
+}
+
+fn validate_temporal_coverage(
+    request: &RenderRequest,
+    representation: &RenderRepresentationRecord,
+) -> Result<(), RenderRepresentationRejectionReason> {
     for (observation_index, observation) in request.observations().iter().copied().enumerate() {
         if !representation
             .temporal_support()
@@ -445,43 +473,39 @@ fn evaluate_representation(
             });
         }
     }
+    Ok(())
+}
 
-    if let Some(required) = method.maximum_refinement_error_meters() {
-        let Some(available) = representation.refinement().finest_absolute_error_meters() else {
-            return Err(RenderRepresentationRejectionReason::RefinementEvidenceMissing);
-        };
-        if available > required {
-            return Err(
-                RenderRepresentationRejectionReason::RefinementInsufficient {
-                    required_max_error_meters: distance_bound(required),
-                    available_finest_error_meters: distance_bound(available),
-                },
-            );
-        }
+fn validate_refinement(
+    method: &RenderMethodContract,
+    representation: &RenderRepresentationRecord,
+) -> Result<(), RenderRepresentationRejectionReason> {
+    let Some(required) = method.maximum_refinement_error_meters() else {
+        return Ok(());
+    };
+    let Some(available) = representation.refinement().finest_absolute_error_meters() else {
+        return Err(RenderRepresentationRejectionReason::RefinementEvidenceMissing);
+    };
+    if available > required {
+        return Err(RenderRepresentationRejectionReason::RefinementInsufficient {
+            required_max_error_meters: distance_bound(required),
+            available_finest_error_meters: distance_bound(available),
+        });
     }
+    Ok(())
+}
 
-    match method.representation_requirement() {
-        RenderRepresentationProtocolRequirement::SurfaceQuery { revision } => {
-            representation
-                .surface_query_protocol(revision)
-                .map_err(protocol_rejection)?;
-            Ok(RenderRepresentationApproximation::Exact)
-        }
-        RenderRepresentationProtocolRequirement::FieldDistance { revision } => {
-            let evidence = representation
-                .field_distance_protocol(revision)
-                .map_err(protocol_rejection)?;
-            let guarantee = evidence.guarantee();
-            if guarantee.is_exact() {
-                return Ok(RenderRepresentationApproximation::Exact);
-            }
-            let max_error = guarantee.max_absolute_error_meters();
-            validate_distance_approximation(request, max_error)?;
-            Ok(RenderRepresentationApproximation::bounded_distance(
-                max_error,
-            ))
-        }
+fn evaluate_field_distance(
+    request: &RenderRequest,
+    evidence: RenderFieldDistanceProtocolEvidence,
+) -> Result<RenderRepresentationApproximation, RenderRepresentationRejectionReason> {
+    let guarantee = evidence.guarantee();
+    if guarantee.is_exact() {
+        return Ok(RenderRepresentationApproximation::Exact);
     }
+    let max_error = guarantee.max_absolute_error_meters();
+    validate_distance_approximation(request, max_error)?;
+    Ok(RenderRepresentationApproximation::bounded_distance(max_error))
 }
 
 fn protocol_rejection(
@@ -579,11 +603,29 @@ mod tests {
         .expect("ordered interval")
     }
 
-    fn object_state() -> RenderObjectState {
+    fn shutter() -> RenderTimeInterval {
+        interval(0.0, 0.0)
+    }
+
+    fn object_state(translation_x: f64) -> RenderObjectState {
         RenderObjectState::new(
             RenderObjectSpatialState::new(
                 RenderSpaceSpec::new(1.0, RenderHandedness::Right).expect("space"),
-                RenderAffineTransform3::identity(),
+                RenderAffineTransform3::from_row_major_3x4([
+                    1.0,
+                    0.0,
+                    0.0,
+                    translation_x,
+                    0.0,
+                    1.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    1.0,
+                    0.0,
+                ])
+                .expect("transform"),
                 RenderSpatialCoverage::unbounded(),
             ),
             RenderObjectTemporalState::new(RenderTemporalSupport::unbounded()),
@@ -648,56 +690,69 @@ mod tests {
         .expect("field method")
     }
 
-    fn insert_object_with_representations(
-        store: &mut RenderSceneStore,
-        field_error: f64,
-        temporal_support: RenderTemporalSupport,
-    ) -> RenderObjectId {
+    fn insert_object(store: &mut RenderSceneStore) -> RenderObjectId {
         let object_id = store.allocate_object_id().expect("object id");
         let mut insert = RenderSceneUpdate::new();
-        insert.insert_with_state(object_id, object_state());
+        insert.insert_with_state(object_id, object_state(0.0));
         store.commit(insert).expect("insert");
+        object_id
+    }
 
-        let surface_id = store
+    fn attach(
+        store: &mut RenderSceneStore,
+        object_id: RenderObjectId,
+        representations: Vec<RenderRepresentationRecord>,
+    ) {
+        let participation =
+            RenderObjectParticipation::new(representations, None, None).expect("participation");
+        let mut update = RenderSceneUpdate::new();
+        update.replace_participation(object_id, participation);
+        store.commit(update).expect("attach representations");
+    }
+
+    fn surface_representation(
+        store: &mut RenderSceneStore,
+        object_id: RenderObjectId,
+        revision: u32,
+        temporal_support: RenderTemporalSupport,
+    ) -> RenderRepresentationRecord {
+        let id = store
             .allocate_representation_id(object_id)
-            .expect("surface id");
-        let field_id = store
-            .allocate_representation_id(object_id)
-            .expect("field id");
-        let surface = RenderRepresentationRecord::new(
-            surface_id,
+            .expect("representation id");
+        RenderRepresentationRecord::new(
+            id,
             RenderSpatialCoverage::unbounded(),
             temporal_support,
             RenderRefinementEvidence::none(),
-            Some(
-                RenderSurfaceProtocolEvidence::exact(RENDER_SURFACE_QUERY_PROTOCOL_REVISION)
-                    .expect("surface protocol"),
-            ),
+            Some(RenderSurfaceProtocolEvidence::exact(revision).expect("surface protocol")),
             None,
         )
-        .expect("surface representation");
-        let field = RenderRepresentationRecord::new(
-            field_id,
+        .expect("surface representation")
+    }
+
+    fn field_representation(
+        store: &mut RenderSceneStore,
+        object_id: RenderObjectId,
+        revision: u32,
+        refinement: RenderRefinementEvidence,
+        guarantee: RenderFieldDistanceGuarantee,
+        temporal_support: RenderTemporalSupport,
+    ) -> RenderRepresentationRecord {
+        let id = store
+            .allocate_representation_id(object_id)
+            .expect("representation id");
+        RenderRepresentationRecord::new(
+            id,
             RenderSpatialCoverage::unbounded(),
             temporal_support,
-            RenderRefinementEvidence::bounded(field_error).expect("refinement"),
+            refinement,
             None,
             Some(
-                RenderFieldDistanceProtocolEvidence::new(
-                    RENDER_FIELD_DISTANCE_PROTOCOL_REVISION,
-                    RenderFieldDistanceGuarantee::conservative(field_error)
-                        .expect("field guarantee"),
-                )
-                .expect("field protocol"),
+                RenderFieldDistanceProtocolEvidence::new(revision, guarantee)
+                    .expect("field protocol"),
             ),
         )
-        .expect("field representation");
-        let participation = RenderObjectParticipation::new(vec![field, surface], None, None)
-            .expect("participation");
-        let mut attach = RenderSceneUpdate::new();
-        attach.replace_participation(object_id, participation);
-        store.commit(attach).expect("attach representations");
-        object_id
+        .expect("field representation")
     }
 
     fn insert_surface_only(
@@ -705,27 +760,9 @@ mod tests {
         revision: u32,
         temporal_support: RenderTemporalSupport,
     ) -> RenderObjectId {
-        let object_id = store.allocate_object_id().expect("object id");
-        let mut insert = RenderSceneUpdate::new();
-        insert.insert_with_state(object_id, object_state());
-        store.commit(insert).expect("insert");
-        let representation_id = store
-            .allocate_representation_id(object_id)
-            .expect("representation id");
-        let representation = RenderRepresentationRecord::new(
-            representation_id,
-            RenderSpatialCoverage::unbounded(),
-            temporal_support,
-            RenderRefinementEvidence::none(),
-            Some(RenderSurfaceProtocolEvidence::exact(revision).expect("surface protocol")),
-            None,
-        )
-        .expect("surface representation");
-        let participation = RenderObjectParticipation::new(vec![representation], None, None)
-            .expect("participation");
-        let mut attach = RenderSceneUpdate::new();
-        attach.replace_participation(object_id, participation);
-        store.commit(attach).expect("attach representation");
+        let object_id = insert_object(store);
+        let representation = surface_representation(store, object_id, revision, temporal_support);
+        attach(store, object_id, vec![representation]);
         object_id
     }
 
@@ -736,30 +773,41 @@ mod tests {
         guarantee: RenderFieldDistanceGuarantee,
         temporal_support: RenderTemporalSupport,
     ) -> RenderObjectId {
-        let object_id = store.allocate_object_id().expect("object id");
-        let mut insert = RenderSceneUpdate::new();
-        insert.insert_with_state(object_id, object_state());
-        store.commit(insert).expect("insert");
-        let representation_id = store
-            .allocate_representation_id(object_id)
-            .expect("representation id");
-        let representation = RenderRepresentationRecord::new(
-            representation_id,
-            RenderSpatialCoverage::unbounded(),
-            temporal_support,
+        let object_id = insert_object(store);
+        let representation = field_representation(
+            store,
+            object_id,
+            revision,
             refinement,
-            None,
-            Some(
-                RenderFieldDistanceProtocolEvidence::new(revision, guarantee)
-                    .expect("field protocol"),
-            ),
-        )
-        .expect("field representation");
-        let participation = RenderObjectParticipation::new(vec![representation], None, None)
-            .expect("participation");
-        let mut attach = RenderSceneUpdate::new();
-        attach.replace_participation(object_id, participation);
-        store.commit(attach).expect("attach representation");
+            guarantee,
+            temporal_support,
+        );
+        attach(store, object_id, vec![representation]);
+        object_id
+    }
+
+    fn insert_surface_and_field(
+        store: &mut RenderSceneStore,
+        field_guarantee: RenderFieldDistanceGuarantee,
+        field_refinement: RenderRefinementEvidence,
+        temporal_support: RenderTemporalSupport,
+    ) -> RenderObjectId {
+        let object_id = insert_object(store);
+        let surface = surface_representation(
+            store,
+            object_id,
+            RENDER_SURFACE_QUERY_PROTOCOL_REVISION,
+            temporal_support,
+        );
+        let field = field_representation(
+            store,
+            object_id,
+            RENDER_FIELD_DISTANCE_PROTOCOL_REVISION,
+            field_refinement,
+            field_guarantee,
+            temporal_support,
+        );
+        attach(store, object_id, vec![surface, field]);
         object_id
     }
 
@@ -780,12 +828,13 @@ mod tests {
     }
 
     #[test]
-    fn deterministic_plan_has_multiple_legal_solution_families_and_no_gpu_state() {
+    fn deterministic_plan_preserves_request_and_multiple_solution_families() {
         let mut store = RenderSceneStore::new();
-        let shutter = interval(0.0, 0.0);
-        insert_object_with_representations(
+        let shutter = shutter();
+        insert_surface_and_field(
             &mut store,
-            0.01,
+            RenderFieldDistanceGuarantee::conservative(0.01).expect("guarantee"),
+            RenderRefinementEvidence::bounded(0.01).expect("refinement"),
             RenderTemporalSupport::interval(shutter),
         );
         let request = distance_request(
@@ -801,6 +850,8 @@ mod tests {
         let second = plan_render(&store.snapshot(), &request, &reversed).expect("plan");
 
         assert_eq!(first, second);
+        assert_eq!(first.request(), &request);
+        assert_eq!(first.outputs(), request.outputs());
         assert_eq!(first.candidates().len(), 2);
         assert_eq!(first.candidates()[0].method_id().raw(), 1);
         assert_eq!(first.candidates()[1].method_id().raw(), 2);
@@ -819,12 +870,43 @@ mod tests {
     }
 
     #[test]
+    fn exact_semantics_preserving_alternatives_coexist_without_relaxation() {
+        let mut store = RenderSceneStore::new();
+        insert_surface_and_field(
+            &mut store,
+            RenderFieldDistanceGuarantee::exact(),
+            RenderRefinementEvidence::bounded(0.0).expect("refinement"),
+            RenderTemporalSupport::unbounded(),
+        );
+        let request = distance_request(RenderSemanticTolerance::exact(), shutter());
+        let plan = plan_render(
+            &store.snapshot(),
+            &request,
+            &[
+                surface_method(1),
+                field_method(2, RenderMotionInputPolicy::None),
+            ],
+        )
+        .expect("both exact methods are legal");
+
+        assert_eq!(plan.candidates().len(), 2);
+        for candidate in plan.candidates() {
+            assert_eq!(
+                candidate.object_representations()[0].representations()[0].approximation(),
+                RenderRepresentationApproximation::Exact
+            );
+        }
+    }
+
+    #[test]
     fn motion_binding_requirement_remains_explicit_and_unadmitted() {
         let mut store = RenderSceneStore::new();
         let shutter = interval(0.0, 0.5);
-        let object_id = insert_object_with_representations(
+        let object_id = insert_field_only(
             &mut store,
-            0.01,
+            RENDER_FIELD_DISTANCE_PROTOCOL_REVISION,
+            RenderRefinementEvidence::bounded(0.01).expect("refinement"),
+            RenderFieldDistanceGuarantee::conservative(0.01).expect("guarantee"),
             RenderTemporalSupport::interval(shutter),
         );
         let request = distance_request(
@@ -847,9 +929,8 @@ mod tests {
     }
 
     #[test]
-    fn protocol_unsupported_and_version_mismatch_are_structured() {
-        let shutter = interval(0.0, 0.0);
-        let request = distance_request(RenderSemanticTolerance::exact(), shutter);
+    fn protocol_unsupported_and_version_mismatch_are_smallest_structured_reasons() {
+        let request = distance_request(RenderSemanticTolerance::exact(), shutter());
 
         let mut unsupported_store = RenderSceneStore::new();
         insert_surface_only(
@@ -891,22 +972,19 @@ mod tests {
     #[test]
     fn temporal_coverage_and_refinement_failures_are_structured() {
         let mut coverage_store = RenderSceneStore::new();
-        let represented = interval(0.0, 0.25);
         insert_field_only(
             &mut coverage_store,
             RENDER_FIELD_DISTANCE_PROTOCOL_REVISION,
             RenderRefinementEvidence::bounded(0.01).expect("refinement"),
             RenderFieldDistanceGuarantee::conservative(0.01).expect("guarantee"),
-            RenderTemporalSupport::interval(represented),
-        );
-        let outside = interval(0.5, 0.5);
-        let request = distance_request(
-            RenderSemanticTolerance::absolute(0.02).expect("tolerance"),
-            outside,
+            RenderTemporalSupport::interval(interval(0.0, 0.25)),
         );
         let coverage = plan_render(
             &coverage_store.snapshot(),
-            &request,
+            &distance_request(
+                RenderSemanticTolerance::absolute(0.02).expect("tolerance"),
+                interval(0.5, 0.5),
+            ),
             &[field_method(1, RenderMotionInputPolicy::None)],
         )
         .expect_err("temporal coverage must reject");
@@ -929,16 +1007,15 @@ mod tests {
             &refinement_store.snapshot(),
             &distance_request(
                 RenderSemanticTolerance::absolute(0.02).expect("tolerance"),
-                shutter_for_test(),
+                shutter(),
             ),
             &[field_method(1, RenderMotionInputPolicy::None)],
         )
         .expect_err("insufficient refinement must reject");
-        let reason = only_representation_reason(refinement);
         let RenderRepresentationRejectionReason::RefinementInsufficient {
             required_max_error_meters,
             available_finest_error_meters,
-        } = reason
+        } = only_representation_reason(refinement)
         else {
             panic!("expected refinement insufficiency");
         };
@@ -946,14 +1023,9 @@ mod tests {
         assert_eq!(available_finest_error_meters.meters(), 0.1);
     }
 
-    fn shutter_for_test() -> RenderTimeInterval {
-        interval(0.0, 0.0)
-    }
-
     #[test]
     fn conservative_field_approximation_stays_inside_declared_request_envelope() {
         let mut store = RenderSceneStore::new();
-        let shutter = shutter_for_test();
         insert_field_only(
             &mut store,
             RENDER_FIELD_DISTANCE_PROTOCOL_REVISION,
@@ -965,16 +1037,15 @@ mod tests {
             &store.snapshot(),
             &distance_request(
                 RenderSemanticTolerance::absolute(0.005).expect("tolerance"),
-                shutter,
+                shutter(),
             ),
             &[field_method(1, RenderMotionInputPolicy::None)],
         )
         .expect_err("approximation outside request envelope must reject");
-        let reason = only_representation_reason(failure);
         let RenderRepresentationRejectionReason::DistanceApproximationExceedsTolerance {
             max_absolute_error_meters,
             allowed_absolute_error_meters,
-        } = reason
+        } = only_representation_reason(failure)
         else {
             panic!("expected bounded-distance rejection");
         };
@@ -985,12 +1056,17 @@ mod tests {
     #[test]
     fn conservative_field_cannot_silently_satisfy_exact_or_relative_distance() {
         let mut store = RenderSceneStore::new();
-        let shutter = shutter_for_test();
-        insert_object_with_representations(&mut store, 0.01, RenderTemporalSupport::unbounded());
+        insert_field_only(
+            &mut store,
+            RENDER_FIELD_DISTANCE_PROTOCOL_REVISION,
+            RenderRefinementEvidence::bounded(0.01).expect("refinement"),
+            RenderFieldDistanceGuarantee::conservative(0.01).expect("guarantee"),
+            RenderTemporalSupport::unbounded(),
+        );
 
         let exact = plan_render(
             &store.snapshot(),
-            &distance_request(RenderSemanticTolerance::exact(), shutter),
+            &distance_request(RenderSemanticTolerance::exact(), shutter()),
             &[field_method(1, RenderMotionInputPolicy::None)],
         )
         .expect_err("conservative field is not exact");
@@ -1003,7 +1079,7 @@ mod tests {
             &store.snapshot(),
             &distance_request(
                 RenderSemanticTolerance::relative(0.1).expect("relative tolerance"),
-                shutter,
+                shutter(),
             ),
             &[field_method(1, RenderMotionInputPolicy::None)],
         )
@@ -1015,9 +1091,8 @@ mod tests {
     }
 
     #[test]
-    fn exact_field_is_admissible_for_exact_distance_without_numeric_storage_assumptions() {
+    fn exact_field_is_admissible_without_numeric_storage_or_device_assumptions() {
         let mut store = RenderSceneStore::new();
-        let shutter = shutter_for_test();
         insert_field_only(
             &mut store,
             RENDER_FIELD_DISTANCE_PROTOCOL_REVISION,
@@ -1027,7 +1102,7 @@ mod tests {
         );
         let plan = plan_render(
             &store.snapshot(),
-            &distance_request(RenderSemanticTolerance::exact(), shutter),
+            &distance_request(RenderSemanticTolerance::exact(), shutter()),
             &[field_method(1, RenderMotionInputPolicy::None)],
         )
         .expect("exact stronger evidence remains admissible");
@@ -1040,7 +1115,6 @@ mod tests {
     #[test]
     fn unsupported_observation_is_a_method_semantic_rejection() {
         let mut store = RenderSceneStore::new();
-        let shutter = shutter_for_test();
         insert_surface_only(
             &mut store,
             RENDER_SURFACE_QUERY_PROTOCOL_REVISION,
@@ -1060,7 +1134,7 @@ mod tests {
         .expect("method");
         let failure = plan_render(
             &store.snapshot(),
-            &distance_request(RenderSemanticTolerance::exact(), shutter),
+            &distance_request(RenderSemanticTolerance::exact(), shutter()),
             &[method],
         )
         .expect_err("probe request is unsupported");
@@ -1077,14 +1151,14 @@ mod tests {
     }
 
     #[test]
-    fn unsupported_output_and_radiometric_domain_do_not_become_fallback() {
+    fn unsupported_output_and_radiometric_domain_are_distinct_without_fallback() {
         let mut store = RenderSceneStore::new();
-        let shutter = shutter_for_test();
         insert_surface_only(
             &mut store,
             RENDER_SURFACE_QUERY_PROTOCOL_REVISION,
             RenderTemporalSupport::unbounded(),
         );
+        let shutter = shutter();
         let observation = RenderObservationSpec::Perspective(
             RenderPerspectiveObservation::new(
                 RenderAffineTransform3::identity(),
@@ -1112,10 +1186,11 @@ mod tests {
             vec![RenderRequestedOutput::new(0, radiance)],
         )
         .expect("request");
+        let unsupported = surface_method(1);
         let radiance_support =
             RenderSpectralRadianceSupport::new(400e-9, 700e-9).expect("spectral support");
-        let method = RenderMethodContract::new(
-            RenderMethodId::new(1).expect("method id"),
+        let domain_mismatch = RenderMethodContract::new(
+            RenderMethodId::new(2).expect("method id"),
             RenderMethodObservationSupport::perspective_only(),
             RenderMethodOutputSupport::none().with_radiance(radiance_support),
             RenderRepresentationProtocolRequirement::SurfaceQuery {
@@ -1126,21 +1201,29 @@ mod tests {
             Vec::new(),
         )
         .expect("method");
-        let failure = plan_render(&store.snapshot(), &request, &[method])
-            .expect_err("out-of-domain radiance cannot be substituted");
+        let failure = plan_render(
+            &store.snapshot(),
+            &request,
+            &[domain_mismatch, unsupported],
+        )
+        .expect_err("neither method may substitute another output meaning");
         let RenderPlanningFailure::NoSemanticSolution { rejections } = failure else {
             panic!("expected semantic no-solution failure");
         };
+        assert_eq!(rejections.len(), 2);
         assert_eq!(
             rejections[0].reason(),
+            &RenderMethodRejectionReason::UnsupportedOutput { output_index: 0 }
+        );
+        assert_eq!(
+            rejections[1].reason(),
             &RenderMethodRejectionReason::RadiometricDomainMismatch { output_index: 0 }
         );
     }
 
     #[test]
-    fn old_snapshots_remain_independently_plannable_and_planning_is_revision_neutral() {
+    fn retained_snapshot_is_plannable_after_a_meaningful_newer_commit() {
         let mut store = RenderSceneStore::new();
-        let shutter = shutter_for_test();
         let object_id = insert_surface_only(
             &mut store,
             RENDER_SURFACE_QUERY_PROTOCOL_REVISION,
@@ -1148,28 +1231,28 @@ mod tests {
         );
         let retained = store.snapshot();
         let retained_revision = retained.revision();
-        let request = distance_request(RenderSemanticTolerance::exact(), shutter);
+        let request = distance_request(RenderSemanticTolerance::exact(), shutter());
         let method = surface_method(1);
-        let retained_plan = plan_render(&retained, &request, std::slice::from_ref(&method))
+        let first = plan_render(&retained, &request, std::slice::from_ref(&method))
             .expect("retained snapshot plan");
 
         let mut replace = RenderSceneUpdate::new();
-        replace.replace_state(object_id, object_state());
-        let commit = store.commit(replace).expect("equal replacement");
-        assert!(commit.change_set().is_empty_incremental());
-        assert_eq!(store.revision(), retained_revision);
+        replace.replace_state(object_id, object_state(2.0));
+        let newer = store.commit(replace).expect("meaningful state replacement");
+        assert_ne!(newer.revision(), retained_revision);
+        let current_revision = store.revision();
 
-        let current_plan =
-            plan_render(&store.snapshot(), &request, &[method]).expect("current plan");
-        assert_eq!(retained_plan, current_plan);
-        assert_eq!(store.revision(), retained_revision);
+        let retained_again = plan_render(&retained, &request, &[method])
+            .expect("old snapshot remains independently plannable");
+        assert_eq!(first, retained_again);
+        assert_eq!(retained_again.scene_revision(), retained_revision);
+        assert_eq!(store.revision(), current_revision);
     }
 
     #[test]
     fn duplicate_method_identity_and_empty_method_set_reject_deterministically() {
         let store = RenderSceneStore::new();
-        let shutter = shutter_for_test();
-        let request = distance_request(RenderSemanticTolerance::exact(), shutter);
+        let request = distance_request(RenderSemanticTolerance::exact(), shutter());
         let method = surface_method(1);
         assert_eq!(
             plan_render(&store.snapshot(), &request, &[method.clone(), method]),
