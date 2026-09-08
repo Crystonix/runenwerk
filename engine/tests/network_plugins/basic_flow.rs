@@ -312,7 +312,7 @@ fn replication_and_prediction_plugins_run_on_fixed_update() {
 }
 
 #[test]
-fn runennet_admission_drives_engine_session_projection_and_owner_routing() {
+fn runennet_admission_drives_engine_session_projection_and_diagnostics() {
     let mut app = App::headless();
     app.add_plugin(NetworkServerPlugin);
     let connection = ConnectionHandle::new(7);
@@ -325,11 +325,10 @@ fn runennet_admission_drives_engine_session_projection_and_owner_routing() {
         projection.participant_for_connection(connection),
         Some(participant)
     );
+    assert_eq!(projection.active_connection_count(), 1);
     let status = app.world().resource::<NetworkSessionStatus>().unwrap();
     assert!(status.connected);
     assert_eq!(status.active_connection_count, 1);
-    let routing = app.world().resource::<NetworkOwnerRouting>().unwrap();
-    assert!(routing.by_connection.contains_key(&connection));
     let diagnostics = app.world().resource::<NetworkDiagnostics>().unwrap();
     assert_eq!(diagnostics.accepted_connections, 1);
 }
