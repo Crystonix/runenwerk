@@ -9,6 +9,7 @@ pub enum RenderRequestValidationError {
     SemanticValue(RenderSemanticValueError),
     NonPositive { field: &'static str },
     Negative { field: &'static str },
+    DegenerateObservationFrame,
     PerspectiveFieldOfViewOutOfRange,
     SamplingConeOutOfRange,
     InvalidLatticeDimensions,
@@ -33,6 +34,9 @@ impl fmt::Display for RenderRequestValidationError {
             Self::SemanticValue(error) => fmt::Display::fmt(error, f),
             Self::NonPositive { field } => write!(f, "{field} must be greater than zero"),
             Self::Negative { field } => write!(f, "{field} must be non-negative"),
+            Self::DegenerateObservationFrame => {
+                write!(f, "observation frame linear basis must be invertible")
+            }
             Self::PerspectiveFieldOfViewOutOfRange => {
                 write!(
                     f,
@@ -78,6 +82,45 @@ impl fmt::Display for RenderRequestValidationError {
 
 impl Error for RenderRequestValidationError {}
 
+fn validate_observation_frame(
+    observation_to_scene: RenderAffineTransform3,
+) -> Result<(), RenderRequestValidationError> {
+    let matrix = observation_to_scene.row_major_3x4();
+    let linear = [
+        matrix[0], matrix[1], matrix[2], matrix[4], matrix[5], matrix[6], matrix[8], matrix[9],
+        matrix[10],
+    ];
+    let scale = linear
+        .iter()
+        .copied()
+        .map(f64::abs)
+        .fold(0.0_f64, f64::max);
+    if scale == 0.0 {
+        return Err(RenderRequestValidationError::DegenerateObservationFrame);
+    }
+
+    let m00 = linear[0] / scale;
+    let m01 = linear[1] / scale;
+    let m02 = linear[2] / scale;
+    let m10 = linear[3] / scale;
+    let m11 = linear[4] / scale;
+    let m12 = linear[5] / scale;
+    let m20 = linear[6] / scale;
+    let m21 = linear[7] / scale;
+    let m22 = linear[8] / scale;
+    let determinant = m00 * (m11 * m22 - m12 * m21) - m01 * (m10 * m22 - m12 * m20)
+        + m02 * (m10 * m21 - m11 * m20);
+    if determinant == 0.0 {
+        return Err(RenderRequestValidationError::DegenerateObservationFrame);
+    }
+    Ok(())
+}
+
+/// Semantic support around the ideal ray associated with one logical observation sample.
+///
+/// This describes which angular region may contribute to requested meaning. It deliberately does
+/// not describe sample counts, sequences, adaptive policy, work distribution, or any other
+/// algorithmic sampling strategy.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct RenderSamplingSupport {
     kind: RenderSamplingSupportKind,
@@ -122,6 +165,13 @@ impl RenderSamplingSupport {
     }
 }
 
+/// A perspective observation in the canonical renderer observation frame.
+///
+/// Observation-local coordinates are right-handed with +X to the logical right, +Y to the logical
+/// top, and -Z as the canonical forward axis. `observation_to_scene` maps that frame into renderer
+/// scene coordinates and must have an invertible linear basis. The vertical field of view is the
+/// full angle about -Z and `aspect_ratio` is logical width divided by logical height. No physical
+/// surface, pixel format, device, or sampling algorithm is implied.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct RenderPerspectiveObservation {
     observation_to_scene: RenderAffineTransform3,
@@ -139,6 +189,7 @@ impl RenderPerspectiveObservation {
         shutter: RenderTimeInterval,
         sampling_support: RenderSamplingSupport,
     ) -> Result<Self, RenderRequestValidationError> {
+        validate_observation_frame(observation_to_scene)?;
         let vertical_field_of_view_radians = CanonicalF64::new(
             vertical_field_of_view_radians,
             "vertical_field_of_view_radians",
@@ -184,10 +235,11 @@ impl RenderPerspectiveObservation {
     }
 }
 
-/// A scalar renderer probe oriented by its observation frame.
+/// A scalar renderer probe oriented by the canonical observation frame.
 ///
-/// The probe evaluates along the frame's canonical local forward axis. This is renderer-semantic
-/// observation meaning; it does not imply an image lattice, physical target, or GPU resource.
+/// The probe evaluates around the frame's -Z forward axis. `observation_to_scene` must have an
+/// invertible linear basis. This is renderer-semantic observation meaning; it does not imply an
+/// image lattice, physical target, or GPU resource.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct RenderProbeObservation {
     observation_to_scene: RenderAffineTransform3,
@@ -196,16 +248,17 @@ pub struct RenderProbeObservation {
 }
 
 impl RenderProbeObservation {
-    pub const fn new(
+    pub fn new(
         observation_to_scene: RenderAffineTransform3,
         shutter: RenderTimeInterval,
         sampling_support: RenderSamplingSupport,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, RenderRequestValidationError> {
+        validate_observation_frame(observation_to_scene)?;
+        Ok(Self {
             observation_to_scene,
             shutter,
             sampling_support,
-        }
+        })
     }
 
     pub const fn observation_to_scene(self) -> RenderAffineTransform3 {
@@ -246,9 +299,14 @@ pub enum RenderRadiometricRepresentation {
     Rgb,
 }
 
+/// Semantic distance meaning relative to the observation frame.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum RenderDistanceConvention {
+    /// Euclidean distance in renderer scene-coordinate units from the observation origin to the
+    /// represented point along the logical sample ray.
     RayDistance,
+    /// Scalar projection of the represented point displacement onto the observation frame's
+    /// transformed -Z forward direction, measured in renderer scene-coordinate units.
     ObservationForwardDepth,
 }
 
@@ -265,6 +323,13 @@ pub enum RenderOutputValue {
     ObjectIdentity,
 }
 
+/// Logical result shape, independent of physical texture/buffer representation.
+///
+/// For a perspective observation, `SampleLattice2D` spans the full perspective domain. Logical X
+/// increases left-to-right and logical Y increases top-to-bottom. Cell `(x, y)` has its semantic
+/// center at `((x + 0.5) / width, (y + 0.5) / height)` across that domain; the observation's
+/// `RenderSamplingSupport` describes support around the resulting center ray. This convention says
+/// nothing about physical memory order, numeric format, or how an algorithm realizes that support.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct RenderResultTopology {
     kind: RenderResultTopologyKind,
@@ -428,6 +493,11 @@ impl RenderRequestedOutput {
     }
 }
 
+/// R2 renderer-semantic request envelope.
+///
+/// All render/shutter times in one request are values on the same renderer-semantic timeline used
+/// by the paired scene snapshot's temporal state. Source clocks, simulation ticks, wall clocks, and
+/// device generations are projected by integration code and are not carried as request identity.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RenderRequest {
     render_interval: RenderTimeInterval,
@@ -513,6 +583,17 @@ mod tests {
         .expect("ordered interval")
     }
 
+    fn probe(shutter: RenderTimeInterval) -> RenderObservationSpec {
+        RenderObservationSpec::Probe(
+            RenderProbeObservation::new(
+                RenderAffineTransform3::identity(),
+                shutter,
+                RenderSamplingSupport::ideal_ray(),
+            )
+            .expect("valid probe"),
+        )
+    }
+
     fn radiance(topology: RenderResultTopology) -> RenderOutputSpec {
         RenderOutputSpec::new(
             RenderOutputValue::Radiance {
@@ -536,6 +617,32 @@ mod tests {
         .expect("valid perspective observation");
         assert_eq!(observation.aspect_ratio(), 16.0 / 9.0);
         assert!(observation.sampling_support().is_ideal_ray());
+    }
+
+    #[test]
+    fn observation_frames_reject_degenerate_linear_basis() {
+        let degenerate = RenderAffineTransform3::from_row_major_3x4([
+            1.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        ])
+        .expect("finite transform");
+        assert_eq!(
+            RenderPerspectiveObservation::new(
+                degenerate,
+                std::f64::consts::FRAC_PI_2,
+                1.0,
+                interval(0.0, 0.0),
+                RenderSamplingSupport::ideal_ray(),
+            ),
+            Err(RenderRequestValidationError::DegenerateObservationFrame)
+        );
+        assert_eq!(
+            RenderProbeObservation::new(
+                degenerate,
+                interval(0.0, 0.0),
+                RenderSamplingSupport::ideal_ray(),
+            ),
+            Err(RenderRequestValidationError::DegenerateObservationFrame)
+        );
     }
 
     #[test]
@@ -573,11 +680,7 @@ mod tests {
     #[test]
     fn probe_request_uses_scalar_topology_without_image_lattice() {
         let render_interval = interval(0.0, 1.0);
-        let probe = RenderObservationSpec::Probe(RenderProbeObservation::new(
-            RenderAffineTransform3::identity(),
-            interval(0.25, 0.25),
-            RenderSamplingSupport::ideal_ray(),
-        ));
+        let probe = probe(interval(0.25, 0.25));
         let output = RenderRequestedOutput::new(0, radiance(RenderResultTopology::scalar()));
         let request = RenderRequest::new(render_interval, vec![probe], vec![output])
             .expect("scalar probe request should validate");
@@ -597,11 +700,7 @@ mod tests {
             )
             .expect("valid perspective"),
         );
-        let probe = RenderObservationSpec::Probe(RenderProbeObservation::new(
-            RenderAffineTransform3::identity(),
-            interval(0.5, 0.5),
-            RenderSamplingSupport::ideal_ray(),
-        ));
+        let probe = probe(interval(0.5, 0.5));
         let lattice = RenderResultTopology::sample_lattice_2d(640, 480).expect("valid lattice");
         let request = RenderRequest::new(
             render_interval,
@@ -624,11 +723,7 @@ mod tests {
 
     #[test]
     fn probe_rejects_image_lattice_and_observation_shutter_must_fit_request() {
-        let probe = RenderObservationSpec::Probe(RenderProbeObservation::new(
-            RenderAffineTransform3::identity(),
-            interval(2.0, 2.0),
-            RenderSamplingSupport::ideal_ray(),
-        ));
+        let probe = probe(interval(2.0, 2.0));
         let lattice = RenderResultTopology::sample_lattice_2d(4, 4).expect("valid lattice");
         assert_eq!(
             RenderRequest::new(
@@ -643,11 +738,7 @@ mod tests {
             )
         );
 
-        let probe = RenderObservationSpec::Probe(RenderProbeObservation::new(
-            RenderAffineTransform3::identity(),
-            interval(0.5, 0.5),
-            RenderSamplingSupport::ideal_ray(),
-        ));
+        let probe = probe(interval(0.5, 0.5));
         assert_eq!(
             RenderRequest::new(
                 interval(0.0, 1.0),
@@ -656,6 +747,40 @@ mod tests {
             ),
             Err(RenderRequestValidationError::ProbeRequiresScalarTopology {
                 observation_index: 0
+            })
+        );
+    }
+
+    #[test]
+    fn request_rejects_invalid_output_references_and_unserved_observations() {
+        let first = probe(interval(0.0, 0.0));
+        assert_eq!(
+            RenderRequest::new(
+                interval(0.0, 1.0),
+                vec![first],
+                vec![RenderRequestedOutput::new(
+                    1,
+                    radiance(RenderResultTopology::scalar()),
+                )],
+            ),
+            Err(RenderRequestValidationError::OutputObservationOutOfRange {
+                observation_index: 1
+            })
+        );
+
+        let first = probe(interval(0.0, 0.0));
+        let second = probe(interval(1.0, 1.0));
+        assert_eq!(
+            RenderRequest::new(
+                interval(0.0, 1.0),
+                vec![first, second],
+                vec![RenderRequestedOutput::new(
+                    0,
+                    radiance(RenderResultTopology::scalar()),
+                )],
+            ),
+            Err(RenderRequestValidationError::ObservationHasNoOutputs {
+                observation_index: 1
             })
         );
     }
