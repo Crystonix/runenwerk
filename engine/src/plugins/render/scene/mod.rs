@@ -720,7 +720,10 @@ mod tests {
             insert_one(&mut incremental, object_id);
         }
 
-        assert_eq!(full.snapshot().membership, incremental.snapshot().membership);
+        assert_eq!(
+            full.snapshot().membership,
+            incremental.snapshot().membership
+        );
         assert_eq!(
             full.snapshot().object_ids(),
             incremental.snapshot().object_ids()
