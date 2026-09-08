@@ -210,13 +210,17 @@ Goal:
 - `RenderSceneStore`;
 - `RenderSceneRevision`;
 - `RenderObjectId`;
-- atomic `RenderSceneUpdate` insert/replace/remove;
+- atomic `RenderSceneUpdate` insert/remove presence mutation;
 - immutable `RenderSceneSnapshot`;
 - explicit R1-owned `RenderSceneChangeSet`;
 - structurally shared or equivalently bounded small-change publication;
 - explicit full scene resynchronization;
 - no views, representations, acquired output images, execution-environment facts, or
   live source/host state inside the scene snapshot.
+
+R1 does not define same-identity replacement because it owns no replaceable object state
+beyond identity/presence. Replacement begins only in the first later phase that owns a
+concrete replaceable renderer-semantic record and its equality/revision/change law.
 
 R1 deliberately does **not** introduce generic producer identity/lifecycle,
 `RenderContributionId`, generic relationships, representation protocols, space/time,
@@ -232,7 +236,9 @@ source disappears
 
 Required proof:
 
-- deterministic insert/replace/remove;
+- deterministic insert/remove presence mutation;
+- deterministic duplicate-insert, missing-remove, same-object conflict, and accepted
+  no-op behavior;
 - atomic multi-operation commit and rejected-commit no-publication behavior;
 - retained old snapshot remains immutable;
 - equivalent full and incremental scene construction;
