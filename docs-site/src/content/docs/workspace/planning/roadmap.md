@@ -5,13 +5,14 @@ status: active
 owner: workspace
 layer: workspace
 canonical: true
-last_reviewed: 2026-08-24
+last_reviewed: 2026-09-08
 related_docs:
   - ../engineering-workflow.md
   - ../../architecture/runenwerk-platform-architecture.md
   - ../../architecture/repository-family-architecture.md
   - ../../adr/accepted/0014-repository-family-extraction-boundaries.md
   - ../../adr/accepted/0015-separate-gpu-execution-from-rendering.md
+  - ../../adr/accepted/0021-ratify-runenrender-semantic-rendering-architecture.md
   - ../../design/active/runengpu-architecture-design.md
   - ../../design/active/runengpu-post-g5c-hardening-design.md
   - ../../design/active/runengpu-phase-requirements-proof-matrix.md
@@ -53,7 +54,7 @@ Target layering:
 
 ```text
 Runenwerk host, source, and product policy
-    -> RunenRender semantic image planning
+    -> RunenRender semantic rendering and renderer-native planning/admission
         -> RunenGPU generic resources, programs, work, realization, and execution
             -> private WGPU backend
 ```
@@ -65,7 +66,8 @@ Non-render consumers may lower directly into RunenGPU without depending on Runen
 RunenSDF owns standalone field mathematics at its public boundary. Runenwerk retains
 product and domain integration above that boundary.
 
-Runenwerk now contains no `domain/sdf` package, source mirror, forwarding namespace, submodule, source include, or unused external dependency.
+Runenwerk now contains no `domain/sdf` package, source mirror, forwarding namespace,
+submodule, source include, or unused external dependency.
 
 ## RunenGPU sequence
 
@@ -90,19 +92,21 @@ G1A logical resource identity
 ```
 
 `G3R` and `G4R` are corrective predecessor phases discovered by G5 owner review. They are
-ordered deliberately: backend-independent semantic correctness is repaired first, then the
-corrected G1-G4 authority is re-proven against the refreshed private WGPU/Naga baseline.
+ordered deliberately: backend-independent semantic correctness is repaired first, then
+the corrected G1-G4 authority is re-proven against the refreshed private WGPU/Naga
+baseline.
 
-`G7A` is intentionally narrower than complete G7. It establishes only the durable generic
-surface identity/generation/capability/acquisition/presentation foundation required so the final
-G5C renderer cutover does not create a disposable pre-G7 surface execution architecture. Full
-loss/reconstruction policy remains G7B.
+`G7A` is intentionally narrower than complete G7. It establishes only the durable
+generic surface identity/generation/capability/acquisition/presentation foundation
+required so the final G5C renderer cutover does not create a disposable pre-G7 surface
+execution architecture. Full loss/reconstruction policy remains G7B.
 
-`G5R` is a bounded correctness gate between final execution cutover and representative proof. It
-requires graph initialization truth and physical content materialization to agree before G6 may
-characterize performance, ergonomics, or application breadth. The focused post-G5C hardening
-design owns the detailed G5R/G6/G7B/G8/GX semantic gates; the RunenGPU phase requirements and
-proof matrix owns the corresponding retained proof roles and observable evidence/artifacts.
+`G5R` is a bounded correctness gate between final execution cutover and representative
+proof. It requires graph initialization truth and physical content materialization to
+agree before G6 may characterize performance, ergonomics, or application breadth. The
+focused post-G5C hardening design owns the detailed G5R/G6/G7B/G8/GX semantic gates; the
+RunenGPU phase requirements and proof matrix owns the corresponding retained proof roles
+and observable evidence/artifacts.
 
 G4 is itself ordered:
 
@@ -118,50 +122,67 @@ Each phase consumes accepted predecessor authority, not an unmerged implementati
 branch. The owning GitHub issue determines whether a phase is proposed, active, blocked,
 or complete at any particular time.
 
-Detailed semantic contracts belong to accepted RunenGPU designs. Proof roles, observable evidence,
-and retained artifact requirements belong to the RunenGPU proof matrix. A workspace RON spec is
-subordinate implementation-handoff detail created only when an activated bounded slice benefits
-from it; this roadmap does not duplicate any of those requirements.
+Detailed semantic contracts belong to accepted RunenGPU designs. Proof roles,
+observable evidence, and retained artifact requirements belong to the RunenGPU proof
+matrix. A workspace RON spec is subordinate implementation-handoff detail created only
+when an activated bounded slice benefits from it; this roadmap does not duplicate any
+of those requirements.
 
 ## RunenRender sequence
 
-RunenRender remains downstream of RunenGPU and preserves the accepted semantic spine:
+RunenRender remains downstream of RunenGPU. ADR 0021 establishes semantic rendering as
+its mission and inserts a mandatory pre-implementation R0 architecture gate.
+
+The permanent normalized direction is:
 
 ```text
 RenderSceneStore
-    -> RenderSceneCommit(RenderSceneSnapshot + RenderChangeSet)
+    -> RenderSceneCommit(RenderSceneSnapshot + RenderSceneChangeSet)
 
-RenderSceneSnapshot + RenderRequest + RenderInputSet
-    -> RenderMethod
-        -> RenderPlan
-            -> AdmittedRenderPlan
-                -> RenderWorkSet
-                    -> RunenGPU
+RenderSceneSnapshot + RenderRequest + representation/method contracts
+    -> conditional RenderPlan
+
+RenderPlan + current request-scoped semantic bindings
+    -> semantic binding admission
+
+semantically admitted candidates
++ representation availability/realization
++ physical output bindings
++ current RunenGPU environment facts
++ execution requirements
+    -> execution admission
+        -> AdmittedRenderPlan
+            -> RenderWorkSet
+                -> RunenGPU
+                    -> RenderResult
 ```
 
 Its durable sequence is:
 
 ```text
-R1  scene revisions, identities, relationships, and cheap snapshots
-R2  space, time, typed dynamic inputs, and availability
-R3  representation offers, sampling footprints, protocols, and narrow results
-R4  views, outputs, measurement, materials, methods, and planning
-R5  founding analytic and field/SDF method through RunenGPU
-R6  derived state, residency, sessions, and invalidation
-R7  multiview, multi-output, surface, readback, and merge integration
-R8  scalability, extension, operational, and extraction conformance
+R0  normative semantic-rendering architecture
+R1  scene lineage and minimal renderer identity
+R2  semantic space/time plus observation/output semantics
+R3  representations, intrinsic validity, protocols, relationships, and minimum appearance
+R4  RenderMethod plus conditional device-independent semantic planning
+R5  semantic bindings, binding admission, operational availability/output bindings, and execution admission
+R6  first complete semantic renderer and public RunenGPU lowering
+R7  derived state, reconstruction/history/sessions, multiview/multi-output, and advanced output integration
+R8  generality, scale, conformance, and extraction readiness
 RX  standalone RunenRender transfer and clean cutover
 ```
 
-The canonical RunenRender architecture owns the detailed semantics and conformance model.
-The owning issues determine activation and current status.
+R0 is architecture/documentation only. It is a prerequisite for any R1 Rust activation.
+
+The canonical RunenRender architecture owns detailed semantics and conformance. The
+owning issues determine activation and current status.
 
 ## Other repository-family programs
 
 RunenSDF remains the accepted standalone field-mathematics authority. RunenECS,
-RunenSpatial, and RunenUI continue through separately owned programs and
-may proceed in parallel only when repository, branch, workspace, files, authority, and
-dependencies do not conflict.
+RunenSpatial, and RunenUI continue through separately owned programs and may proceed in
+parallel only when repository, branch, workspace, files, authority, and dependencies do
+not conflict.
 
 A cross-family dependency belongs here only when it is durable architecture or sequence,
 not merely because one current implementation happens to be waiting for another.
