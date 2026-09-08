@@ -40,6 +40,19 @@ fn run_backpressure_fixed_tick(mut app: App, context: &str) -> App {
         .unwrap_or_else(|error| panic!("{context}: {error:#}"))
 }
 
+fn saturate_server_outbox_before_replication(mut world: WorldMut) {
+    while server_outbox_len(&world) < 4_096 {
+        let index = server_outbox_len(&world);
+        enqueue_server_outbox_broadcast(&mut world, server_probe((index % 251) as u8))
+            .expect("server outbox should fill through its configured capacity");
+    }
+    assert_eq!(
+        server_outbox_len(&world),
+        4_096,
+        "server outbox must be saturated at the replication boundary"
+    );
+}
+
 #[test]
 fn server_replication_emits_scene_snapshot_payloads_for_runennet_connection() {
     let mut app = App::headless();
@@ -254,12 +267,14 @@ fn server_outbox_backpressure_does_not_mark_rejected_snapshot_as_sent() {
     let mut server = App::headless();
     server.add_plugins(default_plugins());
     server.add_plugins((ScenePlugin, NetworkServerPlugin));
+    server.add_systems(
+        FixedUpdate,
+        saturate_server_outbox_before_replication
+            .after(CoreSet::Simulation)
+            .before(engine::plugins::net::NetFixedSet::Replication),
+    );
     let connection = ConnectionHandle::new(1);
     install_runennet_connections(&mut server, &[(connection, ParticipantId::new(1))]);
-    for index in 0..4_096usize {
-        enqueue_server_outbox_broadcast(server.world_mut(), server_probe((index % 251) as u8))
-            .expect("server outbox should fill through its configured capacity");
-    }
 
     let server = server
         .run_for_ticks(1)
