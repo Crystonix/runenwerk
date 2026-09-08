@@ -8,6 +8,7 @@ use std::fmt;
 pub enum RenderRequestValidationError {
     SemanticValue(RenderSemanticValueError),
     NonPositive { field: &'static str },
+    Negative { field: &'static str },
     PerspectiveFieldOfViewOutOfRange,
     SamplingConeOutOfRange,
     InvalidLatticeDimensions,
@@ -29,19 +30,29 @@ impl From<RenderSemanticValueError> for RenderRequestValidationError {
 impl fmt::Display for RenderRequestValidationError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::SemanticValue(error) => error.fmt(f),
+            Self::SemanticValue(error) => fmt::Display::fmt(error, f),
             Self::NonPositive { field } => write!(f, "{field} must be greater than zero"),
+            Self::Negative { field } => write!(f, "{field} must be non-negative"),
             Self::PerspectiveFieldOfViewOutOfRange => {
-                write!(f, "perspective field of view must be between zero and pi radians")
+                write!(
+                    f,
+                    "perspective field of view must be greater than zero and less than pi radians"
+                )
             }
             Self::SamplingConeOutOfRange => {
-                write!(f, "sampling cone half-angle must be between zero and pi/2 radians")
+                write!(
+                    f,
+                    "sampling cone half-angle must be greater than zero and less than pi/2 radians"
+                )
             }
             Self::InvalidLatticeDimensions => {
                 write!(f, "sample lattice dimensions must both be non-zero")
             }
             Self::IdentityToleranceMustBeExact => {
-                write!(f, "object-identity output requires exact semantic tolerance")
+                write!(
+                    f,
+                    "object-identity output requires exact semantic tolerance"
+                )
             }
             Self::EmptyObservations => write!(f, "render request must contain an observation"),
             Self::EmptyOutputs => write!(f, "render request must contain an output"),
@@ -87,7 +98,9 @@ impl RenderSamplingSupport {
 
     pub fn cone(half_angle_radians: f64) -> Result<Self, RenderRequestValidationError> {
         let half_angle_radians = CanonicalF64::new(half_angle_radians, "half_angle_radians")?;
-        if !(0.0..std::f64::consts::FRAC_PI_2).contains(&half_angle_radians.get()) {
+        if half_angle_radians.get() <= 0.0
+            || half_angle_radians.get() >= std::f64::consts::FRAC_PI_2
+        {
             return Err(RenderRequestValidationError::SamplingConeOutOfRange);
         }
         Ok(Self {
@@ -130,7 +143,9 @@ impl RenderPerspectiveObservation {
             vertical_field_of_view_radians,
             "vertical_field_of_view_radians",
         )?;
-        if !(0.0..std::f64::consts::PI).contains(&vertical_field_of_view_radians.get()) {
+        if vertical_field_of_view_radians.get() <= 0.0
+            || vertical_field_of_view_radians.get() >= std::f64::consts::PI
+        {
             return Err(RenderRequestValidationError::PerspectiveFieldOfViewOutOfRange);
         }
         let aspect_ratio = CanonicalF64::new(aspect_ratio, "aspect_ratio")?;
@@ -169,6 +184,10 @@ impl RenderPerspectiveObservation {
     }
 }
 
+/// A scalar renderer probe oriented by its observation frame.
+///
+/// The probe evaluates along the frame's canonical local forward axis. This is renderer-semantic
+/// observation meaning; it does not imply an image lattice, physical target, or GPU resource.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct RenderProbeObservation {
     observation_to_scene: RenderAffineTransform3,
@@ -241,6 +260,8 @@ pub enum RenderOutputValue {
     Distance {
         convention: RenderDistanceConvention,
     },
+    /// Renderer-local object identity. Result values refer to `RenderObjectId` semantics, never
+    /// source/ECS/product or RunenGPU physical identity.
     ObjectIdentity,
 }
 
@@ -308,7 +329,7 @@ impl RenderSemanticTolerance {
     pub fn absolute(max_error: f64) -> Result<Self, RenderRequestValidationError> {
         let max_error = CanonicalF64::new(max_error, "absolute_semantic_tolerance")?;
         if max_error.get() < 0.0 {
-            return Err(RenderRequestValidationError::NonPositive {
+            return Err(RenderRequestValidationError::Negative {
                 field: "absolute_semantic_tolerance",
             });
         }
@@ -320,7 +341,7 @@ impl RenderSemanticTolerance {
     pub fn relative(max_fraction: f64) -> Result<Self, RenderRequestValidationError> {
         let max_fraction = CanonicalF64::new(max_fraction, "relative_semantic_tolerance")?;
         if max_fraction.get() < 0.0 {
-            return Err(RenderRequestValidationError::NonPositive {
+            return Err(RenderRequestValidationError::Negative {
                 field: "relative_semantic_tolerance",
             });
         }
@@ -429,9 +450,11 @@ impl RenderRequest {
 
         for (observation_index, observation) in observations.iter().copied().enumerate() {
             if !render_interval.contains(observation.shutter()) {
-                return Err(RenderRequestValidationError::ObservationOutsideRenderInterval {
-                    observation_index,
-                });
+                return Err(
+                    RenderRequestValidationError::ObservationOutsideRenderInterval {
+                        observation_index,
+                    },
+                );
             }
         }
 
@@ -516,6 +539,38 @@ mod tests {
     }
 
     #[test]
+    fn perspective_and_cone_reject_zero_and_upper_boundary() {
+        assert_eq!(
+            RenderPerspectiveObservation::new(
+                RenderAffineTransform3::identity(),
+                0.0,
+                1.0,
+                interval(0.0, 0.0),
+                RenderSamplingSupport::ideal_ray(),
+            ),
+            Err(RenderRequestValidationError::PerspectiveFieldOfViewOutOfRange)
+        );
+        assert_eq!(
+            RenderPerspectiveObservation::new(
+                RenderAffineTransform3::identity(),
+                std::f64::consts::PI,
+                1.0,
+                interval(0.0, 0.0),
+                RenderSamplingSupport::ideal_ray(),
+            ),
+            Err(RenderRequestValidationError::PerspectiveFieldOfViewOutOfRange)
+        );
+        assert_eq!(
+            RenderSamplingSupport::cone(0.0),
+            Err(RenderRequestValidationError::SamplingConeOutOfRange)
+        );
+        assert_eq!(
+            RenderSamplingSupport::cone(std::f64::consts::FRAC_PI_2),
+            Err(RenderRequestValidationError::SamplingConeOutOfRange)
+        );
+    }
+
+    #[test]
     fn probe_request_uses_scalar_topology_without_image_lattice() {
         let render_interval = interval(0.0, 1.0);
         let probe = RenderObservationSpec::Probe(RenderProbeObservation::new(
@@ -559,7 +614,10 @@ mod tests {
         .expect("coordinated request should validate");
         assert_eq!(request.observations().len(), 2);
         assert_eq!(
-            request.outputs()[0].spec().topology().sample_lattice_dimensions(),
+            request.outputs()[0]
+                .spec()
+                .topology()
+                .sample_lattice_dimensions(),
             Some((640, 480))
         );
     }
@@ -578,9 +636,11 @@ mod tests {
                 vec![probe],
                 vec![RenderRequestedOutput::new(0, radiance(lattice))]
             ),
-            Err(RenderRequestValidationError::ObservationOutsideRenderInterval {
-                observation_index: 0
-            })
+            Err(
+                RenderRequestValidationError::ObservationOutsideRenderInterval {
+                    observation_index: 0
+                }
+            )
         );
 
         let probe = RenderObservationSpec::Probe(RenderProbeObservation::new(
@@ -618,6 +678,34 @@ mod tests {
             }
         ));
         assert_eq!(distance.tolerance().absolute_max_error(), Some(0.001));
+    }
+
+    #[test]
+    fn semantic_tolerance_allows_zero_but_rejects_negative_values() {
+        assert_eq!(
+            RenderSemanticTolerance::absolute(0.0)
+                .expect("zero absolute tolerance is valid")
+                .absolute_max_error(),
+            Some(0.0)
+        );
+        assert_eq!(
+            RenderSemanticTolerance::relative(0.0)
+                .expect("zero relative tolerance is valid")
+                .relative_max_fraction(),
+            Some(0.0)
+        );
+        assert_eq!(
+            RenderSemanticTolerance::absolute(-0.1),
+            Err(RenderRequestValidationError::Negative {
+                field: "absolute_semantic_tolerance"
+            })
+        );
+        assert_eq!(
+            RenderSemanticTolerance::relative(-0.1),
+            Err(RenderRequestValidationError::Negative {
+                field: "relative_semantic_tolerance"
+            })
+        );
     }
 
     #[test]
