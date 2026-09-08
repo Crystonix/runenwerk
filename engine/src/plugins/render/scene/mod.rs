@@ -16,7 +16,7 @@ impl RenderObjectId {
         NonZeroU64::new(raw).map(Self)
     }
 
-    pub const fn raw(self) -> u64 {
+    const fn raw(self) -> u64 {
         self.0.get()
     }
 }
@@ -26,10 +26,6 @@ pub struct RenderSceneRevision(u64);
 
 impl RenderSceneRevision {
     pub const INITIAL: Self = Self(0);
-
-    pub const fn raw(self) -> u64 {
-        self.0
-    }
 
     fn checked_next(self) -> Option<Self> {
         self.0.checked_add(1).map(Self)
@@ -84,7 +80,12 @@ impl RenderSceneUpdate {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum RenderSceneChangeSet {
+pub struct RenderSceneChangeSet {
+    kind: RenderSceneChangeKind,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum RenderSceneChangeKind {
     Incremental {
         inserted: Arc<[RenderObjectId]>,
         removed: Arc<[RenderObjectId]>,
@@ -94,34 +95,42 @@ pub enum RenderSceneChangeSet {
 
 impl RenderSceneChangeSet {
     fn incremental(inserted: Vec<RenderObjectId>, removed: Vec<RenderObjectId>) -> Self {
-        Self::Incremental {
-            inserted: Arc::from(inserted),
-            removed: Arc::from(removed),
+        Self {
+            kind: RenderSceneChangeKind::Incremental {
+                inserted: Arc::from(inserted),
+                removed: Arc::from(removed),
+            },
+        }
+    }
+
+    fn full_resync() -> Self {
+        Self {
+            kind: RenderSceneChangeKind::FullResync,
         }
     }
 
     pub fn inserted(&self) -> Option<&[RenderObjectId]> {
-        match self {
-            Self::Incremental { inserted, .. } => Some(inserted),
-            Self::FullResync => None,
+        match &self.kind {
+            RenderSceneChangeKind::Incremental { inserted, .. } => Some(inserted),
+            RenderSceneChangeKind::FullResync => None,
         }
     }
 
     pub fn removed(&self) -> Option<&[RenderObjectId]> {
-        match self {
-            Self::Incremental { removed, .. } => Some(removed),
-            Self::FullResync => None,
+        match &self.kind {
+            RenderSceneChangeKind::Incremental { removed, .. } => Some(removed),
+            RenderSceneChangeKind::FullResync => None,
         }
     }
 
-    pub const fn is_full_resync(&self) -> bool {
-        matches!(self, Self::FullResync)
+    pub fn is_full_resync(&self) -> bool {
+        matches!(self.kind, RenderSceneChangeKind::FullResync)
     }
 
     pub fn is_empty_incremental(&self) -> bool {
         matches!(
-            self,
-            Self::Incremental { inserted, removed }
+            &self.kind,
+            RenderSceneChangeKind::Incremental { inserted, removed }
                 if inserted.is_empty() && removed.is_empty()
         )
     }
@@ -301,10 +310,6 @@ impl RenderSceneSnapshot {
     pub fn object_ids(&self) -> Vec<RenderObjectId> {
         self.membership.object_ids()
     }
-
-    pub fn membership_eq(&self, other: &Self) -> bool {
-        self.membership == other.membership
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -468,7 +473,7 @@ impl RenderSceneStore {
     pub fn full_resync(&self) -> RenderSceneResync {
         RenderSceneResync {
             snapshot: self.snapshot(),
-            change_set: RenderSceneChangeSet::FullResync,
+            change_set: RenderSceneChangeSet::full_resync(),
         }
     }
 
@@ -573,7 +578,7 @@ mod tests {
         let object_id = store.allocate_object_id().expect("ID should allocate");
 
         let insert = insert_one(&mut store, object_id);
-        assert_eq!(insert.revision().raw(), 1);
+        assert_eq!(insert.revision(), RenderSceneRevision(1));
         assert!(insert.snapshot().contains(object_id));
         assert_eq!(insert.change_set().inserted(), Some(&[object_id][..]));
         assert_eq!(insert.change_set().removed(), Some(&[][..]));
@@ -581,7 +586,7 @@ mod tests {
         let mut remove_update = RenderSceneUpdate::new();
         remove_update.remove(object_id);
         let remove = store.commit(remove_update).expect("remove should commit");
-        assert_eq!(remove.revision().raw(), 2);
+        assert_eq!(remove.revision(), RenderSceneRevision(2));
         assert!(!remove.snapshot().contains(object_id));
         assert_eq!(remove.change_set().inserted(), Some(&[][..]));
         assert_eq!(remove.change_set().removed(), Some(&[object_id][..]));
@@ -663,7 +668,7 @@ mod tests {
             .commit(update)
             .expect("multi-operation update should commit");
 
-        assert_eq!(commit.revision().raw(), 2);
+        assert_eq!(commit.revision(), RenderSceneRevision(2));
         assert_eq!(commit.snapshot().object_ids(), vec![second, third]);
         assert_eq!(commit.change_set().inserted(), Some(&[second, third][..]));
         assert_eq!(commit.change_set().removed(), Some(&[first][..]));
@@ -679,7 +684,7 @@ mod tests {
 
         insert_one(&mut store, second);
 
-        assert_eq!(retained.revision().raw(), 1);
+        assert_eq!(retained.revision(), RenderSceneRevision(1));
         assert_eq!(retained.object_ids(), vec![first]);
         assert_eq!(store.snapshot().object_ids(), vec![first, second]);
     }
@@ -715,7 +720,7 @@ mod tests {
             insert_one(&mut incremental, object_id);
         }
 
-        assert!(full.snapshot().membership_eq(&incremental.snapshot()));
+        assert_eq!(full.snapshot().membership, incremental.snapshot().membership);
         assert_eq!(
             full.snapshot().object_ids(),
             incremental.snapshot().object_ids()
