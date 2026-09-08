@@ -31,12 +31,6 @@ struct ChurnTag;
 struct MixedStats(u64);
 
 #[derive(Debug, Default, ecs::Component, ecs::Resource)]
-struct EventStats(u64);
-
-#[derive(Debug, Copy, Clone)]
-struct BenchEvent(u32);
-
-#[derive(Debug, Default, ecs::Component, ecs::Resource)]
 struct R0(u64);
 #[derive(Debug, Default, ecs::Component, ecs::Resource)]
 struct R1(u64);
@@ -60,14 +54,6 @@ struct W3;
 impl ScheduleLabel for W3 {
     fn name() -> &'static str {
         "W3"
-    }
-}
-
-#[derive(Copy, Clone)]
-struct W4;
-impl ScheduleLabel for W4 {
-    fn name() -> &'static str {
-        "W4"
     }
 }
 
@@ -161,27 +147,6 @@ fn w3_despawn(mut commands: Commands, mut query: Query<(Entity, &ChurnTag)>) {
     }
 }
 
-fn w4_write_events(mut writer: BroadcastWriter<BenchEvent>) {
-    for i in 0..256_u32 {
-        writer.send(BenchEvent(i));
-    }
-}
-
-fn w4_read_broadcast(
-    reader: BroadcastReader<BenchEvent>,
-    mut query: Query<&Position>,
-    mut stats: ResMut<EventStats>,
-) {
-    let events_seen = reader
-        .iter()
-        .fold(0_u64, |acc, event| acc.wrapping_add(event.0 as u64));
-    let entities_seen = query.iter().count() as u64;
-    stats.0 = stats
-        .0
-        .wrapping_add(events_seen)
-        .wrapping_add(entities_seen);
-}
-
 fn w5_write_r0(mut r0: ResMut<R0>) {
     r0.0 = r0.0.wrapping_add(1);
 }
@@ -208,105 +173,6 @@ fn w5_read_mix(r0: Res<R0>, r1: Res<R1>, r2: Res<R2>, mut sink: ResMut<Sink>) {
 
 fn w5_read_mix_alt(r1: Res<R1>, r3: Res<R3>, mut sink: ResMut<Sink>) {
     sink.0 = sink.0.wrapping_add(r1.0).wrapping_add(r3.0);
-}
-
-fn snapshot_delta(
-    before: &EcsTelemetrySnapshot,
-    after: &EcsTelemetrySnapshot,
-) -> EcsTelemetrySnapshot {
-    EcsTelemetrySnapshot {
-        query_matching_calls: after
-            .query_matching_calls
-            .saturating_sub(before.query_matching_calls),
-        query_matching_nanos: after
-            .query_matching_nanos
-            .saturating_sub(before.query_matching_nanos),
-        query_matching_candidates: after
-            .query_matching_candidates
-            .saturating_sub(before.query_matching_candidates),
-        query_matching_matches: after
-            .query_matching_matches
-            .saturating_sub(before.query_matching_matches),
-        query_iter_calls: after
-            .query_iter_calls
-            .saturating_sub(before.query_iter_calls),
-        query_iter_nanos: after
-            .query_iter_nanos
-            .saturating_sub(before.query_iter_nanos),
-        query_get_calls: after.query_get_calls.saturating_sub(before.query_get_calls),
-        query_get_nanos: after.query_get_nanos.saturating_sub(before.query_get_nanos),
-        query_single_calls: after
-            .query_single_calls
-            .saturating_sub(before.query_single_calls),
-        query_single_nanos: after
-            .query_single_nanos
-            .saturating_sub(before.query_single_nanos),
-        changed_check_calls: after
-            .changed_check_calls
-            .saturating_sub(before.changed_check_calls),
-        changed_check_nanos: after
-            .changed_check_nanos
-            .saturating_sub(before.changed_check_nanos),
-        added_check_calls: after
-            .added_check_calls
-            .saturating_sub(before.added_check_calls),
-        added_check_nanos: after
-            .added_check_nanos
-            .saturating_sub(before.added_check_nanos),
-        runtime_plan_calls: after
-            .runtime_plan_calls
-            .saturating_sub(before.runtime_plan_calls),
-        runtime_plan_nanos: after
-            .runtime_plan_nanos
-            .saturating_sub(before.runtime_plan_nanos),
-        runtime_stage_calls: after
-            .runtime_stage_calls
-            .saturating_sub(before.runtime_stage_calls),
-        runtime_stage_nanos: after
-            .runtime_stage_nanos
-            .saturating_sub(before.runtime_stage_nanos),
-        runtime_flush_calls: after
-            .runtime_flush_calls
-            .saturating_sub(before.runtime_flush_calls),
-        runtime_flush_nanos: after
-            .runtime_flush_nanos
-            .saturating_sub(before.runtime_flush_nanos),
-        runtime_flush_command_queues: after
-            .runtime_flush_command_queues
-            .saturating_sub(before.runtime_flush_command_queues),
-        event_reader_calls: after
-            .event_reader_calls
-            .saturating_sub(before.event_reader_calls),
-        event_reader_nanos: after
-            .event_reader_nanos
-            .saturating_sub(before.event_reader_nanos),
-        events_read: after.events_read.saturating_sub(before.events_read),
-        event_writer_calls: after
-            .event_writer_calls
-            .saturating_sub(before.event_writer_calls),
-        event_writer_nanos: after
-            .event_writer_nanos
-            .saturating_sub(before.event_writer_nanos),
-        events_written: after.events_written.saturating_sub(before.events_written),
-        scheduler: scheduler::telemetry::SchedulerTelemetrySnapshot {
-            plan_build_calls: after
-                .scheduler
-                .plan_build_calls
-                .saturating_sub(before.scheduler.plan_build_calls),
-            plan_build_nanos: after
-                .scheduler
-                .plan_build_nanos
-                .saturating_sub(before.scheduler.plan_build_nanos),
-            plan_conflict_checks: after
-                .scheduler
-                .plan_conflict_checks
-                .saturating_sub(before.scheduler.plan_conflict_checks),
-            plan_stage_count: after
-                .scheduler
-                .plan_stage_count
-                .saturating_sub(before.scheduler.plan_stage_count),
-        },
-    }
 }
 
 fn print_workload_report(name: &str, elapsed: std::time::Duration, delta: &EcsTelemetrySnapshot) {
@@ -345,7 +211,7 @@ fn main() {
     print_workload_report(
         "W1 broad transform update",
         start_w1.elapsed(),
-        &snapshot_delta(&before_w1, &after_w1),
+        &telemetry::snapshot_delta(&before_w1, &after_w1),
     );
 
     let before_w2 = telemetry::snapshot();
@@ -394,7 +260,7 @@ fn main() {
     print_workload_report(
         "W2 gameplay mixed",
         start_w2.elapsed(),
-        &snapshot_delta(&before_w2, &after_w2),
+        &telemetry::snapshot_delta(&before_w2, &after_w2),
     );
 
     let before_w3 = telemetry::snapshot();
@@ -423,37 +289,7 @@ fn main() {
     print_workload_report(
         "W3 structural churn",
         start_w3.elapsed(),
-        &snapshot_delta(&before_w3, &after_w3),
-    );
-
-    let before_w4 = telemetry::snapshot();
-    let start_w4 = Instant::now();
-    {
-        let mut world = World::new();
-        world.insert_resource(EventStats::default());
-        for i in 0..10_000 {
-            world
-                .spawn((
-                    Position {
-                        x: i as f32,
-                        y: i as f32,
-                    },
-                    Velocity { x: 0.0, y: 0.0 },
-                ))
-                .expect("profile setup spawn should succeed");
-        }
-        let mut runtime = Runtime::new();
-        runtime.add_systems::<W4, _, _>(&mut world, (w4_write_events, w4_read_broadcast));
-        for _ in 0..20 {
-            runtime.run_schedule::<W4>(&mut world).expect("w4 run");
-            world.clear_broadcast_admin::<BenchEvent>();
-        }
-    }
-    let after_w4 = telemetry::snapshot();
-    print_workload_report(
-        "W4 event heavy",
-        start_w4.elapsed(),
-        &snapshot_delta(&before_w4, &after_w4),
+        &telemetry::snapshot_delta(&before_w3, &after_w3),
     );
 
     let before_w5 = telemetry::snapshot();
@@ -489,7 +325,7 @@ fn main() {
     print_workload_report(
         "W5 scheduler stress",
         start_w5.elapsed(),
-        &snapshot_delta(&before_w5, &after_w5),
+        &telemetry::snapshot_delta(&before_w5, &after_w5),
     );
 
     println!("\n=== cumulative snapshot ===");

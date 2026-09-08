@@ -31,12 +31,6 @@ struct ChurnTag;
 struct MixedStats(u64);
 
 #[derive(Debug, Default, ecs::Component, ecs::Resource)]
-struct EventStats(u64);
-
-#[derive(Debug, Copy, Clone)]
-struct BenchEvent(u32);
-
-#[derive(Debug, Default, ecs::Component, ecs::Resource)]
 struct R0(u64);
 #[derive(Debug, Default, ecs::Component, ecs::Resource)]
 struct R1(u64);
@@ -60,14 +54,6 @@ struct W3;
 impl ScheduleLabel for W3 {
     fn name() -> &'static str {
         "W3"
-    }
-}
-
-#[derive(Copy, Clone)]
-struct W4;
-impl ScheduleLabel for W4 {
-    fn name() -> &'static str {
-        "W4"
     }
 }
 
@@ -291,62 +277,6 @@ fn workload_w3(c: &mut Criterion) {
     group.finish();
 }
 
-fn w4_write_events(mut writer: BroadcastWriter<BenchEvent>) {
-    for i in 0..256_u32 {
-        writer.send(BenchEvent(i));
-    }
-}
-
-fn w4_read_broadcast(
-    reader: BroadcastReader<BenchEvent>,
-    mut query: Query<&Position>,
-    mut stats: ResMut<EventStats>,
-) {
-    let events_seen = reader
-        .iter()
-        .fold(0_u64, |acc, event| acc.wrapping_add(event.0 as u64));
-    let entities_seen = query.iter().count() as u64;
-    stats.0 = stats
-        .0
-        .wrapping_add(events_seen)
-        .wrapping_add(entities_seen);
-}
-
-fn build_runtime_for_w4(entity_count: usize) -> (World, Runtime) {
-    let mut world = World::new();
-    world.insert_resource(EventStats::default());
-    for i in 0..entity_count {
-        world
-            .spawn((
-                Position {
-                    x: i as f32,
-                    y: i as f32,
-                },
-                Velocity { x: 0.0, y: 0.0 },
-            ))
-            .expect("benchmark setup spawn should succeed");
-    }
-
-    let mut runtime = Runtime::new();
-    runtime.add_systems::<W4, _, _>(&mut world, (w4_write_events, w4_read_broadcast));
-    (world, runtime)
-}
-
-fn workload_w4(c: &mut Criterion) {
-    let mut group = c.benchmark_group("w4_event_heavy");
-    let (mut world, mut runtime) = build_runtime_for_w4(10_000);
-    group.bench_function("event_reader_writer_interleaved_query", |b| {
-        b.iter(|| {
-            runtime
-                .run_schedule::<W4>(&mut world)
-                .expect("w4 schedule should run");
-            world.clear_broadcast_admin::<BenchEvent>();
-            black_box(world.resource::<EventStats>().expect("event stats").0)
-        });
-    });
-    group.finish();
-}
-
 fn w5_write_r0(mut r0: ResMut<R0>) {
     r0.0 = r0.0.wrapping_add(1);
 }
@@ -433,7 +363,6 @@ fn phase35_benches(c: &mut Criterion) {
     workload_w1(c);
     workload_w2(c);
     workload_w3(c);
-    workload_w4(c);
     workload_w5(c);
 }
 

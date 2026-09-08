@@ -23,12 +23,6 @@ pub struct EcsTelemetrySnapshot {
     pub runtime_flush_calls: u64,
     pub runtime_flush_nanos: u64,
     pub runtime_flush_command_queues: u64,
-    pub event_reader_calls: u64,
-    pub event_reader_nanos: u64,
-    pub events_read: u64,
-    pub event_writer_calls: u64,
-    pub event_writer_nanos: u64,
-    pub events_written: u64,
     pub scheduler: SchedulerTelemetrySnapshot,
 }
 
@@ -59,12 +53,6 @@ mod imp {
     static RUNTIME_FLUSH_CALLS: AtomicU64 = AtomicU64::new(0);
     static RUNTIME_FLUSH_NANOS: AtomicU64 = AtomicU64::new(0);
     static RUNTIME_FLUSH_COMMAND_QUEUES: AtomicU64 = AtomicU64::new(0);
-    static EVENT_READER_CALLS: AtomicU64 = AtomicU64::new(0);
-    static EVENT_READER_NANOS: AtomicU64 = AtomicU64::new(0);
-    static EVENTS_READ: AtomicU64 = AtomicU64::new(0);
-    static EVENT_WRITER_CALLS: AtomicU64 = AtomicU64::new(0);
-    static EVENT_WRITER_NANOS: AtomicU64 = AtomicU64::new(0);
-    static EVENTS_WRITTEN: AtomicU64 = AtomicU64::new(0);
 
     pub fn reset() {
         QUERY_MATCHING_CALLS.store(0, Ordering::Relaxed);
@@ -88,12 +76,6 @@ mod imp {
         RUNTIME_FLUSH_CALLS.store(0, Ordering::Relaxed);
         RUNTIME_FLUSH_NANOS.store(0, Ordering::Relaxed);
         RUNTIME_FLUSH_COMMAND_QUEUES.store(0, Ordering::Relaxed);
-        EVENT_READER_CALLS.store(0, Ordering::Relaxed);
-        EVENT_READER_NANOS.store(0, Ordering::Relaxed);
-        EVENTS_READ.store(0, Ordering::Relaxed);
-        EVENT_WRITER_CALLS.store(0, Ordering::Relaxed);
-        EVENT_WRITER_NANOS.store(0, Ordering::Relaxed);
-        EVENTS_WRITTEN.store(0, Ordering::Relaxed);
         telemetry::reset();
     }
 
@@ -120,12 +102,6 @@ mod imp {
             runtime_flush_calls: RUNTIME_FLUSH_CALLS.load(Ordering::Relaxed),
             runtime_flush_nanos: RUNTIME_FLUSH_NANOS.load(Ordering::Relaxed),
             runtime_flush_command_queues: RUNTIME_FLUSH_COMMAND_QUEUES.load(Ordering::Relaxed),
-            event_reader_calls: EVENT_READER_CALLS.load(Ordering::Relaxed),
-            event_reader_nanos: EVENT_READER_NANOS.load(Ordering::Relaxed),
-            events_read: EVENTS_READ.load(Ordering::Relaxed),
-            event_writer_calls: EVENT_WRITER_CALLS.load(Ordering::Relaxed),
-            event_writer_nanos: EVENT_WRITER_NANOS.load(Ordering::Relaxed),
-            events_written: EVENTS_WRITTEN.load(Ordering::Relaxed),
             scheduler: telemetry::snapshot(),
         }
     }
@@ -177,18 +153,6 @@ mod imp {
         RUNTIME_FLUSH_NANOS.fetch_add(duration_nanos, Ordering::Relaxed);
         RUNTIME_FLUSH_COMMAND_QUEUES.fetch_add(command_queues, Ordering::Relaxed);
     }
-
-    pub fn record_event_reader(duration_nanos: u64, events_read: u64) {
-        EVENT_READER_CALLS.fetch_add(1, Ordering::Relaxed);
-        EVENT_READER_NANOS.fetch_add(duration_nanos, Ordering::Relaxed);
-        EVENTS_READ.fetch_add(events_read, Ordering::Relaxed);
-    }
-
-    pub fn record_event_writer(duration_nanos: u64, events_written: u64) {
-        EVENT_WRITER_CALLS.fetch_add(1, Ordering::Relaxed);
-        EVENT_WRITER_NANOS.fetch_add(duration_nanos, Ordering::Relaxed);
-        EVENTS_WRITTEN.fetch_add(events_written, Ordering::Relaxed);
-    }
 }
 
 #[cfg(not(feature = "telemetry"))]
@@ -210,8 +174,6 @@ mod imp {
     pub fn record_runtime_plan(_duration_nanos: u64) {}
     pub fn record_runtime_stage(_duration_nanos: u64) {}
     pub fn record_runtime_flush(_duration_nanos: u64, _command_queues: u64) {}
-    pub fn record_event_reader(_duration_nanos: u64, _events_read: u64) {}
-    pub fn record_event_writer(_duration_nanos: u64, _events_written: u64) {}
 }
 
 pub fn reset() {
@@ -286,20 +248,6 @@ pub fn snapshot_delta(
         runtime_flush_command_queues: after
             .runtime_flush_command_queues
             .saturating_sub(before.runtime_flush_command_queues),
-        event_reader_calls: after
-            .event_reader_calls
-            .saturating_sub(before.event_reader_calls),
-        event_reader_nanos: after
-            .event_reader_nanos
-            .saturating_sub(before.event_reader_nanos),
-        events_read: after.events_read.saturating_sub(before.events_read),
-        event_writer_calls: after
-            .event_writer_calls
-            .saturating_sub(before.event_writer_calls),
-        event_writer_nanos: after
-            .event_writer_nanos
-            .saturating_sub(before.event_writer_nanos),
-        events_written: after.events_written.saturating_sub(before.events_written),
         scheduler: scheduler::telemetry::SchedulerTelemetrySnapshot {
             plan_build_calls: after
                 .scheduler
@@ -355,12 +303,4 @@ pub(crate) fn record_runtime_stage(duration_nanos: u64) {
 
 pub(crate) fn record_runtime_flush(duration_nanos: u64, command_queues: u64) {
     imp::record_runtime_flush(duration_nanos, command_queues);
-}
-
-pub(crate) fn record_event_reader(duration_nanos: u64, events_read: u64) {
-    imp::record_event_reader(duration_nanos, events_read);
-}
-
-pub(crate) fn record_event_writer(duration_nanos: u64, events_written: u64) {
-    imp::record_event_writer(duration_nanos, events_written);
 }

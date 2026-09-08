@@ -1,5 +1,5 @@
 use crate::query::QueryAccess;
-use crate::world::{MessagingCapability, WorldAuthority};
+use crate::world::WorldAuthority;
 use crate::{Commands, ResourceError, World};
 use scheduler::system::ParamSlotDescriptor;
 use std::marker::PhantomData;
@@ -55,10 +55,6 @@ impl<'world> SystemParamContext<'world> {
         self,
     ) -> Result<crate::world::ResourceCapability<'world, T>, SystemParamError> {
         Ok(self.authority.resource_mut::<T>()?)
-    }
-
-    pub(crate) fn messaging(self) -> MessagingCapability<'world> {
-        self.authority.messaging()
     }
 
     /// # Safety

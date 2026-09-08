@@ -1,6 +1,5 @@
 use crate::SceneCatalog;
 use crate::plugins::SceneManager;
-use crate::plugins::scene::domain::SceneTemplateUiEvent;
 use crate::plugins::scene::ui::{UiStyle, UiStyleTemplate, UiTextTemplate};
 use anyhow::{Context, anyhow};
 use serde::Deserialize;
@@ -308,23 +307,14 @@ impl SceneTemplateFlowResource {
 fn publish_scene_template_event(
     manager: &mut SceneManager,
     name: &str,
-    scene_id: &str,
-    button: Option<&str>,
-    trigger: &'static str,
+    _scene_id: &str,
+    _button: Option<&str>,
+    _trigger: &'static str,
 ) {
     manager
         .channels
         .overlay_console_lines
         .push(format!("[scene-event] {name}"));
-    manager
-        .overlay_runtime
-        .world
-        .publish_broadcast(SceneTemplateUiEvent {
-            name: name.to_string(),
-            scene_id: scene_id.to_string(),
-            button: button.map(|value| value.to_string()),
-            trigger,
-        });
 }
 
 #[derive(Debug, Clone, Deserialize, Default)]

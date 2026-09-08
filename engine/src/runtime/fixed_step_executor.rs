@@ -77,18 +77,14 @@ pub(crate) fn run_fixed_update_frame(world: &mut World, scheduler: &mut Runtime)
             break;
         }
 
-        let tick_value = {
+        {
             let tick = world
                 .resource_mut::<SimulationTick>()
                 .expect("SimulationTick should be installed");
             tick.0 = tick.0.saturating_add(1);
-            tick.0
-        };
-
-        world.set_current_buffer_tick(tick_value);
+        }
 
         scheduler.run_schedule::<FixedUpdate>(world)?;
-        world.finalize_tick_boundary(tick_value);
         steps = steps.saturating_add(1);
 
         let fixed_state = world

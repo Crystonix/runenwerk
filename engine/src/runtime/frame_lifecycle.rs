@@ -52,7 +52,7 @@ pub(crate) fn run_frame(world: &mut World, scheduler: &mut Runtime) -> Result<()
     scheduler.run_schedule::<RenderPrepare>(world)?;
     scheduler.run_schedule::<RenderSubmit>(world)?;
     scheduler.run_schedule::<FrameEnd>(world)?;
-    world.finalize_frame_boundary();
+    world.advance_change_frame();
     Ok(())
 }
 
@@ -65,12 +65,7 @@ mod tests {
     };
     use anyhow::anyhow;
 
-    #[test]
-    fn frame_finalization_is_skipped_when_frame_end_schedule_fails() {
-        fn fail_frame_end() -> anyhow::Result<()> {
-            Err(anyhow!("frame end failure"))
-        }
-
+    fn test_world() -> World {
         let mut world = World::new();
         let mut time = Time::default();
         time.delta_seconds = 0.0;
@@ -79,15 +74,31 @@ mod tests {
         world.insert_resource(CatchupBudget::default());
         world.insert_resource(FixedTimeState::default());
         world.insert_resource(SimulationTick(0));
+        world
+    }
 
+    #[test]
+    fn successful_frame_end_advances_change_frame_once() {
+        let mut world = test_world();
+        let mut runtime = Runtime::new();
+
+        run_frame(&mut world, &mut runtime).expect("frame should succeed");
+
+        assert_eq!(world.current_frame_index(), 1);
+    }
+
+    #[test]
+    fn change_frame_advance_is_skipped_when_frame_end_schedule_fails() {
+        fn fail_frame_end() -> anyhow::Result<()> {
+            Err(anyhow!("frame end failure"))
+        }
+
+        let mut world = test_world();
         let mut runtime = Runtime::new();
         runtime.add_systems::<FrameEnd, _, _>(&mut world, fail_frame_end);
 
         let err = run_frame(&mut world, &mut runtime).expect_err("frame should fail");
         assert!(format!("{err:#}").contains("frame end failure"));
-
-        let counters = world.messaging_finalization_counters();
-        assert_eq!(counters.frame_boundaries, 0);
-        assert_eq!(counters.tick_boundaries, 0);
+        assert_eq!(world.current_frame_index(), 0);
     }
 }

@@ -1,6 +1,6 @@
 use crate::plugins::InputState;
 // Owner: Engine Scene Plugin - Tests
-use super::super::domain::{QuestState, SceneTemplateUiEvent, WorldToOverlayMessage};
+use super::super::domain::{QuestState, WorldToOverlayMessage};
 use super::super::{
     ScenePlugin, SceneResource, apply_scene_simulation_delta, build_scene_simulation_delta,
     capture_scene_simulation_snapshot, format_world_message, switch_scene_by_id,
@@ -288,64 +288,4 @@ fn scene_template_buttons_switch_scene_on_click() {
         .resource::<super::super::runtime::SceneTemplateFlowResource>()
         .expect("scene template flow resource should exist");
     assert_eq!(templates.active_scene_id(), Some("settings_menu"));
-}
-
-#[test]
-fn scene_template_ui_events_do_not_accumulate_across_frames() {
-    let mut app = App::headless();
-    app.add_scene("engine/tests/fixtures/scene_templates/game_scene.ron");
-    app.add_plugin(ScenePlugin);
-
-    let mut app = app
-        .run_for_frames(1)
-        .expect("scene plugin should initialize");
-
-    for frame in 0..6 {
-        {
-            let scene = app
-                .world_mut()
-                .resource_mut::<SceneResource>()
-                .expect("scene resource should exist");
-            let manager = scene
-                .manager
-                .as_mut()
-                .expect("scene manager should be initialized");
-            manager
-                .overlay_runtime
-                .world
-                .publish_broadcast(SceneTemplateUiEvent {
-                    name: format!("emit-{frame}"),
-                    scene_id: "game_scene".to_string(),
-                    button: Some("Resume".to_string()),
-                    trigger: "test_emit",
-                });
-            assert_eq!(
-                manager
-                    .overlay_runtime
-                    .world
-                    .broadcast_pending_count::<SceneTemplateUiEvent>(),
-                1,
-                "pending SceneTemplateUiEvent count should reset each frame before emit"
-            );
-        }
-
-        app = app.run_for_frames(1).expect("frame should run");
-
-        let scene = app
-            .world()
-            .resource::<SceneResource>()
-            .expect("scene resource should exist");
-        let manager = scene
-            .manager
-            .as_ref()
-            .expect("scene manager should be initialized");
-        assert_eq!(
-            manager
-                .overlay_runtime
-                .world
-                .broadcast_pending_count::<SceneTemplateUiEvent>(),
-            0,
-            "frame boundary finalization should clear frame-transient template events"
-        );
-    }
 }

@@ -849,36 +849,6 @@ fn query_access_to_system_access(access: QueryAccess) -> SystemAccess {
     for write in access.resource_writes() {
         system_access.add_write(AccessKey::resource_by_id(write.type_id(), write.name()));
     }
-    for read in access.broadcast_reads() {
-        system_access.add_read(AccessKey::broadcast_stream_by_id(
-            read.type_id(),
-            read.name(),
-        ));
-    }
-    for write in access.broadcast_writes() {
-        system_access.add_write(AccessKey::broadcast_stream_by_id(
-            write.type_id(),
-            write.name(),
-        ));
-    }
-    for read in access.work_queue_reads() {
-        system_access.add_read(AccessKey::work_queue_by_id(read.type_id(), read.name()));
-    }
-    for write in access.work_queue_writes() {
-        system_access.add_write(AccessKey::work_queue_by_id(write.type_id(), write.name()));
-    }
-    for drain in access.work_queue_drains() {
-        system_access.add_drain(AccessKey::work_queue_by_id(drain.type_id(), drain.name()));
-    }
-    for read in access.tick_buffer_reads() {
-        system_access.add_read(AccessKey::tick_buffer_by_id(read.type_id(), read.name()));
-    }
-    for write in access.tick_buffer_writes() {
-        system_access.add_write(AccessKey::tick_buffer_by_id(write.type_id(), write.name()));
-    }
-    for drain in access.tick_buffer_drains() {
-        system_access.add_drain(AccessKey::tick_buffer_by_id(drain.type_id(), drain.name()));
-    }
     if access.deferred_structural_mutation() {
         system_access.add_write(AccessKey::structural("world_structure"));
     }

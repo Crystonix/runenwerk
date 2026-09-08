@@ -34,11 +34,6 @@ fn tick(
     frame.0 += 1;
 }
 
-fn event_system(mut writer: BroadcastWriter<u32>, reader: BroadcastReader<u32>) {
-    writer.send(1);
-    let _ = reader.iter().count();
-}
-
 #[test]
 fn docs_gameplay_signatures_compile() {
     let _ = tick as fn(
@@ -46,7 +41,6 @@ fn docs_gameplay_signatures_compile() {
         Res<DeltaTime>,
         ResMut<Frame>,
     );
-    let _ = event_system as fn(BroadcastWriter<u32>, BroadcastReader<u32>);
 }
 
 #[test]
