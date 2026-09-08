@@ -21,6 +21,7 @@ pub mod resource;
 pub mod scene;
 pub mod shader;
 pub mod space_time;
+pub mod surface_result;
 mod texture_upload;
 
 mod plugin;
