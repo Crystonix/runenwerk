@@ -29,7 +29,6 @@ pub struct World {
     pub(super) resources: HashMap<TypeId, Box<dyn Any>>,
     pub(super) resource_type_registry: HashMap<TypeId, ResourceMeta>,
 
-    pub(super) current_frame_index: u64,
     pub(super) ownership: OwnershipRegistry,
 
     pub(super) component_indexes:
@@ -64,7 +63,6 @@ impl World {
             resources: HashMap::new(),
             resource_type_registry: HashMap::new(),
 
-            current_frame_index: 0,
             ownership: OwnershipRegistry::default(),
 
             component_indexes: RefCell::new(HashMap::new()),

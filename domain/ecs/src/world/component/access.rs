@@ -222,7 +222,6 @@ impl World {
         self.component_change_log
             .push(crate::world::change_tracking::ComponentChangeRecord {
                 tick: self.change_tick,
-                frame: self.current_frame_index,
                 entity,
                 component_type,
                 component_key,

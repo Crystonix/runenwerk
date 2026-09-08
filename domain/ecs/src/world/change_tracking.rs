@@ -18,7 +18,6 @@ pub enum ComponentChangeKind {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ComponentChangeRecord {
     pub tick: u64,
-    pub frame: u64,
     pub entity: Entity,
     pub component_type: TypeId,
     pub component_key: ComponentTypeKey,
@@ -42,7 +41,6 @@ pub enum ResourceChangeKind {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ResourceChangeRecord {
     pub tick: u64,
-    pub frame: u64,
     pub resource_type: TypeId,
     pub resource_key: ResourceTypeKey,
     pub resource_name: &'static str,
@@ -59,13 +57,4 @@ pub(super) struct ComponentMeta {
 pub(super) struct ResourceMeta {
     pub(super) id: ResourceTypeKey,
     pub(super) name: &'static str,
-}
-
-impl super::World {
-    /// Advance the frame index used exclusively by component/resource change records.
-    ///
-    /// Runenwerk calls this only after the complete host `FrameEnd` schedule succeeds.
-    pub fn advance_change_frame(&mut self) {
-        self.current_frame_index = self.current_frame_index.saturating_add(1);
-    }
 }

@@ -7,8 +7,6 @@ use crate::world::change_tracking::{
 pub struct ChangeExtractionWindow {
     pub tick_start_exclusive: u64,
     pub tick_end_inclusive: u64,
-    pub frame_start_exclusive: u64,
-    pub frame_end_inclusive: u64,
 }
 
 impl ChangeExtractionWindow {
@@ -16,39 +14,17 @@ impl ChangeExtractionWindow {
         Self {
             tick_start_exclusive: start_exclusive,
             tick_end_inclusive: end_inclusive,
-            frame_start_exclusive: u64::MAX,
-            frame_end_inclusive: u64::MAX,
-        }
-    }
-
-    pub fn for_frame_window(start_exclusive: u64, end_inclusive: u64) -> Self {
-        Self {
-            tick_start_exclusive: u64::MAX,
-            tick_end_inclusive: u64::MAX,
-            frame_start_exclusive: start_exclusive,
-            frame_end_inclusive: end_inclusive,
         }
     }
 
     pub fn contains_tick(&self, tick: u64) -> bool {
-        if self.tick_start_exclusive == u64::MAX && self.tick_end_inclusive == u64::MAX {
-            return true;
-        }
         tick > self.tick_start_exclusive && tick <= self.tick_end_inclusive
-    }
-
-    pub fn contains_frame(&self, frame: u64) -> bool {
-        if self.frame_start_exclusive == u64::MAX && self.frame_end_inclusive == u64::MAX {
-            return true;
-        }
-        frame > self.frame_start_exclusive && frame <= self.frame_end_inclusive
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ComponentStructuralDelta {
     pub tick: u64,
-    pub frame: u64,
     pub entity: crate::entity::Entity,
     pub component_key: ComponentTypeKey,
     pub component_name: &'static str,
@@ -58,7 +34,6 @@ pub struct ComponentStructuralDelta {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ResourceStructuralDelta {
     pub tick: u64,
-    pub frame: u64,
     pub resource_key: ResourceTypeKey,
     pub resource_name: &'static str,
     pub kind: ResourceChangeKind,
@@ -107,7 +82,7 @@ impl World {
     ) -> StructuralDeltaBatch {
         let mut component_deltas = Vec::<ComponentStructuralDelta>::new();
         for change in &self.component_change_log {
-            if !window.contains_tick(change.tick) || !window.contains_frame(change.frame) {
+            if !window.contains_tick(change.tick) {
                 continue;
             }
 
@@ -119,7 +94,6 @@ impl World {
 
             component_deltas.push(ComponentStructuralDelta {
                 tick: change.tick,
-                frame: change.frame,
                 entity: change.entity,
                 component_key: change.component_key,
                 component_name: change.component_name,
@@ -131,14 +105,13 @@ impl World {
                 delta.entity,
                 delta.component_key,
                 delta.tick,
-                delta.frame,
                 component_kind_order(delta.kind),
             )
         });
 
         let mut resource_deltas = Vec::<ResourceStructuralDelta>::new();
         for change in &self.resource_change_log {
-            if !window.contains_tick(change.tick) || !window.contains_frame(change.frame) {
+            if !window.contains_tick(change.tick) {
                 continue;
             }
 
@@ -150,7 +123,6 @@ impl World {
 
             resource_deltas.push(ResourceStructuralDelta {
                 tick: change.tick,
-                frame: change.frame,
                 resource_key: change.resource_key,
                 resource_name: change.resource_name,
                 kind: change.kind,
@@ -160,7 +132,6 @@ impl World {
             (
                 delta.resource_key,
                 delta.tick,
-                delta.frame,
                 resource_kind_order(delta.kind),
             )
         });
@@ -179,29 +150,7 @@ impl World {
         filter: ChangeExtractionFilter<'_>,
     ) -> StructuralDeltaBatch {
         self.extract_structural_deltas(
-            ChangeExtractionWindow {
-                tick_start_exclusive,
-                tick_end_inclusive,
-                frame_start_exclusive: u64::MAX,
-                frame_end_inclusive: u64::MAX,
-            },
-            filter,
-        )
-    }
-
-    pub fn extract_structural_deltas_for_frame_window(
-        &self,
-        frame_start_exclusive: u64,
-        frame_end_inclusive: u64,
-        filter: ChangeExtractionFilter<'_>,
-    ) -> StructuralDeltaBatch {
-        self.extract_structural_deltas(
-            ChangeExtractionWindow {
-                tick_start_exclusive: u64::MAX,
-                tick_end_inclusive: u64::MAX,
-                frame_start_exclusive,
-                frame_end_inclusive,
-            },
+            ChangeExtractionWindow::for_tick_window(tick_start_exclusive, tick_end_inclusive),
             filter,
         )
     }
