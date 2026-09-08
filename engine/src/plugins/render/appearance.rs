@@ -26,11 +26,17 @@ impl fmt::Display for RenderAppearanceValidationError {
         match self {
             Self::SemanticValue(error) => fmt::Display::fmt(error, f),
             Self::DiffuseReflectanceOutOfRange => {
-                write!(f, "diffuse reflectance must lie in the closed interval [0, 1]")
+                write!(
+                    f,
+                    "diffuse reflectance must lie in the closed interval [0, 1]"
+                )
             }
             Self::ZeroDirection => write!(f, "directional emitter direction must be non-zero"),
             Self::NegativeSpectralIrradiance => {
-                write!(f, "directional emitter spectral irradiance must be non-negative")
+                write!(
+                    f,
+                    "directional emitter spectral irradiance must be non-negative"
+                )
             }
         }
     }
@@ -93,10 +99,8 @@ impl RenderDirectionalEmitter {
                 },
             ));
         }
-        let spectral_irradiance_w_m3 = CanonicalF64::new(
-            spectral_irradiance_w_m3,
-            "emitter_spectral_irradiance_w_m3",
-        )?;
+        let spectral_irradiance_w_m3 =
+            CanonicalF64::new(spectral_irradiance_w_m3, "emitter_spectral_irradiance_w_m3")?;
         if spectral_irradiance_w_m3.get() < 0.0 {
             return Err(RenderAppearanceValidationError::NegativeSpectralIrradiance);
         }
@@ -128,11 +132,7 @@ fn canonical_unit_direction(
         CanonicalF64::new(direction[1], "directional_emitter_direction")?.get(),
         CanonicalF64::new(direction[2], "directional_emitter_direction")?.get(),
     ];
-    let scale = values
-        .iter()
-        .copied()
-        .map(f64::abs)
-        .fold(0.0_f64, f64::max);
+    let scale = values.iter().copied().map(f64::abs).fold(0.0_f64, f64::max);
     if scale == 0.0 {
         return Err(RenderAppearanceValidationError::ZeroDirection);
     }
