@@ -64,9 +64,8 @@ fn invalid_second_object_rejects_valid_first_object_r3_change_atomically() {
         None,
     )
     .expect("valid first participation");
-    let invalid_second =
-        RenderObjectParticipation::new(vec![first_representation], None, None)
-            .expect("structurally valid second participation");
+    let invalid_second = RenderObjectParticipation::new(vec![first_representation], None, None)
+        .expect("structurally valid second participation");
 
     let before = store.snapshot();
     let revision = store.revision();
@@ -96,12 +95,9 @@ fn full_and_incremental_r3_construction_have_identical_semantic_participation() 
     insert_object(&mut full, full_object);
     let full_first = surface_representation(&mut full, full_object);
     let full_second = surface_representation(&mut full, full_object);
-    let expected = RenderObjectParticipation::new(
-        vec![full_second, full_first],
-        Some(material(0.5)),
-        None,
-    )
-    .expect("valid full participation");
+    let expected =
+        RenderObjectParticipation::new(vec![full_second, full_first], Some(material(0.5)), None)
+            .expect("valid full participation");
     let mut full_update = RenderSceneUpdate::new();
     full_update.replace_participation(full_object, expected.clone());
     full.commit(full_update)
@@ -114,12 +110,9 @@ fn full_and_incremental_r3_construction_have_identical_semantic_participation() 
     insert_object(&mut incremental, incremental_object);
     let incremental_first = surface_representation(&mut incremental, incremental_object);
     let incremental_second = surface_representation(&mut incremental, incremental_object);
-    let first_step = RenderObjectParticipation::new(
-        vec![incremental_first.clone()],
-        Some(material(0.5)),
-        None,
-    )
-    .expect("valid first step");
+    let first_step =
+        RenderObjectParticipation::new(vec![incremental_first.clone()], Some(material(0.5)), None)
+            .expect("valid first step");
     let mut first_update = RenderSceneUpdate::new();
     first_update.replace_participation(incremental_object, first_step);
     incremental
@@ -161,7 +154,9 @@ fn material_assignment_removal_and_missing_endpoint_are_deterministic() {
         .expect("valid material assignment");
     let mut assign = RenderSceneUpdate::new();
     assign.replace_participation(present, assignment);
-    store.commit(assign).expect("material assignment should commit");
+    store
+        .commit(assign)
+        .expect("material assignment should commit");
 
     let mut remove = RenderSceneUpdate::new();
     remove.clear_participation(present);
@@ -178,9 +173,8 @@ fn material_assignment_removal_and_missing_endpoint_are_deterministic() {
 
     let before = store.snapshot();
     let revision = store.revision();
-    let missing_assignment =
-        RenderObjectParticipation::new(Vec::new(), Some(material(0.5)), None)
-            .expect("valid missing assignment value");
+    let missing_assignment = RenderObjectParticipation::new(Vec::new(), Some(material(0.5)), None)
+        .expect("valid missing assignment value");
     let mut invalid = RenderSceneUpdate::new();
     invalid.replace_participation(missing, missing_assignment);
     assert_eq!(
@@ -203,7 +197,9 @@ fn object_identity_is_stable_across_representation_add_replace_and_removal() {
         object_id,
         RenderObjectParticipation::new(vec![first], None, None).expect("first participation"),
     );
-    let first_commit = store.commit(attach).expect("first representation should commit");
+    let first_commit = store
+        .commit(attach)
+        .expect("first representation should commit");
     assert_eq!(first_commit.snapshot().object_ids(), vec![object_id]);
     assert_eq!(first_commit.change_set().inserted(), Some(&[][..]));
     assert_eq!(first_commit.change_set().removed(), Some(&[][..]));
@@ -228,7 +224,12 @@ fn object_identity_is_stable_across_representation_add_replace_and_removal() {
         .expect("representation removal should commit");
     assert_eq!(clear_commit.snapshot().object_ids(), vec![object_id]);
     assert!(clear_commit.snapshot().contains(object_id));
-    assert!(clear_commit.snapshot().object_participation(object_id).is_none());
+    assert!(
+        clear_commit
+            .snapshot()
+            .object_participation(object_id)
+            .is_none()
+    );
 }
 
 #[test]
@@ -237,12 +238,9 @@ fn unknown_representation_identity_is_rejected_without_publication() {
     let object_id = store.allocate_object_id().expect("object ID");
     insert_object(&mut store, object_id);
     let unknown = RenderRepresentationId::from_raw(999_999).expect("non-zero unknown ID");
-    let participation = RenderObjectParticipation::new(
-        vec![surface_representation_with_id(unknown)],
-        None,
-        None,
-    )
-    .expect("structurally valid participation");
+    let participation =
+        RenderObjectParticipation::new(vec![surface_representation_with_id(unknown)], None, None)
+            .expect("structurally valid participation");
     let before = store.snapshot();
 
     let mut update = RenderSceneUpdate::new();
