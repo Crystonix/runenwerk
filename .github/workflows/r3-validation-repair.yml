@@ -1,0 +1,89 @@
+name: R3 validation repair
+
+on:
+  push:
+    branches:
+      - issue-475-r3-representations
+
+permissions:
+  contents: write
+
+concurrency:
+  group: r3-validation-repair-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+
+      - name: Verify reviewed starting point
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = "aba096e8279ed165fdbc146b100b5204315fd93e"
+          test "$(git hash-object engine/src/plugins/render/scene/mod.rs)" = "66b251daca86b5d0f24da9c0098bc8d7a8f2939f"
+          test "$(git hash-object engine/src/plugins/render/representation.rs)" = "1361c2d3242332a225198da360dc3789010017de"
+
+      - name: Apply exact validation repairs
+        shell: python
+        run: |
+          from pathlib import Path
+
+          scene_path = Path("engine/src/plugins/render/scene/mod.rs")
+          scene = scene_path.read_text()
+          old_scene = '''                    let representations_differ = current
+                        .map(RenderObjectParticipation::representations)
+                        != next.map(RenderObjectParticipation::representations);
+'''
+          new_scene = '''                    let current_representations = current
+                        .map(RenderObjectParticipation::representations)
+                        .unwrap_or(&[]);
+                    let next_representations = next
+                        .map(RenderObjectParticipation::representations)
+                        .unwrap_or(&[]);
+                    let representations_differ = current_representations != next_representations;
+'''
+          if scene.count(old_scene) != 1:
+              raise SystemExit("scene representation-change comparison did not match exactly once")
+          scene_path.write_text(scene.replace(old_scene, new_scene, 1))
+
+          representation_path = Path("engine/src/plugins/render/representation.rs")
+          representation = representation_path.read_text()
+          old_representation = '''    pub(crate) const fn raw(self) -> u64 {
+        self.0.get()
+    }
+'''
+          new_representation = '''    #[cfg(test)]
+    pub(crate) const fn raw(self) -> u64 {
+        self.0.get()
+    }
+'''
+          if representation.count(old_representation) != 1:
+              raise SystemExit("representation raw accessor did not match exactly once")
+          representation_path.write_text(
+              representation.replace(old_representation, new_representation, 1)
+          )
+
+      - name: Validate focused repair and publish
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install stable --profile minimal --component rustfmt,clippy
+          cargo +stable fmt --all
+          cargo +stable fmt --all --check
+          cargo +stable test -p engine material_assignment_and_emitter_publish_only_their_truthful_r3_evidence --locked
+          cargo +stable test -p engine material_assignment_removal_and_missing_endpoint_are_deterministic --locked
+          cargo +stable clippy -p engine --lib --locked -- -D warnings
+          git diff --check
+          expected=$'engine/src/plugins/render/representation.rs\nengine/src/plugins/render/scene/mod.rs'
+          actual="$(git diff --name-only)"
+          test "$actual" = "$expected"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add engine/src/plugins/render/representation.rs engine/src/plugins/render/scene/mod.rs
+          git commit -m "RunenRender R3: make change evidence truthful"
+          git push origin HEAD:issue-475-r3-representations
