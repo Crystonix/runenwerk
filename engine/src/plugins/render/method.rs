@@ -174,11 +174,9 @@ impl RenderMethodOutputSupport {
 
     pub fn supports_value(self, value: RenderOutputValue) -> bool {
         match value {
-            RenderOutputValue::Radiance { representation } => self
-                .radiance
-                .is_some_and(|support| {
-                    support.contains_wavelength_meters(representation.wavelength_meters())
-                }),
+            RenderOutputValue::Radiance { representation } => self.radiance.is_some_and(|support| {
+                support.contains_wavelength_meters(representation.wavelength_meters())
+            }),
             RenderOutputValue::Distance { .. } => self.distance,
             RenderOutputValue::ObjectIdentity => self.object_identity,
         }
@@ -321,16 +319,18 @@ impl fmt::Display for RenderMethodValidationError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::SemanticValue(error) => fmt::Display::fmt(error, formatter),
-            Self::NoObservations => formatter.write_str("render method must support an observation"),
+            Self::NoObservations => {
+                formatter.write_str("render method must support an observation")
+            }
             Self::NoOutputs => formatter.write_str("render method must support an output"),
-            Self::InvalidSpectralRange => formatter.write_str(
-                "render method spectral range must be finite, positive, and ordered",
-            ),
+            Self::InvalidSpectralRange => formatter
+                .write_str("render method spectral range must be finite, positive, and ordered"),
             Self::InvalidProtocolRevision => {
                 formatter.write_str("render method protocol revision must be non-zero")
             }
-            Self::NegativeRefinementError => formatter
-                .write_str("render method maximum refinement error must be non-negative"),
+            Self::NegativeRefinementError => {
+                formatter.write_str("render method maximum refinement error must be non-negative")
+            }
         }
     }
 }
