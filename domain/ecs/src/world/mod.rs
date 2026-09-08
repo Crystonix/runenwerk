@@ -14,7 +14,7 @@ pub mod resource;
 
 pub use change_extraction::{
     ChangeExtractionFilter, ChangeExtractionWindow, ComponentStructuralDelta,
-    ResourceStructuralDelta, StructuralDeltaBatch, StructuralDeltaRef,
+    ResourceStructuralDelta, StructuralDeltaBatch,
 };
 pub use change_tracking::{
     ComponentChangeKind, ComponentChangeRecord, ComponentTypeKey, ResourceChangeKind,

@@ -72,9 +72,6 @@ fn extraction_supports_resource_key_filtering() {
         ChangeExtractionFilter {
             component_key_filter: None,
             resource_key_filter: Some(&move |key: ResourceTypeKey| key == resource_key),
-            component_ownership_filter: None,
-            resource_ownership_filter: None,
-            interest_filter: None,
         },
     );
 

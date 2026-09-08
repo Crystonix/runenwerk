@@ -40,5 +40,5 @@ pub use world::{
     ComponentStructuralDelta, ComponentTypeKey, EntityMut, EntityRef, Mut, OwnerId, OwnerRole,
     OwnerState, OwnershipTarget, OwnershipTransferRecord, ResourceChangeKind, ResourceChangeRecord,
     ResourceOwnerKey, ResourceOwnershipDescriptor, ResourceStructuralDelta, ResourceTypeKey,
-    StructuralDeltaBatch, StructuralDeltaRef, World,
+    StructuralDeltaBatch, World,
 };

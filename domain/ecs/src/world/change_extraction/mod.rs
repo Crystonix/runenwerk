@@ -1,9 +1,7 @@
-use crate::entity::Entity;
 use crate::world::World;
 use crate::world::change_tracking::{
     ComponentChangeKind, ComponentTypeKey, ResourceChangeKind, ResourceTypeKey,
 };
-use crate::world::ownership::OwnerState;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct ChangeExtractionWindow {
@@ -51,7 +49,7 @@ impl ChangeExtractionWindow {
 pub struct ComponentStructuralDelta {
     pub tick: u64,
     pub frame: u64,
-    pub entity: Entity,
+    pub entity: crate::entity::Entity,
     pub component_key: ComponentTypeKey,
     pub component_name: &'static str,
     pub kind: ComponentChangeKind,
@@ -79,19 +77,10 @@ impl StructuralDeltaBatch {
     }
 }
 
-pub enum StructuralDeltaRef<'a> {
-    Component(&'a ComponentStructuralDelta),
-    Resource(&'a ResourceStructuralDelta),
-}
-
 #[derive(Default)]
 pub struct ChangeExtractionFilter<'a> {
     pub component_key_filter: Option<&'a dyn Fn(ComponentTypeKey) -> bool>,
     pub resource_key_filter: Option<&'a dyn Fn(ResourceTypeKey) -> bool>,
-    pub component_ownership_filter:
-        Option<&'a dyn Fn(Entity, OwnerState, ComponentTypeKey) -> bool>,
-    pub resource_ownership_filter: Option<&'a dyn Fn(ResourceTypeKey, OwnerState) -> bool>,
-    pub interest_filter: Option<&'a dyn Fn(StructuralDeltaRef<'_>) -> bool>,
 }
 
 fn component_kind_order(kind: ComponentChangeKind) -> u8 {
@@ -128,29 +117,14 @@ impl World {
                 continue;
             }
 
-            let owner = self.entity_owner(change.entity);
-            if let Some(component_ownership_filter) = filter.component_ownership_filter
-                && !component_ownership_filter(change.entity, owner, change.component_key)
-            {
-                continue;
-            }
-
-            let delta = ComponentStructuralDelta {
+            component_deltas.push(ComponentStructuralDelta {
                 tick: change.tick,
                 frame: change.frame,
                 entity: change.entity,
                 component_key: change.component_key,
                 component_name: change.component_name,
                 kind: change.kind,
-            };
-
-            if let Some(interest_filter) = filter.interest_filter
-                && !interest_filter(StructuralDeltaRef::Component(&delta))
-            {
-                continue;
-            }
-
-            component_deltas.push(delta);
+            });
         }
         component_deltas.sort_by_key(|delta| {
             (
@@ -174,28 +148,13 @@ impl World {
                 continue;
             }
 
-            let owner = self.resource_owner_by_type_id(change.resource_type);
-            if let Some(resource_ownership_filter) = filter.resource_ownership_filter
-                && !resource_ownership_filter(change.resource_key, owner)
-            {
-                continue;
-            }
-
-            let delta = ResourceStructuralDelta {
+            resource_deltas.push(ResourceStructuralDelta {
                 tick: change.tick,
                 frame: change.frame,
                 resource_key: change.resource_key,
                 resource_name: change.resource_name,
                 kind: change.kind,
-            };
-
-            if let Some(interest_filter) = filter.interest_filter
-                && !interest_filter(StructuralDeltaRef::Resource(&delta))
-            {
-                continue;
-            }
-
-            resource_deltas.push(delta);
+            });
         }
         resource_deltas.sort_by_key(|delta| {
             (
