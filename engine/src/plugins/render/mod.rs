@@ -10,6 +10,7 @@ pub mod graph;
 pub mod inspect;
 pub mod material_compiler;
 pub mod params;
+pub mod participation;
 pub mod pipelines;
 pub mod procedural;
 pub mod renderer;
