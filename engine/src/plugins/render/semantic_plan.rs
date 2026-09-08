@@ -362,9 +362,7 @@ fn plan_method(
         if matches!(value, RenderOutputValue::Radiance { .. })
             && method.output_support().radiance().is_some()
         {
-            return Err(RenderMethodRejectionReason::RadiometricDomainMismatch {
-                output_index,
-            });
+            return Err(RenderMethodRejectionReason::RadiometricDomainMismatch { output_index });
         }
         return Err(RenderMethodRejectionReason::UnsupportedOutput { output_index });
     }
@@ -566,13 +564,11 @@ mod tests {
         RenderPerspectiveObservation, RenderProbeObservation, RenderRadiometricRepresentation,
         RenderResultTopology, RenderSamplingSupport,
     };
-    use crate::plugins::render::scene::{
-        RenderObjectState, RenderSceneStore, RenderSceneUpdate,
-    };
+    use crate::plugins::render::scene::{RenderObjectState, RenderSceneStore, RenderSceneUpdate};
     use crate::plugins::render::space_time::{
         RenderAffineTransform3, RenderHandedness, RenderObjectSpatialState,
-        RenderObjectTemporalState, RenderSpaceSpec, RenderSpatialCoverage,
-        RenderTemporalSupport, RenderTimePoint,
+        RenderObjectTemporalState, RenderSpaceSpec, RenderSpatialCoverage, RenderTemporalSupport,
+        RenderTimePoint,
     };
 
     fn interval(start: f64, end: f64) -> RenderTimeInterval {
@@ -880,12 +876,8 @@ mod tests {
             RENDER_SURFACE_QUERY_PROTOCOL_REVISION + 1,
             RenderTemporalSupport::unbounded(),
         );
-        let mismatch = plan_render(
-            &mismatch_store.snapshot(),
-            &request,
-            &[surface_method(1)],
-        )
-        .expect_err("protocol revision must match exactly");
+        let mismatch = plan_render(&mismatch_store.snapshot(), &request, &[surface_method(1)])
+            .expect_err("protocol revision must match exactly");
         assert_eq!(
             only_representation_reason(mismatch),
             RenderRepresentationRejectionReason::ProtocolVersionMismatch {
@@ -1167,7 +1159,8 @@ mod tests {
         assert!(commit.change_set().is_empty_incremental());
         assert_eq!(store.revision(), retained_revision);
 
-        let current_plan = plan_render(&store.snapshot(), &request, &[method]).expect("current plan");
+        let current_plan =
+            plan_render(&store.snapshot(), &request, &[method]).expect("current plan");
         assert_eq!(retained_plan, current_plan);
         assert_eq!(store.revision(), retained_revision);
     }
