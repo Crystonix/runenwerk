@@ -18,6 +18,25 @@ where
     anyhow::Error::new(error).context(context)
 }
 
+fn client_ack_cursor<TSnapshot>(world: &World) -> SnapshotCursor
+where
+    TSnapshot: Clone + PartialEq + 'static,
+{
+    world
+        .resource::<ClientSnapshotReplicationState<TSnapshot>>()
+        .map(|state| state.last_acknowledged_cursor)
+        .unwrap_or_default()
+}
+
+fn restore_client_ack_cursor<TSnapshot>(world: &mut World, cursor: SnapshotCursor)
+where
+    TSnapshot: Clone + PartialEq + 'static,
+{
+    if let Ok(state) = world.resource_mut::<ClientSnapshotReplicationState<TSnapshot>>() {
+        state.last_acknowledged_cursor = cursor;
+    }
+}
+
 pub fn client_receive_system<TDriver>(mut world: WorldMut) -> anyhow::Result<()>
 where
     TDriver: ReplicationDriver + SnapshotApplyDriver + InputDriver + Send + Sync + 'static,
@@ -49,6 +68,7 @@ where
     for message in messages {
         match message {
             ServerMessage::Snapshot(snapshot) => {
+                let previous_ack_cursor = client_ack_cursor::<TDriver::Snapshot>(&world);
                 let result = apply_authoritative_snapshot::<TDriver>(
                     &mut world,
                     snapshot.tick,
@@ -76,9 +96,17 @@ where
                         ) {
                             Ok(()) => {}
                             Err(NetworkPendingEnqueueError::Unavailable { endpoint, .. }) => {
+                                restore_client_ack_cursor::<TDriver::Snapshot>(
+                                    &mut world,
+                                    previous_ack_cursor,
+                                );
                                 anyhow::bail!("{endpoint} should be installed by NetPlugin");
                             }
                             Err(NetworkPendingEnqueueError::Backpressure { capacity, .. }) => {
+                                restore_client_ack_cursor::<TDriver::Snapshot>(
+                                    &mut world,
+                                    previous_ack_cursor,
+                                );
                                 tracing::warn!(capacity, "failed to enqueue snapshot ack");
                             }
                         }
@@ -89,6 +117,10 @@ where
                         }
                     }
                     Err(error) => {
+                        restore_client_ack_cursor::<TDriver::Snapshot>(
+                            &mut world,
+                            previous_ack_cursor,
+                        );
                         tracing::warn!(
                             error = %format!("{error:#}"),
                             "network snapshot apply failed"
@@ -97,6 +129,7 @@ where
                 }
             }
             ServerMessage::DeltaSnapshot(snapshot) => {
+                let previous_ack_cursor = client_ack_cursor::<TDriver::Snapshot>(&world);
                 let result = apply_authoritative_delta::<TDriver>(
                     &mut world,
                     snapshot.tick,
@@ -124,9 +157,17 @@ where
                         ) {
                             Ok(()) => {}
                             Err(NetworkPendingEnqueueError::Unavailable { endpoint, .. }) => {
+                                restore_client_ack_cursor::<TDriver::Snapshot>(
+                                    &mut world,
+                                    previous_ack_cursor,
+                                );
                                 anyhow::bail!("{endpoint} should be installed by NetPlugin");
                             }
                             Err(NetworkPendingEnqueueError::Backpressure { capacity, .. }) => {
+                                restore_client_ack_cursor::<TDriver::Snapshot>(
+                                    &mut world,
+                                    previous_ack_cursor,
+                                );
                                 tracing::warn!(capacity, "failed to enqueue delta snapshot ack");
                             }
                         }
@@ -137,6 +178,10 @@ where
                         }
                     }
                     Err(error) => {
+                        restore_client_ack_cursor::<TDriver::Snapshot>(
+                            &mut world,
+                            previous_ack_cursor,
+                        );
                         tracing::warn!(
                             error = %format!("{error:#}"),
                             "network delta snapshot apply failed"
