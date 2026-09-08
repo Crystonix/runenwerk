@@ -1,3 +1,16 @@
+//! R2 renderer-semantic space and time conventions.
+//!
+//! Renderer scene coordinates are a canonical right-handed Cartesian frame measured in metres.
+//! The scene axes carry no product/world policy such as gravity or world-up; those remain outside
+//! RunenRender. Object-local frames may use other unit scales or handedness, but adapters project
+//! source conventions into the renderer-owned vocabulary here.
+//!
+//! Renderer-semantic time is measured in seconds on one affine timeline shared by a scene's
+//! temporal state and the `RenderRequest` paired with that scene snapshot. The epoch is deliberately
+//! opaque and has no persistence/wire meaning. Integration code projects simulation ticks, wall
+//! clocks, tracking time, or other source clocks onto this timeline rather than leaking them into
+//! the semantic core.
+
 use std::error::Error;
 use std::fmt;
 
@@ -49,10 +62,13 @@ pub enum RenderHandedness {
     Right,
 }
 
-/// Unit scale and handedness for one renderer-semantic local coordinate frame.
+/// Unit scale and handedness for one renderer-semantic object-local coordinate frame.
 ///
-/// Source coordinate systems remain source-owned. Adapters project their conventions into this
-/// renderer-local vocabulary rather than leaking source spatial types into RunenRender.
+/// `meters_per_unit` converts local coordinate magnitudes to metres before an object's
+/// `local_to_scene` transform is applied. `local_to_scene` then maps those metric local coordinates
+/// into the canonical right-handed scene frame; any orientation/handedness conversion required by
+/// the local frame is therefore represented by that transform. Source coordinate-system types
+/// remain source-owned and never enter this contract.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct RenderSpaceSpec {
     meters_per_unit: CanonicalF64,
@@ -85,11 +101,14 @@ impl RenderSpaceSpec {
     }
 }
 
-/// A finite semantic affine transform from one renderer-local frame into another.
+/// A finite semantic affine transform between renderer-semantic frames.
 ///
-/// The 3x4 matrix is row-major. R2 validates finiteness but deliberately does not require
-/// invertibility: a semantic source projection may be degenerate without implying a GPU numeric
-/// realization or a representation-specific transform-validity guarantee.
+/// The 3x4 matrix is row-major. When used as `RenderObjectSpatialState::local_to_scene`, its input
+/// is the object's metre-normalized local coordinates and its output is canonical scene metres.
+/// R2 validates finiteness but deliberately does not require invertibility for general object
+/// transforms: a semantic object projection may be degenerate without implying a GPU numeric
+/// realization or a representation-specific validity guarantee. Observation constructors impose
+/// their stronger frame requirements separately.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct RenderAffineTransform3 {
     row_major_3x4: [CanonicalF64; 12],
@@ -128,7 +147,7 @@ impl RenderAffineTransform3 {
     }
 }
 
-/// Renderer-semantic spatial support expressed in scene coordinates.
+/// Renderer-semantic spatial support expressed as canonical scene metres.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RenderSpatialCoverage {
     kind: RenderSpatialCoverageKind,
@@ -193,6 +212,7 @@ impl RenderSpatialCoverage {
     }
 }
 
+/// A point on the renderer-semantic timeline, measured in seconds from its opaque shared epoch.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct RenderTimePoint {
     seconds: CanonicalF64,
@@ -277,6 +297,11 @@ impl RenderTemporalSupport {
     }
 }
 
+/// R2 object spatial state in renderer-owned coordinates.
+///
+/// A local point is first converted to metres using `local_space.meters_per_unit`; the
+/// `local_to_scene` affine then maps the metric local point into canonical scene metres. The
+/// `scene_coverage` value is already expressed directly in that canonical scene frame.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RenderObjectSpatialState {
     local_space: RenderSpaceSpec,
