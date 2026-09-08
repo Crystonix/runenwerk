@@ -24,7 +24,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^^)" = "aba096e8279ed165fdbc146b100b5204315fd93e"
+          base_candidate=aba096e8279ed165fdbc146b100b5204315fd93e
+          test "$(git diff --name-only "$base_candidate"..HEAD)" = ".github/workflows/r3-validation-repair.yml"
           test "$(git hash-object engine/src/plugins/render/scene/mod.rs)" = "66b251daca86b5d0f24da9c0098bc8d7a8f2939f"
           test "$(git hash-object engine/src/plugins/render/representation.rs)" = "1361c2d3242332a225198da360dc3789010017de"
 
@@ -34,41 +35,56 @@ jobs:
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
+          import re
 
           scene_path = Path("engine/src/plugins/render/scene/mod.rs")
           scene = scene_path.read_text()
-          old_scene = '''                    let representations_differ = current
-                        .map(RenderObjectParticipation::representations)
-                        != next.map(RenderObjectParticipation::representations);
-          '''
-          new_scene = '''                    let current_representations = current
-                        .map(RenderObjectParticipation::representations)
-                        .unwrap_or(&[]);
-                    let next_representations = next
-                        .map(RenderObjectParticipation::representations)
-                        .unwrap_or(&[]);
-                    let representations_differ = current_representations != next_representations;
-          '''
-          if scene.count(old_scene) != 1:
-              raise SystemExit("scene representation-change comparison did not match exactly once")
-          scene_path.write_text(scene.replace(old_scene, new_scene, 1))
+          scene_pattern = re.compile(
+              r"(?P<indent> +)let representations_differ = current\n"
+              r"(?P=indent)    \.map\(RenderObjectParticipation::representations\)\n"
+              r"(?P=indent)    != next\.map\(RenderObjectParticipation::representations\);"
+          )
+          scene_matches = list(scene_pattern.finditer(scene))
+          if len(scene_matches) != 1:
+              raise SystemExit(
+                  f"scene representation-change comparison matched {len(scene_matches)} times"
+              )
+          match = scene_matches[0]
+          indent = match.group("indent")
+          replacement = (
+              f"{indent}let current_representations = current\n"
+              f"{indent}    .map(RenderObjectParticipation::representations)\n"
+              f"{indent}    .unwrap_or(&[]);\n"
+              f"{indent}let next_representations = next\n"
+              f"{indent}    .map(RenderObjectParticipation::representations)\n"
+              f"{indent}    .unwrap_or(&[]);\n"
+              f"{indent}let representations_differ = current_representations != next_representations;"
+          )
+          scene = scene[: match.start()] + replacement + scene[match.end() :]
+          scene_path.write_text(scene)
 
           representation_path = Path("engine/src/plugins/render/representation.rs")
           representation = representation_path.read_text()
-          old_representation = '''    pub(crate) const fn raw(self) -> u64 {
-              self.0.get()
-          }
-          '''
-          new_representation = '''    #[cfg(test)]
-              pub(crate) const fn raw(self) -> u64 {
-                  self.0.get()
-              }
-          '''
-          if representation.count(old_representation) != 1:
-              raise SystemExit("representation raw accessor did not match exactly once")
-          representation_path.write_text(
-              representation.replace(old_representation, new_representation, 1)
+          raw_pattern = re.compile(
+              r"(?m)^(?P<indent> +)pub\(crate\) const fn raw\(self\) -> u64 \{\n"
+              r"(?P=indent)    self\.0\.get\(\)\n"
+              r"(?P=indent)\}$"
           )
+          raw_matches = list(raw_pattern.finditer(representation))
+          if len(raw_matches) != 1:
+              raise SystemExit(f"representation raw accessor matched {len(raw_matches)} times")
+          match = raw_matches[0]
+          indent = match.group("indent")
+          replacement = (
+              f"{indent}#[cfg(test)]\n"
+              f"{indent}pub(crate) const fn raw(self) -> u64 {{\n"
+              f"{indent}    self.0.get()\n"
+              f"{indent}}}"
+          )
+          representation = (
+              representation[: match.start()] + replacement + representation[match.end() :]
+          )
+          representation_path.write_text(representation)
           PY
 
       - name: Validate focused repair and publish
