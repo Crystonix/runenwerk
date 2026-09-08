@@ -1,5 +1,6 @@
 pub mod adapters;
 pub mod api;
+pub mod appearance;
 pub mod backend;
 pub mod composition;
 pub mod features;
@@ -12,6 +13,7 @@ pub mod params;
 pub mod pipelines;
 pub mod procedural;
 pub mod renderer;
+pub mod representation;
 pub mod request;
 pub mod residency;
 pub mod resource;
