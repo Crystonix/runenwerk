@@ -186,6 +186,45 @@ fn material_assignment_removal_and_missing_endpoint_are_deterministic() {
 }
 
 #[test]
+fn material_assignment_replacement_is_deterministic_and_precise() {
+    let mut store = RenderSceneStore::new();
+    let object_id = store.allocate_object_id().expect("object ID");
+    insert_object(&mut store, object_id);
+
+    let initial = RenderObjectParticipation::new(Vec::new(), Some(material(0.25)), None)
+        .expect("valid initial material assignment");
+    let mut assign = RenderSceneUpdate::new();
+    assign.replace_participation(object_id, initial);
+    store
+        .commit(assign)
+        .expect("initial material assignment should commit");
+    let revision = store.revision();
+
+    let replacement = RenderObjectParticipation::new(Vec::new(), Some(material(0.75)), None)
+        .expect("valid replacement material assignment");
+    let mut replace = RenderSceneUpdate::new();
+    replace.replace_participation(object_id, replacement.clone());
+    let commit = store
+        .commit(replace)
+        .expect("material assignment replacement should commit");
+
+    assert_ne!(commit.revision(), revision);
+    assert_eq!(commit.snapshot().object_ids(), vec![object_id]);
+    assert_eq!(
+        commit.snapshot().object_participation(object_id),
+        Some(&replacement)
+    );
+    assert_eq!(
+        commit.change_set().material_assignment_changed(),
+        Some(&[object_id][..])
+    );
+    assert_eq!(commit.change_set().representation_changed(), Some(&[][..]));
+    assert_eq!(commit.change_set().emitter_changed(), Some(&[][..]));
+    assert_eq!(commit.change_set().inserted(), Some(&[][..]));
+    assert_eq!(commit.change_set().removed(), Some(&[][..]));
+}
+
+#[test]
 fn object_identity_is_stable_across_representation_add_replace_and_removal() {
     let mut store = RenderSceneStore::new();
     let object_id = store.allocate_object_id().expect("object ID");
