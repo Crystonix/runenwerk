@@ -1,7 +1,5 @@
 use super::participation::RenderObjectParticipation;
-use super::representation::{
-    RenderRepresentationId, classify_field_distance_transform,
-};
+use super::representation::{RenderRepresentationId, classify_field_distance_transform};
 use super::space_time::{RenderObjectSpatialState, RenderObjectTemporalState};
 use std::collections::btree_map::Entry;
 use std::collections::{BTreeMap, BTreeSet};
@@ -955,7 +953,8 @@ impl RenderSceneStore {
 
                     let current = self.objects.object_participation(object_id);
                     let next = participation.as_ref();
-                    let representations_differ = current.map(RenderObjectParticipation::representations)
+                    let representations_differ = current
+                        .map(RenderObjectParticipation::representations)
                         != next.map(RenderObjectParticipation::representations);
                     let material_differs = current
                         .and_then(RenderObjectParticipation::material_assignment)
@@ -1028,10 +1027,12 @@ impl RenderSceneStore {
                 continue;
             }
             let Some(state) = state else {
-                return Err(RenderSceneCommitError::FieldRepresentationRequiresSpatialState {
-                    object_id,
-                    representation_id: representation.id(),
-                });
+                return Err(
+                    RenderSceneCommitError::FieldRepresentationRequiresSpatialState {
+                        object_id,
+                        representation_id: representation.id(),
+                    },
+                );
             };
             let classification =
                 classify_field_distance_transform(state.spatial().local_to_scene());
@@ -1628,6 +1629,21 @@ mod tests {
     }
 
     #[test]
+    fn representation_allocator_exhaustion_is_explicit_and_revision_neutral() {
+        let mut store = RenderSceneStore::new();
+        let owner = store.allocate_object_id().expect("object ID");
+        let revision = store.revision();
+        store.next_representation_raw = u64::MAX;
+
+        assert_eq!(
+            store.allocate_representation_id(owner),
+            Err(RenderRepresentationIdAllocationError::Exhausted)
+        );
+        assert_eq!(store.revision(), revision);
+        assert!(store.representation_owners.is_empty());
+    }
+
+    #[test]
     fn r3_participation_supports_multiple_representations_and_precise_change_evidence() {
         let mut store = RenderSceneStore::new();
         let object_id = store.allocate_object_id().expect("object ID");
@@ -1641,14 +1657,19 @@ mod tests {
             .expect("valid participation");
         let mut update = RenderSceneUpdate::new();
         update.replace_participation(object_id, participation.clone());
-        let commit = store.commit(update).expect("R3 participation should commit");
+        let commit = store
+            .commit(update)
+            .expect("R3 participation should commit");
 
         assert_eq!(commit.revision(), RenderSceneRevision(2));
         assert_eq!(
             commit.change_set().representation_changed(),
             Some(&[object_id][..])
         );
-        assert_eq!(commit.change_set().material_assignment_changed(), Some(&[][..]));
+        assert_eq!(
+            commit.change_set().material_assignment_changed(),
+            Some(&[][..])
+        );
         assert_eq!(commit.change_set().emitter_changed(), Some(&[][..]));
         assert_eq!(
             commit.snapshot().object_participation(object_id),
@@ -1700,7 +1721,9 @@ mod tests {
 
         let mut equal = RenderSceneUpdate::new();
         equal.replace_participation(object_id, participation.clone());
-        let equal_commit = store.commit(equal).expect("equal R3 replacement should commit");
+        let equal_commit = store
+            .commit(equal)
+            .expect("equal R3 replacement should commit");
         assert_eq!(equal_commit.revision(), revision);
         assert!(equal_commit.change_set().is_empty_incremental());
 
@@ -1718,9 +1741,8 @@ mod tests {
         let mut store = RenderSceneStore::new();
         let object_id = store.allocate_object_id().expect("object ID");
         insert_one(&mut store, object_id);
-        let material = RenderMaterialAssignment::new(
-            RenderDiffuseMaterial::new(0.5).expect("valid material"),
-        );
+        let material =
+            RenderMaterialAssignment::new(RenderDiffuseMaterial::new(0.5).expect("valid material"));
         let material_only =
             RenderObjectParticipation::new(Vec::new(), Some(material), None).expect("valid state");
         let mut material_update = RenderSceneUpdate::new();
@@ -1732,23 +1754,29 @@ mod tests {
             material_commit.change_set().material_assignment_changed(),
             Some(&[object_id][..])
         );
-        assert_eq!(material_commit.change_set().representation_changed(), Some(&[][..]));
-        assert_eq!(material_commit.change_set().emitter_changed(), Some(&[][..]));
+        assert_eq!(
+            material_commit.change_set().representation_changed(),
+            Some(&[][..])
+        );
+        assert_eq!(
+            material_commit.change_set().emitter_changed(),
+            Some(&[][..])
+        );
 
-        let emitter = RenderDirectionalEmitter::new([0.0, 1.0, 0.0], 550e-9, 2.0)
-            .expect("valid emitter");
-        let with_emitter = RenderObjectParticipation::new(
-            Vec::new(),
-            Some(material),
-            Some(emitter),
-        )
-        .expect("valid state");
+        let emitter =
+            RenderDirectionalEmitter::new([0.0, 1.0, 0.0], 550e-9, 2.0).expect("valid emitter");
+        let with_emitter =
+            RenderObjectParticipation::new(Vec::new(), Some(material), Some(emitter))
+                .expect("valid state");
         let mut emitter_update = RenderSceneUpdate::new();
         emitter_update.replace_participation(object_id, with_emitter);
         let emitter_commit = store
             .commit(emitter_update)
             .expect("emitter semantics should commit");
-        assert_eq!(emitter_commit.change_set().emitter_changed(), Some(&[object_id][..]));
+        assert_eq!(
+            emitter_commit.change_set().emitter_changed(),
+            Some(&[object_id][..])
+        );
         assert_eq!(
             emitter_commit.change_set().material_assignment_changed(),
             Some(&[][..])
@@ -1756,39 +1784,33 @@ mod tests {
     }
 
     #[test]
-    fn invalid_r3_operation_rejects_multi_object_update_without_partial_publication() {
+    fn duplicate_same_object_r3_replacement_rejects_without_publication() {
         let mut store = RenderSceneStore::new();
-        let first = store.allocate_object_id().expect("object ID");
-        let second = store.allocate_object_id().expect("object ID");
-        insert_one(&mut store, first);
-        insert_one(&mut store, second);
-        let first_representation = surface_representation(&mut store, first);
-        let valid = RenderObjectParticipation::new(vec![first_representation], None, None)
-            .expect("valid state");
-        let second_representation = surface_representation(&mut store, second);
-        let invalid = RenderObjectParticipation::new(vec![second_representation], None, None)
-            .expect("valid state");
+        let object_id = store.allocate_object_id().expect("object ID");
+        insert_one(&mut store, object_id);
+        let representation = surface_representation(&mut store, object_id);
+        let participation =
+            RenderObjectParticipation::new(vec![representation], None, None).expect("valid state");
         let before = store.snapshot();
 
         let mut update = RenderSceneUpdate::new();
         update
-            .replace_participation(first, valid)
-            .replace_participation(first, invalid);
+            .replace_participation(object_id, participation.clone())
+            .replace_participation(object_id, participation);
         assert_eq!(
             store.commit(update),
-            Err(RenderSceneCommitError::ConflictingOperations { object_id: first })
+            Err(RenderSceneCommitError::ConflictingOperations { object_id })
         );
         assert_eq!(store.snapshot(), before);
     }
-
     #[test]
     fn retained_snapshot_preserves_prior_r3_participation() {
         let mut store = RenderSceneStore::new();
         let object_id = store.allocate_object_id().expect("object ID");
         insert_one(&mut store, object_id);
         let first = surface_representation(&mut store, object_id);
-        let first_state = RenderObjectParticipation::new(vec![first], None, None)
-            .expect("valid participation");
+        let first_state =
+            RenderObjectParticipation::new(vec![first], None, None).expect("valid participation");
         let mut attach = RenderSceneUpdate::new();
         attach.replace_participation(object_id, first_state.clone());
         let retained = store
@@ -1798,8 +1820,8 @@ mod tests {
             .clone();
 
         let second = surface_representation(&mut store, object_id);
-        let second_state = RenderObjectParticipation::new(vec![second], None, None)
-            .expect("valid participation");
+        let second_state =
+            RenderObjectParticipation::new(vec![second], None, None).expect("valid participation");
         let mut replace = RenderSceneUpdate::new();
         replace.replace_participation(object_id, second_state.clone());
         store.commit(replace).expect("replacement should commit");
@@ -1818,12 +1840,8 @@ mod tests {
         insert_one(&mut full, full_id);
         let full_first = surface_representation(&mut full, full_id);
         let full_second = field_representation(&mut full, full_id);
-        let full_state = RenderObjectParticipation::new(
-            vec![full_first, full_second],
-            None,
-            None,
-        )
-        .expect("valid participation");
+        let full_state = RenderObjectParticipation::new(vec![full_first, full_second], None, None)
+            .expect("valid participation");
         let mut full_update = RenderSceneUpdate::new();
         full_update.replace_state(full_id, object_state(0.0, 1.0));
         full.commit(full_update).expect("R2 state should commit");
@@ -1877,12 +1895,16 @@ mod tests {
             full_state
                 .representations()
                 .iter()
-                .map(|representation| representation.surface_query_protocol(RENDER_SURFACE_QUERY_PROTOCOL_REVISION).is_ok())
+                .map(|representation| representation
+                    .surface_query_protocol(RENDER_SURFACE_QUERY_PROTOCOL_REVISION)
+                    .is_ok())
                 .collect::<Vec<_>>(),
             incremental_final
                 .representations()
                 .iter()
-                .map(|representation| representation.surface_query_protocol(RENDER_SURFACE_QUERY_PROTOCOL_REVISION).is_ok())
+                .map(|representation| representation
+                    .surface_query_protocol(RENDER_SURFACE_QUERY_PROTOCOL_REVISION)
+                    .is_ok())
                 .collect::<Vec<_>>()
         );
     }
@@ -1894,17 +1916,19 @@ mod tests {
         insert_one(&mut missing_state, object_id);
         let field = field_representation(&mut missing_state, object_id);
         let representation_id = field.id();
-        let participation = RenderObjectParticipation::new(vec![field], None, None)
-            .expect("valid participation");
+        let participation =
+            RenderObjectParticipation::new(vec![field], None, None).expect("valid participation");
         let before = missing_state.snapshot();
         let mut attach = RenderSceneUpdate::new();
         attach.replace_participation(object_id, participation);
         assert_eq!(
             missing_state.commit(attach),
-            Err(RenderSceneCommitError::FieldRepresentationRequiresSpatialState {
-                object_id,
-                representation_id,
-            })
+            Err(
+                RenderSceneCommitError::FieldRepresentationRequiresSpatialState {
+                    object_id,
+                    representation_id,
+                }
+            )
         );
         assert_eq!(missing_state.snapshot(), before);
 
@@ -1919,11 +1943,13 @@ mod tests {
             singular_id,
             object_state_with_transform(singular_transform, 0.0, 1.0),
         );
-        singular.commit(insert).expect("R2 insert accepts degenerate object transform");
+        singular
+            .commit(insert)
+            .expect("R2 insert accepts degenerate object transform");
         let field = field_representation(&mut singular, singular_id);
         let representation_id = field.id();
-        let participation = RenderObjectParticipation::new(vec![field], None, None)
-            .expect("valid participation");
+        let participation =
+            RenderObjectParticipation::new(vec![field], None, None).expect("valid participation");
         let before = singular.snapshot();
         let mut attach = RenderSceneUpdate::new();
         attach.replace_participation(singular_id, participation);
@@ -1946,11 +1972,13 @@ mod tests {
         store.commit(insert).expect("insert should commit");
         let field = field_representation(&mut store, object_id);
         let representation_id = field.id();
-        let participation = RenderObjectParticipation::new(vec![field], None, None)
-            .expect("valid participation");
+        let participation =
+            RenderObjectParticipation::new(vec![field], None, None).expect("valid participation");
         let mut attach = RenderSceneUpdate::new();
         attach.replace_participation(object_id, participation.clone());
-        store.commit(attach).expect("field participation should commit");
+        store
+            .commit(attach)
+            .expect("field participation should commit");
         let before = store.snapshot();
         let revision = store.revision();
 
@@ -1959,10 +1987,7 @@ mod tests {
         ])
         .expect("finite singular transform");
         let mut replace = RenderSceneUpdate::new();
-        replace.replace_state(
-            object_id,
-            object_state_with_transform(singular, 0.0, 2.0),
-        );
+        replace.replace_state(object_id, object_state_with_transform(singular, 0.0, 2.0));
         assert_eq!(
             store.commit(replace),
             Err(RenderSceneCommitError::InvalidFieldTransform {
