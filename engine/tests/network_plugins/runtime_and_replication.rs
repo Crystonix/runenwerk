@@ -53,6 +53,19 @@ fn saturate_server_outbox_before_replication(mut world: WorldMut) {
     );
 }
 
+fn saturate_client_outbox_before_receive(mut world: WorldMut) {
+    while client_outbox_len(&world) < 4_096 {
+        let index = client_outbox_len(&world);
+        enqueue_client_outbox(&mut world, client_probe((index % 251) as u8))
+            .expect("client outbox should fill through its configured capacity");
+    }
+    assert_eq!(
+        client_outbox_len(&world),
+        4_096,
+        "client outbox must be saturated at the receive boundary"
+    );
+}
+
 #[test]
 fn server_replication_emits_scene_snapshot_payloads_for_runennet_connection() {
     let mut app = App::headless();
@@ -177,6 +190,51 @@ fn client_snapshot_application_sends_ack_and_reconciles_prediction() {
             .unwrap()
             .pending_frames_len(),
         0
+    );
+}
+
+#[test]
+fn client_outbox_backpressure_does_not_mark_rejected_snapshot_acknowledged() {
+    let mut client = App::headless();
+    client.add_plugins(default_plugins());
+    client.add_plugins((ScenePlugin, NetworkClientPlugin));
+    client.add_systems(
+        PreUpdate,
+        saturate_client_outbox_before_receive
+            .before(engine::plugins::net::NetPreUpdateSet::Receive),
+    );
+
+    let tick = SimulationTick(1);
+    let payload = TestReplicationDriver::encode_snapshot(&TestSnapshot::default())
+        .expect("snapshot payload encoding should succeed");
+    enqueue_client_inbox(
+        client.world_mut(),
+        ServerMessage::Snapshot(Snapshot {
+            tick,
+            cursor: SnapshotCursor(1),
+            last_applied: SnapshotCursor::default(),
+            entity_ids: Vec::new(),
+            payload,
+        }),
+    )
+    .expect("snapshot should enqueue into client inbox");
+
+    let client = client
+        .run_for_frames(1)
+        .expect("client receive should survive ACK backpressure");
+
+    let state = client.world().resource::<ClientSnapshotState>().unwrap();
+    assert_eq!(state.last_acknowledged_cursor, SnapshotCursor::default());
+    assert_eq!(state.last_received_tick, tick);
+    assert_eq!(state.applied_snapshots, 1);
+
+    let outbound = client.world().resource::<NetworkOutboundQueue>().unwrap();
+    assert_eq!(outbound.client_messages().len(), 4_096);
+    assert!(
+        outbound
+            .client_messages()
+            .iter()
+            .all(|message| !matches!(message, ClientMessage::Ack(_)))
     );
 }
 
