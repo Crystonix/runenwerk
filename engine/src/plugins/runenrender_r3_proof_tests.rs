@@ -292,3 +292,27 @@ fn unknown_representation_identity_is_rejected_without_publication() {
     );
     assert_eq!(store.snapshot(), before);
 }
+
+#[test]
+fn mixed_same_object_structural_and_r3_operations_reject_atomically() {
+    let mut store = RenderSceneStore::new();
+    let object_id = store.allocate_object_id().expect("object ID");
+    insert_object(&mut store, object_id);
+    let representation = surface_representation(&mut store, object_id);
+    let participation =
+        RenderObjectParticipation::new(vec![representation], None, None).expect("valid participation");
+    let before = store.snapshot();
+    let revision = store.revision();
+
+    let mut update = RenderSceneUpdate::new();
+    update
+        .remove(object_id)
+        .replace_participation(object_id, participation);
+
+    assert_eq!(
+        store.commit(update),
+        Err(RenderSceneCommitError::ConflictingOperations { object_id })
+    );
+    assert_eq!(store.revision(), revision);
+    assert_eq!(store.snapshot(), before);
+}
