@@ -22,6 +22,57 @@ impl RenderSurfaceHit {
         if distance_meters.get() < 0.0 {
             return Err(RenderRepresentationValidationError::NegativeSurfaceHitDistance);
         }
+
+        let origin = query.origin_scene_meters();
+        let direction = query.direction_scene();
+        let distance = distance_meters.get();
+        let position = [
+            origin[0] + direction[0] * distance,
+            origin[1] + direction[1] * distance,
+            origin[2] + direction[2] * distance,
+        ];
+
+        Ok(Self {
+            distance_meters,
+            position_scene_meters: [
+                CanonicalF64::new(position[0], "surface_hit_position_scene_meters")?,
+                CanonicalF64::new(position[1], "surface_hit_position_scene_meters")?,
+                CanonicalF64::new(position[2], "surface_hit_position_scene_meters")?,
+            ],
+        })
+    }
+
+    pub fn distance_meters(self) -> f64 {
+        self.distance_meters.get()
+    }
+
+    pub fn position_scene_meters(self) -> [f64; 3] {
+        self.position_scene_meters.map(CanonicalF64::get)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct RenderSurfaceQueryResult {
+    kind: RenderSurfaceQueryResultKind,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+enum RenderSurfaceQueryResultKind {
+    Miss,
+    Hit(RenderSurfaceHit),
+}
+
+impl RenderSurfaceQueryResult {
+    pub const fn miss() -> Self {
+        Self {
+            kind: RenderSurfaceQueryResultKind::Miss,
+        }
+    }
+
+    pub fn hit_at_distance(
+        query: RenderSurfaceQuery,
+        distance_meters: f64,
+    ) -> Result<Self, RenderRepresentationValidationError> {
         let hit = RenderSurfaceHit::from_query_distance(query, distance_meters)?;
         Ok(Self {
             kind: RenderSurfaceQueryResultKind::Hit(hit),
