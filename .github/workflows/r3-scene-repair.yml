@@ -47,27 +47,28 @@ jobs:
           text = path.read_text()
 
           marker = """    #[test]
-    fn r3_participation_supports_multiple_representations_and_precise_change_evidence() {
-"""
+              fn r3_participation_supports_multiple_representations_and_precise_change_evidence() {
+          """.replace("              fn", "    fn")
           if text.count(marker) != 1:
               raise SystemExit("R3 participation insertion marker was not unique")
 
           exhaustion = """    #[test]
-    fn representation_allocator_exhaustion_is_explicit_and_revision_neutral() {
-        let mut store = RenderSceneStore::new();
-        let owner = store.allocate_object_id().expect("object ID");
-        let revision = store.revision();
-        store.next_representation_raw = u64::MAX;
+              fn representation_allocator_exhaustion_is_explicit_and_revision_neutral() {
+                  let mut store = RenderSceneStore::new();
+                  let owner = store.allocate_object_id().expect("object ID");
+                  let revision = store.revision();
+                  store.next_representation_raw = u64::MAX;
 
-        assert_eq!(
-            store.allocate_representation_id(owner),
-            Err(RenderRepresentationIdAllocationError::Exhausted)
-        );
-        assert_eq!(store.revision(), revision);
-        assert!(store.representation_owners.is_empty());
-    }
+                  assert_eq!(
+                      store.allocate_representation_id(owner),
+                      Err(RenderRepresentationIdAllocationError::Exhausted)
+                  );
+                  assert_eq!(store.revision(), revision);
+                  assert!(store.representation_owners.is_empty());
+              }
 
-"""
+          """
+          exhaustion = "\n".join(line[10:] if line.startswith("          ") else line for line in exhaustion.splitlines()) + "\n"
           text = text.replace(marker, exhaustion + marker, 1)
 
           pattern = re.compile(
@@ -77,26 +78,27 @@ jobs:
               re.S,
           )
           replacement = """    #[test]
-    fn duplicate_same_object_r3_replacement_rejects_without_publication() {
-        let mut store = RenderSceneStore::new();
-        let object_id = store.allocate_object_id().expect("object ID");
-        insert_one(&mut store, object_id);
-        let representation = surface_representation(&mut store, object_id);
-        let participation = RenderObjectParticipation::new(vec![representation], None, None)
-            .expect("valid state");
-        let before = store.snapshot();
+              fn duplicate_same_object_r3_replacement_rejects_without_publication() {
+                  let mut store = RenderSceneStore::new();
+                  let object_id = store.allocate_object_id().expect("object ID");
+                  insert_one(&mut store, object_id);
+                  let representation = surface_representation(&mut store, object_id);
+                  let participation = RenderObjectParticipation::new(vec![representation], None, None)
+                      .expect("valid state");
+                  let before = store.snapshot();
 
-        let mut update = RenderSceneUpdate::new();
-        update
-            .replace_participation(object_id, participation.clone())
-            .replace_participation(object_id, participation);
-        assert_eq!(
-            store.commit(update),
-            Err(RenderSceneCommitError::ConflictingOperations { object_id })
-        );
-        assert_eq!(store.snapshot(), before);
-    }
-"""
+                  let mut update = RenderSceneUpdate::new();
+                  update
+                      .replace_participation(object_id, participation.clone())
+                      .replace_participation(object_id, participation);
+                  assert_eq!(
+                      store.commit(update),
+                      Err(RenderSceneCommitError::ConflictingOperations { object_id })
+                  );
+                  assert_eq!(store.snapshot(), before);
+              }
+          """
+          replacement = "\n".join(line[10:] if line.startswith("          ") else line for line in replacement.splitlines())
           text, count = pattern.subn(replacement, text, count=1)
           if count != 1:
               raise SystemExit("misleading R3 conflict test replacement did not match exactly once")
@@ -112,8 +114,6 @@ jobs:
           git diff --check
           actual="$(git hash-object engine/src/plugins/render/scene/mod.rs)"
           echo "canonical repaired scene blob: $actual"
-          echo "--- scene diff stat ---"
           git diff --stat -- engine/src/plugins/render/scene/mod.rs
-          echo "--- proof markers ---"
           grep -n "representation_allocator_exhaustion_is_explicit_and_revision_neutral\|duplicate_same_object_r3_replacement_rejects_without_publication" engine/src/plugins/render/scene/mod.rs
           echo "Diagnostic only: no repository write is performed by this workflow."
