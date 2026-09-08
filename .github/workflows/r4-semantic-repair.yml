@@ -1,0 +1,73 @@
+name: R4 semantic repair
+
+on:
+  push:
+    branches:
+      - issue-477-r4-semantic-planning
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - name: Repair and validate R4 semantic files
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD:engine/src/plugins/render/semantic_plan.rs)" = "4c88c1d0b22046126d5fa23e1a5003fe49e8646b"
+          python3 <<'PY'
+          from pathlib import Path
+          p = Path('engine/src/plugins/render/semantic_plan.rs')
+          s = p.read_text()
+
+          marker = "use std::fmt;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]\npub enum RenderRepresentationApproximation"
+          replacement = """use std::fmt;\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]\npub struct RenderDistanceErrorBound {\n    meters: CanonicalF64,\n}\n\nimpl RenderDistanceErrorBound {\n    fn from_validated(meters: f64, field: &'static str) -> Self {\n        Self {\n            meters: CanonicalF64::new(meters, field)\n                .expect(\"R2/R3 validated semantic distances are finite\"),\n        }\n    }\n\n    pub fn meters(self) -> f64 {\n        self.meters.get()\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]\npub enum RenderRepresentationApproximation"""
+          assert s.count(marker) == 1
+          s = s.replace(marker, replacement)
+
+          old = """    BoundedDistance {\n        max_absolute_error_meters: CanonicalF64,\n    },"""
+          new = """    BoundedDistance {\n        max_absolute_error_meters: RenderDistanceErrorBound,\n    },"""
+          assert s.count(old) == 1
+          s = s.replace(old, new)
+
+          old = """            max_absolute_error_meters: CanonicalF64::new(\n                max_absolute_error_meters,\n                \"plan_bounded_distance_error_meters\",\n            )\n            .expect(\"R3 guarantees expose finite non-negative field error\"),"""
+          new = """            max_absolute_error_meters: RenderDistanceErrorBound::from_validated(\n                max_absolute_error_meters,\n                \"plan_bounded_distance_error_meters\",\n            ),"""
+          assert s.count(old) == 1
+          s = s.replace(old, new)
+
+          old = """            } => Some(max_absolute_error_meters.get()),"""
+          new = """            } => Some(max_absolute_error_meters.meters()),"""
+          assert s.count(old) == 1
+          s = s.replace(old, new)
+
+          s = s.replace('required_max_error_meters: CanonicalF64,', 'required_max_error_meters: RenderDistanceErrorBound,')
+          s = s.replace('available_finest_error_meters: CanonicalF64,', 'available_finest_error_meters: RenderDistanceErrorBound,')
+          s = s.replace('max_absolute_error_meters: CanonicalF64,', 'max_absolute_error_meters: RenderDistanceErrorBound,')
+          s = s.replace('allowed_absolute_error_meters: CanonicalF64,', 'allowed_absolute_error_meters: RenderDistanceErrorBound,')
+
+          old = """fn canonical_non_negative(value: f64) -> CanonicalF64 {\n    CanonicalF64::new(value, \"plan_non_negative_semantic_value\")\n        .expect(\"validated R2/R3 semantic values are finite\")\n}"""
+          new = """fn canonical_non_negative(value: f64) -> RenderDistanceErrorBound {\n    RenderDistanceErrorBound::from_validated(value, \"plan_non_negative_semantic_value\")\n}"""
+          assert s.count(old) == 1
+          s = s.replace(old, new)
+
+          p.write_text(s)
+          PY
+          rustup toolchain install stable --profile minimal --component rustfmt,clippy
+          cargo +stable fmt --all
+          cargo +stable test -p engine --lib semantic_plan
+          cargo +stable clippy -p engine --lib --locked -- -D warnings
+          git diff --check
+          actual="$(git diff --name-only | sort)"
+          expected=$'engine/src/plugins/render/method.rs\nengine/src/plugins/render/semantic_plan.rs'
+          test "$actual" = "$expected"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add engine/src/plugins/render/method.rs engine/src/plugins/render/semantic_plan.rs
+          git commit -m 'render: normalize R4 semantic contracts'
+          git push origin HEAD:issue-477-r4-semantic-planning
