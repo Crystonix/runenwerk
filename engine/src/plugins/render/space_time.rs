@@ -35,10 +35,7 @@ impl fmt::Display for RenderSemanticValueError {
             Self::InvalidBounds => write!(f, "spatial bounds minimum must not exceed maximum"),
             Self::InvalidInterval => write!(f, "time interval start must not exceed end"),
             Self::MotionOutsideValidity => {
-                write!(
-                    f,
-                    "motion interval must be contained by temporal validity"
-                )
+                write!(f, "motion interval must be contained by temporal validity")
             }
         }
     }
@@ -409,11 +406,9 @@ mod tests {
 
     #[test]
     fn object_spatial_coverage_is_explicitly_scene_space() {
-        let coverage = RenderSpatialCoverage::axis_aligned_bounds(
-            [-2.0, -1.0, -1.0],
-            [2.0, 1.0, 1.0],
-        )
-        .expect("valid bounds");
+        let coverage =
+            RenderSpatialCoverage::axis_aligned_bounds([-2.0, -1.0, -1.0], [2.0, 1.0, 1.0])
+                .expect("valid bounds");
         let state = RenderObjectSpatialState::new(
             RenderSpaceSpec::new(0.01, RenderHandedness::Left).expect("valid local space"),
             RenderAffineTransform3::identity(),
