@@ -774,8 +774,7 @@ mod tests {
             RenderTimePoint::from_seconds(temporal_end).expect("finite time"),
         )
         .expect("ordered interval");
-        let temporal =
-            RenderObjectTemporalState::new(RenderTemporalSupport::interval(validity));
+        let temporal = RenderObjectTemporalState::new(RenderTemporalSupport::interval(validity));
         RenderObjectState::new(spatial, temporal)
     }
 
