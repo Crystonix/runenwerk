@@ -1,4 +1,5 @@
 use super::space_time::{RenderObjectSpatialState, RenderObjectTemporalState};
+use std::collections::btree_map::Entry;
 use std::collections::{BTreeMap, BTreeSet};
 use std::error::Error;
 use std::fmt;
@@ -33,6 +34,10 @@ impl RenderSceneRevision {
     }
 }
 
+/// The concrete R2-owned semantic state of one renderer object.
+///
+/// Presence-only R1 objects remain valid and therefore have no `RenderObjectState`. This record
+/// begins same-identity replacement only for the spatial and temporal semantics R2 actually owns.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RenderObjectState {
     spatial: RenderObjectSpatialState,
@@ -178,6 +183,8 @@ impl RenderSceneChangeSet {
         }
     }
 
+    /// Objects whose existing R2 spatial state changed through same-identity replacement.
+    /// Stateful insertions are reported by `inserted()` rather than duplicated here.
     pub fn spatial_changed(&self) -> Option<&[RenderObjectId]> {
         match &self.kind {
             RenderSceneChangeKind::Incremental {
@@ -187,6 +194,8 @@ impl RenderSceneChangeSet {
         }
     }
 
+    /// Objects whose existing R2 temporal state changed through same-identity replacement.
+    /// Stateful insertions are reported by `inserted()` rather than duplicated here.
     pub fn temporal_changed(&self) -> Option<&[RenderObjectId]> {
         match &self.kind {
             RenderSceneChangeKind::Incremental {
@@ -639,10 +648,13 @@ impl RenderSceneStore {
         let mut conflicts = BTreeSet::<RenderObjectId>::new();
 
         for operation in &update.operations {
-            if normalized.contains_key(&operation.object_id) {
-                conflicts.insert(operation.object_id);
-            } else {
-                normalized.insert(operation.object_id, operation.kind.clone());
+            match normalized.entry(operation.object_id) {
+                Entry::Vacant(entry) => {
+                    entry.insert(operation.kind.clone());
+                }
+                Entry::Occupied(_) => {
+                    conflicts.insert(operation.object_id);
+                }
             }
         }
 
@@ -675,12 +687,10 @@ impl RenderSceneStore {
                         return Err(RenderSceneCommitError::ObjectMissing { object_id });
                     }
                     let current = self.objects.object_state(object_id);
-                    let spatial_differs = current.map_or(true, |current| {
-                        current.spatial() != state.spatial()
-                    });
-                    let temporal_differs = current.map_or(true, |current| {
-                        current.temporal() != state.temporal()
-                    });
+                    let spatial_differs =
+                        current.is_none_or(|current| current.spatial() != state.spatial());
+                    let temporal_differs =
+                        current.is_none_or(|current| current.temporal() != state.temporal());
                     if spatial_differs || temporal_differs {
                         if spatial_differs {
                             spatial_changed.push(object_id);
@@ -784,8 +794,12 @@ mod tests {
     #[test]
     fn allocation_is_monotonic_non_reusing_and_does_not_advance_scene_revision() {
         let mut store = RenderSceneStore::new();
-        let first = store.allocate_object_id().expect("first ID should allocate");
-        let second = store.allocate_object_id().expect("second ID should allocate");
+        let first = store
+            .allocate_object_id()
+            .expect("first ID should allocate");
+        let second = store
+            .allocate_object_id()
+            .expect("second ID should allocate");
         assert_eq!(first.raw(), 1);
         assert_eq!(second.raw(), 2);
         assert_eq!(store.revision(), RenderSceneRevision::INITIAL);
@@ -794,7 +808,9 @@ mod tests {
         let mut remove = RenderSceneUpdate::new();
         remove.remove(first);
         store.commit(remove).expect("remove should commit");
-        let third = store.allocate_object_id().expect("third ID should allocate");
+        let third = store
+            .allocate_object_id()
+            .expect("third ID should allocate");
         assert_eq!(third.raw(), 3);
         assert_ne!(third, first);
     }
@@ -888,7 +904,9 @@ mod tests {
         insert_one(&mut store, first);
         let mut update = RenderSceneUpdate::new();
         update.remove(first).insert(second).insert(third);
-        let commit = store.commit(update).expect("multi-operation update should commit");
+        let commit = store
+            .commit(update)
+            .expect("multi-operation update should commit");
         assert_eq!(commit.revision(), RenderSceneRevision(2));
         assert_eq!(commit.snapshot().object_ids(), vec![second, third]);
         assert_eq!(commit.change_set().inserted(), Some(&[second, third][..]));
@@ -919,18 +937,28 @@ mod tests {
         for object_id in full_ids {
             full_update.insert(object_id);
         }
-        full.commit(full_update).expect("full construction should commit");
+        full.commit(full_update)
+            .expect("full construction should commit");
 
         let mut incremental = RenderSceneStore::new();
         let incremental_ids = [
-            incremental.allocate_object_id().expect("ID should allocate"),
-            incremental.allocate_object_id().expect("ID should allocate"),
-            incremental.allocate_object_id().expect("ID should allocate"),
+            incremental
+                .allocate_object_id()
+                .expect("ID should allocate"),
+            incremental
+                .allocate_object_id()
+                .expect("ID should allocate"),
+            incremental
+                .allocate_object_id()
+                .expect("ID should allocate"),
         ];
         for object_id in incremental_ids {
             insert_one(&mut incremental, object_id);
         }
-        assert_eq!(full.snapshot().object_ids(), incremental.snapshot().object_ids());
+        assert_eq!(
+            full.snapshot().object_ids(),
+            incremental.snapshot().object_ids()
+        );
         assert_ne!(full.revision(), incremental.revision());
     }
 
@@ -995,18 +1023,32 @@ mod tests {
         let initial = object_state(0.0, 1.0);
         let mut insert = RenderSceneUpdate::new();
         insert.insert_with_state(object_id, initial.clone());
-        store.commit(insert).expect("stateful insert should commit");
+        let insert_commit = store.commit(insert).expect("stateful insert should commit");
+        assert_eq!(insert_commit.change_set().inserted(), Some(&[object_id][..]));
+        assert_eq!(insert_commit.change_set().spatial_changed(), Some(&[][..]));
+        assert_eq!(insert_commit.change_set().temporal_changed(), Some(&[][..]));
         assert_eq!(store.snapshot().object_state(object_id), Some(&initial));
 
         let replacement = object_state(2.0, 2.0);
         let mut replace = RenderSceneUpdate::new();
         replace.replace_state(object_id, replacement.clone());
-        let commit = store.commit(replace).expect("state replacement should commit");
+        let commit = store
+            .commit(replace)
+            .expect("state replacement should commit");
         assert_eq!(commit.revision(), RenderSceneRevision(2));
         assert_eq!(commit.snapshot().object_ids(), vec![object_id]);
-        assert_eq!(commit.snapshot().object_state(object_id), Some(&replacement));
-        assert_eq!(commit.change_set().spatial_changed(), Some(&[object_id][..]));
-        assert_eq!(commit.change_set().temporal_changed(), Some(&[object_id][..]));
+        assert_eq!(
+            commit.snapshot().object_state(object_id),
+            Some(&replacement)
+        );
+        assert_eq!(
+            commit.change_set().spatial_changed(),
+            Some(&[object_id][..])
+        );
+        assert_eq!(
+            commit.change_set().temporal_changed(),
+            Some(&[object_id][..])
+        );
     }
 
     #[test]
@@ -1021,18 +1063,25 @@ mod tests {
 
         let mut equal = RenderSceneUpdate::new();
         equal.replace_state(object_id, initial.clone());
-        let equal_commit = store.commit(equal).expect("equal replacement should be accepted");
+        let equal_commit = store
+            .commit(equal)
+            .expect("equal replacement should be accepted");
         assert_eq!(equal_commit.revision(), revision);
         assert!(equal_commit.change_set().is_empty_incremental());
 
         let spatial_only = RenderObjectState::new(
             object_state(3.0, 1.0).spatial().clone(),
-            initial.temporal().to_owned(),
+            *initial.temporal(),
         );
         let mut changed = RenderSceneUpdate::new();
         changed.replace_state(object_id, spatial_only);
-        let commit = store.commit(changed).expect("spatial replacement should commit");
-        assert_eq!(commit.change_set().spatial_changed(), Some(&[object_id][..]));
+        let commit = store
+            .commit(changed)
+            .expect("spatial replacement should commit");
+        assert_eq!(
+            commit.change_set().spatial_changed(),
+            Some(&[object_id][..])
+        );
         assert_eq!(commit.change_set().temporal_changed(), Some(&[][..]));
     }
 
@@ -1050,7 +1099,9 @@ mod tests {
         assert_eq!(store.snapshot(), before);
 
         let mut mixed = RenderSceneUpdate::new();
-        mixed.insert(missing).replace_state(missing, object_state(0.0, 1.0));
+        mixed
+            .insert(missing)
+            .replace_state(missing, object_state(0.0, 1.0));
         assert_eq!(
             store.commit(mixed),
             Err(RenderSceneCommitError::ConflictingOperations { object_id: missing })
@@ -1065,12 +1116,19 @@ mod tests {
         let initial = object_state(0.0, 1.0);
         let mut insert = RenderSceneUpdate::new();
         insert.insert_with_state(object_id, initial.clone());
-        let retained = store.commit(insert).expect("insert should commit").snapshot().clone();
+        let retained = store
+            .commit(insert)
+            .expect("insert should commit")
+            .snapshot()
+            .clone();
         let mut replace = RenderSceneUpdate::new();
         replace.replace_state(object_id, object_state(4.0, 2.0));
         store.commit(replace).expect("replace should commit");
         assert_eq!(retained.object_state(object_id), Some(&initial));
-        assert_ne!(retained.object_state(object_id), store.snapshot().object_state(object_id));
+        assert_ne!(
+            retained.object_state(object_id),
+            store.snapshot().object_state(object_id)
+        );
     }
 
     #[test]
@@ -1080,19 +1138,27 @@ mod tests {
         let full_id = full.allocate_object_id().expect("ID should allocate");
         let mut full_update = RenderSceneUpdate::new();
         full_update.insert_with_state(full_id, state.clone());
-        full.commit(full_update).expect("stateful insert should commit");
+        full.commit(full_update)
+            .expect("stateful insert should commit");
 
         let mut incremental = RenderSceneStore::new();
-        let incremental_id = incremental.allocate_object_id().expect("ID should allocate");
+        let incremental_id = incremental
+            .allocate_object_id()
+            .expect("ID should allocate");
         insert_one(&mut incremental, incremental_id);
         let mut replace = RenderSceneUpdate::new();
         replace.replace_state(incremental_id, state.clone());
-        incremental.commit(replace).expect("replacement should commit");
+        incremental
+            .commit(replace)
+            .expect("replacement should commit");
 
         assert_eq!(full.snapshot().object_ids(), vec![full_id]);
         assert_eq!(incremental.snapshot().object_ids(), vec![incremental_id]);
         assert_eq!(full.snapshot().object_state(full_id), Some(&state));
-        assert_eq!(incremental.snapshot().object_state(incremental_id), Some(&state));
+        assert_eq!(
+            incremental.snapshot().object_state(incremental_id),
+            Some(&state)
+        );
     }
 
     #[test]
