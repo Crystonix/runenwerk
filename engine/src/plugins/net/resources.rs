@@ -1,43 +1,112 @@
 use super::*;
 use crate::{App, CoreSet, FixedUpdate, FrameEnd, PreUpdate, SystemConfigExt};
-use ecs::{
-    OwnerId, OwnerRole, OwnershipTarget, TickBufferConfig, TickBufferProvenance, WorkQueueConfig,
-    WorkQueueEnqueueError, World,
-};
+use ecs::{OwnerId, OwnerRole, OwnershipTarget, World};
 use engine_net::replication::{InputDriver, ReplicationDriver, SnapshotApplyDriver};
 use engine_net::*;
 use engine_sim::SimulationTick;
 use runen_net::identity::ConnectionHandle;
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap, VecDeque};
 
 // engine/src/plugins/net/resources.rs
 
 const NETWORK_MESSAGE_QUEUE_CAPACITY: usize = 4_096;
 const MAX_TRACKED_SENT_BASELINE_CURSORS: usize = 256;
-const TICK_BUFFER_PROVENANCE_DOMAIN_SERVER: u32 = 1;
-const TICK_BUFFER_PROVENANCE_DOMAIN_OWNER: u32 = 2;
 
-fn configure_network_message_queues(world: &mut World) {
-    let config = WorkQueueConfig {
-        capacity: Some(NETWORK_MESSAGE_QUEUE_CAPACITY),
-    };
-    world.configure_work_queue::<ServerMessage>(config);
-    world.configure_work_queue::<InboundClientMessage>(config);
-    world.configure_work_queue::<ClientMessage>(config);
-    world.configure_work_queue::<OutboundServerMessage>(config);
+#[derive(Debug, Clone, PartialEq)]
+pub enum NetworkPendingEnqueueError<T> {
+    Unavailable { endpoint: &'static str, message: T },
+    Backpressure { capacity: usize, message: T },
 }
 
-fn enqueue_work_queue_with_backpressure<T: 'static>(
-    world: &mut World,
-    work_queue_name: &'static str,
+impl<T> NetworkPendingEnqueueError<T> {
+    pub fn capacity(&self) -> Option<usize> {
+        match self {
+            Self::Unavailable { .. } => None,
+            Self::Backpressure { capacity, .. } => Some(*capacity),
+        }
+    }
+
+    pub fn into_message(self) -> T {
+        match self {
+            Self::Unavailable { message, .. } | Self::Backpressure { message, .. } => message,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+struct PendingNetworkQueue<T> {
+    messages: VecDeque<T>,
+    capacity: usize,
+}
+
+impl<T> Default for PendingNetworkQueue<T> {
+    fn default() -> Self {
+        Self {
+            messages: VecDeque::new(),
+            capacity: NETWORK_MESSAGE_QUEUE_CAPACITY,
+        }
+    }
+}
+
+impl<T> PendingNetworkQueue<T> {
+    fn enqueue(&mut self, message: T) -> Result<(), NetworkPendingEnqueueError<T>> {
+        if self.messages.len() >= self.capacity {
+            return Err(NetworkPendingEnqueueError::Backpressure {
+                capacity: self.capacity,
+                message,
+            });
+        }
+        self.messages.push_back(message);
+        Ok(())
+    }
+
+    fn len(&self) -> usize {
+        self.messages.len()
+    }
+
+    fn drain(&mut self) -> Vec<T> {
+        self.messages.drain(..).collect()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum OutboundServerMessage {
+    ToConnection {
+        connection: ConnectionHandle,
+        message: ServerMessage,
+    },
+    Broadcast(ServerMessage),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct InboundClientMessage {
+    pub connection: Option<ConnectionHandle>,
+    pub message: ClientMessage,
+}
+
+#[derive(Debug, Clone, Default, ecs::Resource)]
+pub struct NetworkClientInbox(PendingNetworkQueue<ServerMessage>);
+
+#[derive(Debug, Clone, Default, ecs::Resource)]
+pub struct NetworkServerInbox(PendingNetworkQueue<InboundClientMessage>);
+
+#[derive(Debug, Clone, Default, ecs::Resource)]
+pub struct NetworkClientOutbox(PendingNetworkQueue<ClientMessage>);
+
+#[derive(Debug, Clone, Default, ecs::Resource)]
+pub struct NetworkServerOutbox(PendingNetworkQueue<OutboundServerMessage>);
+
+fn enqueue_pending<T>(
+    queue: &mut PendingNetworkQueue<T>,
+    queue_name: &'static str,
     message: T,
-) -> Result<(), WorkQueueEnqueueError> {
-    let result = world.work_queue_enqueue(message);
-    if let Err(WorkQueueEnqueueError::Backpressure { capacity, .. }) = &result {
+) -> Result<(), NetworkPendingEnqueueError<T>> {
+    let result = queue.enqueue(message);
+    if let Err(NetworkPendingEnqueueError::Backpressure { capacity, .. }) = &result {
         tracing::warn!(
-            work_queue = work_queue_name,
+            queue = queue_name,
             capacity = *capacity,
-            "network queue backpressure; dropping newest message"
+            "network queue backpressure; returning rejected message to caller"
         );
     }
     result
@@ -46,12 +115,24 @@ fn enqueue_work_queue_with_backpressure<T: 'static>(
 pub fn enqueue_client_inbox(
     world: &mut World,
     message: ServerMessage,
-) -> Result<(), WorkQueueEnqueueError> {
-    enqueue_work_queue_with_backpressure(world, "NetworkClientInbox", message)
+) -> Result<(), NetworkPendingEnqueueError<ServerMessage>> {
+    let inbox = match world.resource_mut::<NetworkClientInbox>() {
+        Ok(inbox) => inbox,
+        Err(_) => {
+            return Err(NetworkPendingEnqueueError::Unavailable {
+                endpoint: "NetworkClientInbox",
+                message,
+            });
+        }
+    };
+    enqueue_pending(&mut inbox.0, "NetworkClientInbox", message)
 }
 
 pub fn client_inbox_len(world: &World) -> usize {
-    world.work_queue_pending_count::<ServerMessage>()
+    world
+        .resource::<NetworkClientInbox>()
+        .map(|inbox| inbox.0.len())
+        .unwrap_or(0)
 }
 
 pub fn client_inbox_is_empty(world: &World) -> bool {
@@ -59,13 +140,16 @@ pub fn client_inbox_is_empty(world: &World) -> bool {
 }
 
 pub fn drain_client_inbox(world: &mut World) -> Vec<ServerMessage> {
-    world.work_queue_drain::<ServerMessage>()
+    world
+        .resource_mut::<NetworkClientInbox>()
+        .map(|inbox| inbox.0.drain())
+        .unwrap_or_default()
 }
 
 pub fn enqueue_server_inbox(
     world: &mut World,
     message: ClientMessage,
-) -> Result<(), WorkQueueEnqueueError> {
+) -> Result<(), NetworkPendingEnqueueError<InboundClientMessage>> {
     enqueue_server_inbox_from(world, None, message)
 }
 
@@ -73,19 +157,28 @@ pub fn enqueue_server_inbox_from(
     world: &mut World,
     connection: Option<ConnectionHandle>,
     message: ClientMessage,
-) -> Result<(), WorkQueueEnqueueError> {
-    enqueue_work_queue_with_backpressure(
-        world,
-        "NetworkServerInbox",
-        InboundClientMessage {
-            connection,
-            message,
-        },
-    )
+) -> Result<(), NetworkPendingEnqueueError<InboundClientMessage>> {
+    let message = InboundClientMessage {
+        connection,
+        message,
+    };
+    let inbox = match world.resource_mut::<NetworkServerInbox>() {
+        Ok(inbox) => inbox,
+        Err(_) => {
+            return Err(NetworkPendingEnqueueError::Unavailable {
+                endpoint: "NetworkServerInbox",
+                message,
+            });
+        }
+    };
+    enqueue_pending(&mut inbox.0, "NetworkServerInbox", message)
 }
 
 pub fn server_inbox_len(world: &World) -> usize {
-    world.work_queue_pending_count::<InboundClientMessage>()
+    world
+        .resource::<NetworkServerInbox>()
+        .map(|inbox| inbox.0.len())
+        .unwrap_or(0)
 }
 
 pub fn server_inbox_is_empty(world: &World) -> bool {
@@ -93,18 +186,33 @@ pub fn server_inbox_is_empty(world: &World) -> bool {
 }
 
 pub fn drain_server_inbox(world: &mut World) -> Vec<InboundClientMessage> {
-    world.work_queue_drain::<InboundClientMessage>()
+    world
+        .resource_mut::<NetworkServerInbox>()
+        .map(|inbox| inbox.0.drain())
+        .unwrap_or_default()
 }
 
 pub fn enqueue_client_outbox(
     world: &mut World,
     message: ClientMessage,
-) -> Result<(), WorkQueueEnqueueError> {
-    enqueue_work_queue_with_backpressure(world, "NetworkClientOutbox", message)
+) -> Result<(), NetworkPendingEnqueueError<ClientMessage>> {
+    let outbox = match world.resource_mut::<NetworkClientOutbox>() {
+        Ok(outbox) => outbox,
+        Err(_) => {
+            return Err(NetworkPendingEnqueueError::Unavailable {
+                endpoint: "NetworkClientOutbox",
+                message,
+            });
+        }
+    };
+    enqueue_pending(&mut outbox.0, "NetworkClientOutbox", message)
 }
 
 pub fn client_outbox_len(world: &World) -> usize {
-    world.work_queue_pending_count::<ClientMessage>()
+    world
+        .resource::<NetworkClientOutbox>()
+        .map(|outbox| outbox.0.len())
+        .unwrap_or(0)
 }
 
 pub fn client_outbox_is_empty(world: &World) -> bool {
@@ -112,20 +220,32 @@ pub fn client_outbox_is_empty(world: &World) -> bool {
 }
 
 pub fn drain_client_outbox(world: &mut World) -> Vec<ClientMessage> {
-    world.work_queue_drain::<ClientMessage>()
+    world
+        .resource_mut::<NetworkClientOutbox>()
+        .map(|outbox| outbox.0.drain())
+        .unwrap_or_default()
 }
 
 pub fn enqueue_server_outbox(
     world: &mut World,
     message: OutboundServerMessage,
-) -> Result<(), WorkQueueEnqueueError> {
-    enqueue_work_queue_with_backpressure(world, "NetworkServerOutbox", message)
+) -> Result<(), NetworkPendingEnqueueError<OutboundServerMessage>> {
+    let outbox = match world.resource_mut::<NetworkServerOutbox>() {
+        Ok(outbox) => outbox,
+        Err(_) => {
+            return Err(NetworkPendingEnqueueError::Unavailable {
+                endpoint: "NetworkServerOutbox",
+                message,
+            });
+        }
+    };
+    enqueue_pending(&mut outbox.0, "NetworkServerOutbox", message)
 }
 
 pub fn enqueue_server_outbox_broadcast(
     world: &mut World,
     message: ServerMessage,
-) -> Result<(), WorkQueueEnqueueError> {
+) -> Result<(), NetworkPendingEnqueueError<OutboundServerMessage>> {
     enqueue_server_outbox(world, OutboundServerMessage::Broadcast(message))
 }
 
@@ -133,7 +253,7 @@ pub fn enqueue_server_outbox_to(
     world: &mut World,
     connection: ConnectionHandle,
     message: ServerMessage,
-) -> Result<(), WorkQueueEnqueueError> {
+) -> Result<(), NetworkPendingEnqueueError<OutboundServerMessage>> {
     enqueue_server_outbox(
         world,
         OutboundServerMessage::ToConnection {
@@ -144,7 +264,10 @@ pub fn enqueue_server_outbox_to(
 }
 
 pub fn server_outbox_len(world: &World) -> usize {
-    world.work_queue_pending_count::<OutboundServerMessage>()
+    world
+        .resource::<NetworkServerOutbox>()
+        .map(|outbox| outbox.0.len())
+        .unwrap_or(0)
 }
 
 pub fn server_outbox_is_empty(world: &World) -> bool {
@@ -152,7 +275,82 @@ pub fn server_outbox_is_empty(world: &World) -> bool {
 }
 
 pub fn drain_server_outbox(world: &mut World) -> Vec<OutboundServerMessage> {
-    world.work_queue_drain::<OutboundServerMessage>()
+    world
+        .resource_mut::<NetworkServerOutbox>()
+        .map(|outbox| outbox.0.drain())
+        .unwrap_or_default()
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) enum NetworkInputStageError<T> {
+    Backpressure { capacity: usize, input: T },
+}
+
+#[derive(Debug, Clone, ecs::Resource)]
+pub(crate) struct NetworkInputStaging<TInput>
+where
+    TInput: Clone + PartialEq + 'static,
+{
+    by_tick: BTreeMap<SimulationTick, Vec<TInput>>,
+    pending: usize,
+    capacity: usize,
+}
+
+impl<TInput> Default for NetworkInputStaging<TInput>
+where
+    TInput: Clone + PartialEq + 'static,
+{
+    fn default() -> Self {
+        Self {
+            by_tick: BTreeMap::new(),
+            pending: 0,
+            capacity: NETWORK_MESSAGE_QUEUE_CAPACITY,
+        }
+    }
+}
+
+impl<TInput> NetworkInputStaging<TInput>
+where
+    TInput: Clone + PartialEq + 'static,
+{
+    pub(crate) fn stage(
+        &mut self,
+        tick: SimulationTick,
+        input: TInput,
+    ) -> Result<(), NetworkInputStageError<TInput>> {
+        if self.pending >= self.capacity {
+            return Err(NetworkInputStageError::Backpressure {
+                capacity: self.capacity,
+                input,
+            });
+        }
+        self.by_tick.entry(tick).or_default().push(input);
+        self.pending = self.pending.saturating_add(1);
+        Ok(())
+    }
+
+    pub(crate) fn drain_tick(&mut self, tick: SimulationTick) -> Vec<TInput> {
+        let stale_ticks = self
+            .by_tick
+            .keys()
+            .copied()
+            .take_while(|staged_tick| *staged_tick < tick)
+            .collect::<Vec<_>>();
+        for stale_tick in stale_ticks {
+            if let Some(stale) = self.by_tick.remove(&stale_tick) {
+                self.pending = self.pending.saturating_sub(stale.len());
+            }
+        }
+
+        let drained = self.by_tick.remove(&tick).unwrap_or_default();
+        self.pending = self.pending.saturating_sub(drained.len());
+        drained
+    }
+
+    #[cfg(test)]
+    pub(crate) fn pending_len(&self) -> usize {
+        self.pending
+    }
 }
 
 pub fn ensure_owner_for_connection(
@@ -180,14 +378,6 @@ pub fn owner_for_connection(world: &World, connection: ConnectionHandle) -> Opti
         .resource::<NetworkOwnerRouting>()
         .ok()
         .and_then(|routing| routing.by_connection.get(&connection).copied())
-}
-
-pub fn server_tick_buffer_provenance() -> TickBufferProvenance {
-    TickBufferProvenance::new(TICK_BUFFER_PROVENANCE_DOMAIN_SERVER, 1)
-}
-
-pub fn owner_tick_buffer_provenance(owner_id: OwnerId) -> TickBufferProvenance {
-    TickBufferProvenance::new(TICK_BUFFER_PROVENANCE_DOMAIN_OWNER, owner_id.as_raw())
 }
 
 pub fn remove_owner_for_connection(
@@ -237,7 +427,6 @@ fn configure_session_projection(app: &mut App) {
 }
 
 pub(crate) fn configure_client_role(app: &mut App) {
-    configure_network_message_queues(app.world_mut());
     app.init_resource::<NetworkClientInbox>();
     app.init_resource::<NetworkClientOutbox>();
     app.init_resource::<NetworkInboundQueue>();
@@ -257,7 +446,6 @@ pub(crate) fn configure_client_role(app: &mut App) {
 }
 
 pub(crate) fn configure_server_role(app: &mut App) {
-    configure_network_message_queues(app.world_mut());
     app.init_resource::<NetworkServerInbox>();
     app.init_resource::<NetworkServerOutbox>();
     app.init_resource::<NetworkInboundQueue>();
@@ -305,11 +493,7 @@ where
     TDriver: ReplicationDriver + InputDriver + Send + Sync + 'static,
     TDriver::Input: Clone + PartialEq + 'static,
 {
-    app.world_mut()
-        .configure_tick_buffer::<TDriver::Input>(TickBufferConfig {
-            capacity: Some(NETWORK_MESSAGE_QUEUE_CAPACITY),
-            retain_finalized_ticks: false,
-        });
+    app.init_resource::<NetworkInputStaging<TDriver::Input>>();
     app.init_resource::<PredictionState<TDriver::Input>>();
     app.init_resource::<PredictionDiagnostics>();
     app.add_systems(
@@ -321,36 +505,9 @@ where
 }
 
 #[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
-pub struct NetworkClientInbox;
-
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
-pub struct NetworkServerInbox;
-
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
-pub struct NetworkClientOutbox;
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum OutboundServerMessage {
-    ToConnection {
-        connection: ConnectionHandle,
-        message: ServerMessage,
-    },
-    Broadcast(ServerMessage),
-}
-
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
-pub struct NetworkServerOutbox;
-
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
 pub struct NetworkInboundQueue {
     client_messages: Vec<InboundClientMessage>,
     server_messages: Vec<ServerMessage>,
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct InboundClientMessage {
-    pub connection: Option<ConnectionHandle>,
-    pub message: ClientMessage,
 }
 
 impl NetworkInboundQueue {
@@ -684,6 +841,49 @@ pub struct NetDiagnosticsView {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn network_input_staging_capacity_is_total_across_ticks_and_recovers_after_stale_cleanup() {
+        let mut staging = NetworkInputStaging::<u16>::default();
+        for index in 0..NETWORK_MESSAGE_QUEUE_CAPACITY {
+            let tick = SimulationTick(1 + (index % 4) as u64);
+            staging
+                .stage(tick, index as u16)
+                .expect("staging should accept inputs through its total capacity");
+        }
+
+        assert_eq!(staging.pending_len(), NETWORK_MESSAGE_QUEUE_CAPACITY);
+        let rejected = 5_000u16;
+        assert_eq!(
+            staging.stage(SimulationTick(6), rejected),
+            Err(NetworkInputStageError::Backpressure {
+                capacity: NETWORK_MESSAGE_QUEUE_CAPACITY,
+                input: rejected,
+            })
+        );
+
+        assert!(staging.drain_tick(SimulationTick(5)).is_empty());
+        assert_eq!(staging.pending_len(), 0);
+        staging
+            .stage(SimulationTick(6), rejected)
+            .expect("stale cleanup should recover staging capacity");
+        assert_eq!(staging.pending_len(), 1);
+    }
+
+    #[test]
+    fn network_input_staging_discards_skipped_ticks_and_preserves_current_and_future_order() {
+        let mut staging = NetworkInputStaging::<u8>::default();
+        staging.stage(SimulationTick(2), 20).unwrap();
+        staging.stage(SimulationTick(5), 50).unwrap();
+        staging.stage(SimulationTick(5), 51).unwrap();
+        staging.stage(SimulationTick(6), 60).unwrap();
+
+        assert_eq!(staging.pending_len(), 4);
+        assert_eq!(staging.drain_tick(SimulationTick(5)), vec![50, 51]);
+        assert_eq!(staging.pending_len(), 1);
+        assert_eq!(staging.drain_tick(SimulationTick(6)), vec![60]);
+        assert_eq!(staging.pending_len(), 0);
+    }
 
     #[test]
     fn checkpoint_accepts_only_sent_and_available_baselines() {

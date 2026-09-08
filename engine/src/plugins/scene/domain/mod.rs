@@ -2,7 +2,6 @@ use crate::plugins::scene::ui::{
     ConsoleUiRuntimeState, initialize_console_ui, load_console_template,
 };
 use anyhow::Result;
-use ecs::{BroadcastLifetime, BroadcastStreamConfig};
 use scheduler::builder::SchedulerBuilder;
 use scheduler::node::Node;
 use scheduler::scheduler_core::Scheduler;
@@ -190,14 +189,6 @@ pub enum OverlayCommandInput {
     Line(String),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SceneTemplateUiEvent {
-    pub name: String,
-    pub scene_id: String,
-    pub button: Option<String>,
-    pub trigger: &'static str,
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum WorldToOverlayMessage {
     Tick {
@@ -235,10 +226,6 @@ pub fn build_overlay_runtime(
     registry: &SceneRegistry,
 ) -> Result<OverlaySceneRuntime> {
     let mut world = ecs::World::new();
-    world.configure_broadcast_stream::<SceneTemplateUiEvent>(BroadcastStreamConfig {
-        lifetime: BroadcastLifetime::FrameTransient,
-        ..BroadcastStreamConfig::default()
-    });
     let mut ui = initialize_console_ui(&mut world)?;
     ui.screen_size = screen_size;
     ui.scale = scale;

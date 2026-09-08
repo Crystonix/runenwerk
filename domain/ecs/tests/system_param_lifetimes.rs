@@ -37,5 +37,4 @@ fn invocation_bound_parameters_cannot_escape() {
     let cases = trybuild::TestCases::new();
     cases.compile_fail("tests/ui/system_param_res_mut_escape.rs");
     cases.compile_fail("tests/ui/system_param_query_escape.rs");
-    cases.compile_fail("tests/ui/system_param_broadcast_reader_escape.rs");
 }

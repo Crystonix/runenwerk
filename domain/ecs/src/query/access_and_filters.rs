@@ -88,14 +88,6 @@ pub struct QueryAccess {
     component_writes: Vec<QueryTypeAccess>,
     resource_reads: Vec<QueryTypeAccess>,
     resource_writes: Vec<QueryTypeAccess>,
-    broadcast_reads: Vec<QueryTypeAccess>,
-    broadcast_writes: Vec<QueryTypeAccess>,
-    work_queue_reads: Vec<QueryTypeAccess>,
-    work_queue_writes: Vec<QueryTypeAccess>,
-    work_queue_drains: Vec<QueryTypeAccess>,
-    tick_buffer_reads: Vec<QueryTypeAccess>,
-    tick_buffer_writes: Vec<QueryTypeAccess>,
-    tick_buffer_drains: Vec<QueryTypeAccess>,
     deferred_structural_mutation: bool,
     exclusive_world_accesses: usize,
     component_borrows: Vec<QueryBorrowAccess>,
@@ -170,38 +162,6 @@ impl QueryAccess {
         self.exclusive_world_accesses
     }
 
-    pub fn broadcast_reads(&self) -> &[QueryTypeAccess] {
-        &self.broadcast_reads
-    }
-
-    pub fn broadcast_writes(&self) -> &[QueryTypeAccess] {
-        &self.broadcast_writes
-    }
-
-    pub fn work_queue_reads(&self) -> &[QueryTypeAccess] {
-        &self.work_queue_reads
-    }
-
-    pub fn work_queue_writes(&self) -> &[QueryTypeAccess] {
-        &self.work_queue_writes
-    }
-
-    pub fn work_queue_drains(&self) -> &[QueryTypeAccess] {
-        &self.work_queue_drains
-    }
-
-    pub fn tick_buffer_reads(&self) -> &[QueryTypeAccess] {
-        &self.tick_buffer_reads
-    }
-
-    pub fn tick_buffer_writes(&self) -> &[QueryTypeAccess] {
-        &self.tick_buffer_writes
-    }
-
-    pub fn tick_buffer_drains(&self) -> &[QueryTypeAccess] {
-        &self.tick_buffer_drains
-    }
-
     pub(crate) fn add_component_read<T: Component>(&mut self) {
         self.component_borrows
             .push(QueryBorrowAccess::shared::<T>(T::component_name()));
@@ -245,38 +205,6 @@ impl QueryAccess {
         );
     }
 
-    pub(crate) fn add_broadcast_read_named<T: 'static>(&mut self, name: &'static str) {
-        push_unique_access(&mut self.broadcast_reads, QueryTypeAccess::of::<T>(name));
-    }
-
-    pub(crate) fn add_broadcast_write_named<T: 'static>(&mut self, name: &'static str) {
-        push_unique_access(&mut self.broadcast_writes, QueryTypeAccess::of::<T>(name));
-    }
-
-    pub(crate) fn add_work_queue_read_named<T: 'static>(&mut self, name: &'static str) {
-        push_unique_access(&mut self.work_queue_reads, QueryTypeAccess::of::<T>(name));
-    }
-
-    pub(crate) fn add_work_queue_write_named<T: 'static>(&mut self, name: &'static str) {
-        push_unique_access(&mut self.work_queue_writes, QueryTypeAccess::of::<T>(name));
-    }
-
-    pub(crate) fn add_work_queue_drain_named<T: 'static>(&mut self, name: &'static str) {
-        push_unique_access(&mut self.work_queue_drains, QueryTypeAccess::of::<T>(name));
-    }
-
-    pub(crate) fn add_tick_buffer_read_named<T: 'static>(&mut self, name: &'static str) {
-        push_unique_access(&mut self.tick_buffer_reads, QueryTypeAccess::of::<T>(name));
-    }
-
-    pub(crate) fn add_tick_buffer_write_named<T: 'static>(&mut self, name: &'static str) {
-        push_unique_access(&mut self.tick_buffer_writes, QueryTypeAccess::of::<T>(name));
-    }
-
-    pub(crate) fn add_tick_buffer_drain_named<T: 'static>(&mut self, name: &'static str) {
-        push_unique_access(&mut self.tick_buffer_drains, QueryTypeAccess::of::<T>(name));
-    }
-
     pub(crate) fn borrow_checkpoint(&self) -> (usize, usize) {
         (self.component_borrows.len(), self.resource_borrows.len())
     }
@@ -306,14 +234,6 @@ impl QueryAccess {
             || !self.component_writes.is_empty()
             || !self.resource_reads.is_empty()
             || !self.resource_writes.is_empty()
-            || !self.broadcast_reads.is_empty()
-            || !self.broadcast_writes.is_empty()
-            || !self.work_queue_reads.is_empty()
-            || !self.work_queue_writes.is_empty()
-            || !self.work_queue_drains.is_empty()
-            || !self.tick_buffer_reads.is_empty()
-            || !self.tick_buffer_writes.is_empty()
-            || !self.tick_buffer_drains.is_empty()
     }
 
     /// Extends this access set with another access set.
@@ -337,30 +257,6 @@ impl QueryAccess {
         }
         for access in other.resource_writes {
             push_unique_access(&mut self.resource_writes, access);
-        }
-        for access in other.broadcast_reads {
-            push_unique_access(&mut self.broadcast_reads, access);
-        }
-        for access in other.broadcast_writes {
-            push_unique_access(&mut self.broadcast_writes, access);
-        }
-        for access in other.work_queue_reads {
-            push_unique_access(&mut self.work_queue_reads, access);
-        }
-        for access in other.work_queue_writes {
-            push_unique_access(&mut self.work_queue_writes, access);
-        }
-        for access in other.work_queue_drains {
-            push_unique_access(&mut self.work_queue_drains, access);
-        }
-        for access in other.tick_buffer_reads {
-            push_unique_access(&mut self.tick_buffer_reads, access);
-        }
-        for access in other.tick_buffer_writes {
-            push_unique_access(&mut self.tick_buffer_writes, access);
-        }
-        for access in other.tick_buffer_drains {
-            push_unique_access(&mut self.tick_buffer_drains, access);
         }
         self.deferred_structural_mutation |= other.deferred_structural_mutation;
         self.exclusive_world_accesses = self

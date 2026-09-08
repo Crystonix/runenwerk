@@ -1,6 +1,9 @@
 #[derive(ecs::SystemParam)]
 struct WrongOrder<'w, 's> {
-    reader: ecs::BroadcastReader<'s, 'w, u32>,
+    query: ecs::Query<'s, 'w, &'static Marker>,
 }
+
+#[derive(ecs::Component)]
+struct Marker;
 
 fn main() {}

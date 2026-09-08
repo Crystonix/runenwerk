@@ -4,12 +4,6 @@ use super::change_tracking::{
     ResourceMeta,
 };
 use super::component_indexes::{ComponentIndexKey, ComponentIndexStorage};
-use super::messaging::broadcast::{
-    BroadcastObserver, BroadcastObserverNotification, BroadcastStreamStorage,
-};
-use super::messaging::finalization::MessagingFinalizationCounters;
-use super::messaging::tick_buffer::TickBufferStorage;
-use super::messaging::work_queue::WorkQueueStorage;
 use super::ownership::OwnershipRegistry;
 use crate::entity::{Entity, EntityAllocator, WorldScopeId};
 use crate::storage::{ArchetypeRegistry, EntityLocationMap};
@@ -35,18 +29,7 @@ pub struct World {
     pub(super) resources: HashMap<TypeId, Box<dyn Any>>,
     pub(super) resource_type_registry: HashMap<TypeId, ResourceMeta>,
 
-    pub(super) broadcast_streams: HashMap<TypeId, BroadcastStreamStorage>,
-    pub(super) broadcast_observers: HashMap<String, BroadcastObserver>,
-    pub(super) broadcast_observer_notifications: Vec<BroadcastObserverNotification>,
-    pub(super) work_queues: HashMap<TypeId, WorkQueueStorage>,
-    pub(super) tick_buffers: HashMap<TypeId, TickBufferStorage>,
-    pub(super) next_broadcast_key: u64,
-    pub(super) next_work_queue_key: u64,
-    pub(super) next_tick_buffer_key: u64,
-    pub(super) current_buffer_tick: u64,
-    pub(super) finalized_buffer_tick: Option<u64>,
     pub(super) current_frame_index: u64,
-    pub(super) messaging_finalization_counters: MessagingFinalizationCounters,
     pub(super) ownership: OwnershipRegistry,
 
     pub(super) component_indexes:
@@ -81,18 +64,7 @@ impl World {
             resources: HashMap::new(),
             resource_type_registry: HashMap::new(),
 
-            broadcast_streams: HashMap::new(),
-            broadcast_observers: HashMap::new(),
-            broadcast_observer_notifications: Vec::new(),
-            work_queues: HashMap::new(),
-            tick_buffers: HashMap::new(),
-            next_broadcast_key: 0,
-            next_work_queue_key: 0,
-            next_tick_buffer_key: 0,
-            current_buffer_tick: 0,
-            finalized_buffer_tick: None,
             current_frame_index: 0,
-            messaging_finalization_counters: MessagingFinalizationCounters::default(),
             ownership: OwnershipRegistry::default(),
 
             component_indexes: RefCell::new(HashMap::new()),

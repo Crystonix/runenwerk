@@ -67,10 +67,3 @@ fn publish_scene_overlay_frame(
             .with_rect_shader_asset_id(rect_shader_asset_id),
     );
 }
-
-pub(crate) fn finalize_overlay_messaging_frame_system(mut scene_resource: ResMut<SceneResource>) {
-    let Some(manager) = scene_resource.manager.as_mut() else {
-        return;
-    };
-    manager.overlay_runtime.world.finalize_frame_boundary();
-}

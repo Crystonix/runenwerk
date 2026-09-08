@@ -1,6 +1,7 @@
 use super::*;
 use crate::WorldMut;
-use ecs::{OwnerRole, TickBufferProvenance, WorkQueueEnqueueError, World};
+use anyhow::Context;
+use ecs::{OwnerRole, World};
 use engine_net::replication::{InputDriver, ReplicationDriver, SnapshotApplyDriver};
 use engine_net::*;
 use engine_sim::{AuthorityRole, SimulationProfileConfig, SimulationTick};
@@ -12,22 +13,6 @@ use world_ops::SyncCursor;
 const FULL_SNAPSHOT_INTERVAL_TICKS: u64 = 30;
 const MAX_SERVER_SNAPSHOT_HISTORY: usize = 256;
 const MAX_CLIENT_SNAPSHOT_HISTORY: usize = 256;
-
-fn enqueue_work_queue_with_backpressure<T: 'static>(
-    world: &mut World,
-    work_queue_name: &'static str,
-    message: T,
-) -> Result<(), WorkQueueEnqueueError> {
-    let result = world.work_queue_enqueue(message);
-    if let Err(WorkQueueEnqueueError::Backpressure { capacity, .. }) = &result {
-        tracing::warn!(
-            work_queue = work_queue_name,
-            capacity = *capacity,
-            "network queue backpressure; dropping newest message"
-        );
-    }
-    result
-}
 
 fn active_connections(world: &World) -> Vec<ConnectionHandle> {
     let mut connections = world
@@ -50,14 +35,20 @@ where
     TDriver: ReplicationDriver + Send + Sync + 'static,
     TDriver::Snapshot: Clone + PartialEq,
 {
-    if let Ok(diagnostics) = world.resource_mut::<ReplicationDiagnostics>() {
-        diagnostics.fixed_steps_observed = diagnostics.fixed_steps_observed.saturating_add(1);
-    }
-
     let authority = world
         .resource::<SimulationProfileConfig>()
         .map(|config| config.authority)
         .unwrap_or(AuthorityRole::Local);
+
+    if matches!(authority, AuthorityRole::Server | AuthorityRole::Peer) {
+        world
+            .resource::<NetworkServerOutbox>()
+            .context("NetworkServerOutbox should be installed by the server network role")?;
+    }
+
+    if let Ok(diagnostics) = world.resource_mut::<ReplicationDiagnostics>() {
+        diagnostics.fixed_steps_observed = diagnostics.fixed_steps_observed.saturating_add(1);
+    }
 
     if !matches!(authority, AuthorityRole::Server | AuthorityRole::Peer) {
         let cursor = world
@@ -83,8 +74,7 @@ where
 
     let active_connections = active_connections(&world);
 
-    let mut outbound = Vec::<OutboundServerMessage>::new();
-    let mut world_streaming_updates = Vec::<(ConnectionHandle, SyncCursor, bool)>::new();
+    let mut outbound = Vec::<(OutboundServerMessage, ConnectionHandle, bool)>::new();
     if !active_connections.is_empty() {
         let mut snapshots_for_connections = Vec::<(ConnectionHandle, TDriver::Snapshot)>::new();
         for connection in &active_connections {
@@ -173,17 +163,14 @@ where
                 })
             };
 
-            state
-                .checkpoints
-                .entry(connection)
-                .or_default()
-                .mark_snapshot_sent(cursor, tick, send_full);
-            world_streaming_updates.push((connection, SyncCursor(cursor.0), send_full));
-
-            outbound.push(OutboundServerMessage::ToConnection {
+            outbound.push((
+                OutboundServerMessage::ToConnection {
+                    connection,
+                    message,
+                },
                 connection,
-                message,
-            });
+                send_full,
+            ));
         }
 
         if let Some(snapshot) = first_snapshot_for_tick {
@@ -193,19 +180,42 @@ where
         }
     }
 
-    if !world_streaming_updates.is_empty()
-        && let Ok(streaming_state) = world.resource_mut::<NetStreamingStateResource>()
-    {
-        for (connection, cursor, sent_full_snapshot) in world_streaming_updates {
-            streaming_state.mark_snapshot_sent(connection, cursor, sent_full_snapshot);
+    let mut accepted_outbound = Vec::<(ConnectionHandle, bool)>::new();
+    for (message, connection, sent_full_snapshot) in outbound {
+        match enqueue_server_outbox(&mut world, message) {
+            Ok(()) => accepted_outbound.push((connection, sent_full_snapshot)),
+            Err(NetworkPendingEnqueueError::Unavailable { endpoint, .. }) => {
+                anyhow::bail!("{endpoint} should be installed by NetPlugin");
+            }
+            Err(NetworkPendingEnqueueError::Backpressure { capacity, .. }) => {
+                tracing::warn!(
+                    capacity,
+                    "failed to enqueue replication server outbox message"
+                );
+            }
         }
     }
 
-    for message in &outbound {
-        if let Err(error) =
-            enqueue_work_queue_with_backpressure(&mut world, "NetworkServerOutbox", message.clone())
-        {
-            tracing::warn!(error = ?error, "failed to enqueue replication server outbox message");
+    if !accepted_outbound.is_empty() {
+        let state = world.resource_mut::<ServerSnapshotReplicationState<TDriver::Snapshot>>()?;
+        for (connection, sent_full_snapshot) in &accepted_outbound {
+            state
+                .checkpoints
+                .entry(*connection)
+                .or_default()
+                .mark_snapshot_sent(cursor, tick, *sent_full_snapshot);
+        }
+    }
+
+    if !accepted_outbound.is_empty()
+        && let Ok(streaming_state) = world.resource_mut::<NetStreamingStateResource>()
+    {
+        for (connection, sent_full_snapshot) in &accepted_outbound {
+            streaming_state.mark_snapshot_sent(
+                *connection,
+                SyncCursor(cursor.0),
+                *sent_full_snapshot,
+            );
         }
     }
 
@@ -213,7 +223,7 @@ where
         diagnostics.last_snapshot_cursor = cursor.0;
         diagnostics.emitted_snapshots = diagnostics
             .emitted_snapshots
-            .saturating_add(outbound.len() as u64);
+            .saturating_add(accepted_outbound.len() as u64);
     }
 
     Ok(())
@@ -224,6 +234,20 @@ where
     TDriver: ReplicationDriver + InputDriver + Send + Sync + 'static,
     TDriver::Input: Clone + PartialEq,
 {
+    world
+        .resource::<NetworkInputStaging<TDriver::Input>>()
+        .context("NetworkInputStaging should be installed by NetPlugin")?;
+
+    let authority = world
+        .resource::<SimulationProfileConfig>()
+        .map(|config| config.authority)
+        .unwrap_or(AuthorityRole::Local);
+    if matches!(authority, AuthorityRole::Client | AuthorityRole::Peer) {
+        world
+            .resource::<NetworkClientOutbox>()
+            .context("NetworkClientOutbox should be installed by the client network role")?;
+    }
+
     if let Ok(diagnostics) = world.resource_mut::<PredictionDiagnostics>() {
         diagnostics.fixed_steps_observed = diagnostics.fixed_steps_observed.saturating_add(1);
     }
@@ -233,66 +257,67 @@ where
         .copied()
         .unwrap_or_default();
 
-    let authority = world
-        .resource::<SimulationProfileConfig>()
-        .map(|config| config.authority)
-        .unwrap_or(AuthorityRole::Local);
-
     let commands = TDriver::take_local_input(&mut world)
         .map_err(|error| map_driver_error::<TDriver>(error, "take local input"))?;
+    let mut staged_commands = Vec::with_capacity(commands.len());
     if !commands.is_empty() {
-        let provenance = if matches!(authority, AuthorityRole::Client | AuthorityRole::Peer) {
-            if let Some(connection) = sole_active_connection(&world) {
-                let controller =
-                    ensure_owner_for_connection(&mut world, connection, OwnerRole::Active);
-                owner_tick_buffer_provenance(controller)
-            } else {
-                TickBufferProvenance::UNSPECIFIED
-            }
-        } else {
-            server_tick_buffer_provenance()
-        };
+        if matches!(authority, AuthorityRole::Client | AuthorityRole::Peer)
+            && let Some(connection) = sole_active_connection(&world)
+        {
+            let _ = ensure_owner_for_connection(&mut world, connection, OwnerRole::Active);
+        }
 
-        for command in &commands {
-            if let Err(error) = world.push_buffer_message_for_tick::<TDriver::Input>(
-                tick.0,
-                provenance,
-                command.clone(),
-            ) {
-                tracing::warn!(?error, "failed to enqueue local input into tick buffer");
+        let staging = world.resource_mut::<NetworkInputStaging<TDriver::Input>>()?;
+        for command in commands {
+            match staging.stage(tick, command.clone()) {
+                Ok(()) => staged_commands.push(command),
+                Err(NetworkInputStageError::Backpressure { capacity, .. }) => {
+                    tracing::warn!(
+                        capacity,
+                        tick = tick.0,
+                        "network input staging backpressure; rejecting local input"
+                    );
+                }
             }
         }
     }
 
-    if matches!(authority, AuthorityRole::Client | AuthorityRole::Peer) && !commands.is_empty() {
-        let payload = TDriver::encode_input(&commands)
+    if matches!(authority, AuthorityRole::Client | AuthorityRole::Peer)
+        && !staged_commands.is_empty()
+    {
+        let payload = TDriver::encode_input(&staged_commands)
             .map_err(|error| map_driver_error::<TDriver>(error, "encode input"))?;
 
-        if let Err(error) = enqueue_work_queue_with_backpressure(
+        let frame_enqueued = match enqueue_client_outbox(
             &mut world,
-            "NetworkClientOutbox",
             ClientMessage::InputFrame(InputFrame { tick, payload }),
         ) {
-            tracing::warn!(error = ?error, "failed to enqueue local input frame");
-        }
+            Ok(()) => true,
+            Err(NetworkPendingEnqueueError::Unavailable { endpoint, .. }) => {
+                anyhow::bail!("{endpoint} should be installed by NetPlugin");
+            }
+            Err(NetworkPendingEnqueueError::Backpressure { capacity, .. }) => {
+                tracing::warn!(capacity, "failed to enqueue local input frame");
+                false
+            }
+        };
 
-        if let Ok(prediction) = world.resource_mut::<PredictionState<TDriver::Input>>() {
+        if frame_enqueued
+            && let Ok(prediction) = world.resource_mut::<PredictionState<TDriver::Input>>()
+        {
             prediction.pending_frames.push(PendingInputFrame {
                 tick,
-                commands: commands.clone(),
+                commands: staged_commands.clone(),
             });
         }
     }
 
-    let drained = world.drain_current_buffer_records::<TDriver::Input>();
-    if drained.is_empty() {
+    let inputs_to_apply = world
+        .resource_mut::<NetworkInputStaging<TDriver::Input>>()?
+        .drain_tick(tick);
+    if inputs_to_apply.is_empty() {
         return Ok(());
     }
-
-    let inputs_to_apply = drained
-        .into_iter()
-        .map(|record| record.payload)
-        .collect::<Vec<_>>();
 
     if let Ok(diagnostics) = world.resource_mut::<PredictionDiagnostics>() {
         diagnostics.commands_applied = diagnostics
