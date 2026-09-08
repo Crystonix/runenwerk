@@ -815,9 +815,8 @@ mod tests {
 
     #[test]
     fn spectral_radiance_requires_explicit_positive_wavelength() {
-        let representation =
-            RenderRadiometricRepresentation::spectral_at_wavelength_meters(550e-9)
-                .expect("positive wavelength should validate");
+        let representation = RenderRadiometricRepresentation::spectral_at_wavelength_meters(550e-9)
+            .expect("positive wavelength should validate");
         assert_eq!(representation.wavelength_meters(), 550e-9);
         assert_eq!(
             RenderRadiometricRepresentation::spectral_at_wavelength_meters(0.0),
