@@ -299,8 +299,8 @@ fn mixed_same_object_structural_and_r3_operations_reject_atomically() {
     let object_id = store.allocate_object_id().expect("object ID");
     insert_object(&mut store, object_id);
     let representation = surface_representation(&mut store, object_id);
-    let participation =
-        RenderObjectParticipation::new(vec![representation], None, None).expect("valid participation");
+    let participation = RenderObjectParticipation::new(vec![representation], None, None)
+        .expect("valid participation");
     let before = store.snapshot();
     let revision = store.revision();
 
