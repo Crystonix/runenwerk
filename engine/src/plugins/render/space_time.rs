@@ -37,7 +37,6 @@ pub enum RenderSemanticValueError {
     NonPositive { field: &'static str },
     InvalidBounds,
     InvalidInterval,
-    MotionOutsideValidity,
 }
 
 impl fmt::Display for RenderSemanticValueError {
@@ -47,9 +46,6 @@ impl fmt::Display for RenderSemanticValueError {
             Self::NonPositive { field } => write!(f, "{field} must be greater than zero"),
             Self::InvalidBounds => write!(f, "spatial bounds minimum must not exceed maximum"),
             Self::InvalidInterval => write!(f, "time interval start must not exceed end"),
-            Self::MotionOutsideValidity => {
-                write!(f, "motion interval must be contained by temporal validity")
-            }
         }
     }
 }
@@ -230,6 +226,12 @@ impl RenderTimePoint {
     }
 }
 
+/// A closed renderer-semantic interval `[start, end]` on the canonical seconds timeline.
+///
+/// R2 uses this shared interval vocabulary for render intervals, observation shutter support, and
+/// temporal validity. A future motion-bearing contract may use the same vocabulary when it can
+/// also define the motion being evaluated; R2 deliberately does not attach a bare motion interval
+/// to an object without such evaluable motion semantics.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct RenderTimeInterval {
     start: RenderTimePoint,
@@ -335,34 +337,23 @@ impl RenderObjectSpatialState {
     }
 }
 
+/// The smallest concrete R2-owned temporal state of one renderer object.
+///
+/// This records only the interval over which the object's committed R2 state is semantically valid.
+/// A motion interval without a trajectory, time-sampled transform, or motion query contract would
+/// assert motion that R2 cannot evaluate, so no such placeholder is stored here.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct RenderObjectTemporalState {
     validity: RenderTemporalSupport,
-    motion_interval: Option<RenderTimeInterval>,
 }
 
 impl RenderObjectTemporalState {
-    pub fn new(
-        validity: RenderTemporalSupport,
-        motion_interval: Option<RenderTimeInterval>,
-    ) -> Result<Self, RenderSemanticValueError> {
-        if let Some(motion_interval) = motion_interval
-            && !validity.contains_interval(motion_interval)
-        {
-            return Err(RenderSemanticValueError::MotionOutsideValidity);
-        }
-        Ok(Self {
-            validity,
-            motion_interval,
-        })
+    pub const fn new(validity: RenderTemporalSupport) -> Self {
+        Self { validity }
     }
 
     pub const fn validity(self) -> RenderTemporalSupport {
         self.validity
-    }
-
-    pub const fn motion_interval(self) -> Option<RenderTimeInterval> {
-        self.motion_interval
     }
 }
 
@@ -398,7 +389,7 @@ mod tests {
     }
 
     #[test]
-    fn bounds_and_time_intervals_validate_semantic_ordering() {
+    fn bounds_and_time_intervals_validate_semantic_ordering_and_closed_containment() {
         assert_eq!(
             RenderSpatialCoverage::axis_aligned_bounds([1.0, 0.0, 0.0], [0.0, 1.0, 1.0]),
             Err(RenderSemanticValueError::InvalidBounds)
@@ -409,24 +400,25 @@ mod tests {
             RenderTimeInterval::new(start, end),
             Err(RenderSemanticValueError::InvalidInterval)
         );
+
+        let outer = RenderTimeInterval::new(
+            RenderTimePoint::from_seconds(1.0).expect("finite time"),
+            RenderTimePoint::from_seconds(2.0).expect("finite time"),
+        )
+        .expect("ordered interval");
+        assert!(outer.contains(RenderTimeInterval::instant(outer.start())));
+        assert!(outer.contains(RenderTimeInterval::instant(outer.end())));
     }
 
     #[test]
-    fn motion_interval_must_fit_temporal_validity() {
+    fn object_temporal_state_expresses_validity_without_fabricated_motion_state() {
         let validity = RenderTimeInterval::new(
             RenderTimePoint::from_seconds(1.0).expect("finite time"),
             RenderTimePoint::from_seconds(2.0).expect("finite time"),
         )
         .expect("ordered interval");
-        let motion = RenderTimeInterval::new(
-            RenderTimePoint::from_seconds(0.0).expect("finite time"),
-            RenderTimePoint::from_seconds(2.0).expect("finite time"),
-        )
-        .expect("ordered interval");
-        assert_eq!(
-            RenderObjectTemporalState::new(RenderTemporalSupport::interval(validity), Some(motion)),
-            Err(RenderSemanticValueError::MotionOutsideValidity)
-        );
+        let state = RenderObjectTemporalState::new(RenderTemporalSupport::interval(validity));
+        assert_eq!(state.validity().bounded_interval(), Some(validity));
     }
 
     #[test]
