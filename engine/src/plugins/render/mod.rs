@@ -14,6 +14,7 @@ pub mod procedural;
 pub mod renderer;
 pub mod residency;
 pub mod resource;
+pub mod scene;
 pub mod shader;
 mod texture_upload;
 

@@ -11,6 +11,8 @@ pub mod host;
 pub mod mount;
 pub mod plugin;
 pub mod render_publish;
+#[cfg(test)]
+pub(crate) mod render_scene;
 pub mod report;
 pub mod resources;
 pub mod schedule;
