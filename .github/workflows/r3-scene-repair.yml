@@ -25,7 +25,6 @@ jobs:
         run: |
           set -euo pipefail
           actual="$(git hash-object engine/src/plugins/render/scene/mod.rs)"
-          echo "starting scene blob: $actual"
           test "$actual" = "242b765613400dce9a919639b3cc8cbc3367412b"
 
       - name: Canonical stable rustfmt
@@ -105,7 +104,7 @@ jobs:
 
           path.write_text(text)
 
-      - name: Verify and expose canonical repaired scene
+      - name: Verify exact canonical repaired scene
         shell: bash
         run: |
           set -euo pipefail
@@ -115,7 +114,14 @@ jobs:
           actual="$(git hash-object engine/src/plugins/render/scene/mod.rs)"
           echo "canonical repaired scene blob: $actual"
           test "$actual" = "66b251daca86b5d0f24da9c0098bc8d7a8f2939f"
-          echo "--- canonical scene diff ---"
-          git diff -- engine/src/plugins/render/scene/mod.rs
-          echo "--- end canonical scene diff ---"
-          echo "Diagnostic only: no repository write is performed by this workflow."
+          test "$(git diff --name-only)" = "engine/src/plugins/render/scene/mod.rs"
+
+      - name: Publish verified scene blob
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add engine/src/plugins/render/scene/mod.rs
+          git commit -m "RunenRender R3: canonicalize scene proofs"
+          git push origin HEAD:issue-475-r3-representations
