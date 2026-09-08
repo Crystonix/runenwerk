@@ -90,11 +90,7 @@ fn validate_observation_frame(
         matrix[0], matrix[1], matrix[2], matrix[4], matrix[5], matrix[6], matrix[8], matrix[9],
         matrix[10],
     ];
-    let scale = linear
-        .iter()
-        .copied()
-        .map(f64::abs)
-        .fold(0.0_f64, f64::max);
+    let scale = linear.iter().copied().map(f64::abs).fold(0.0_f64, f64::max);
     if scale == 0.0 {
         return Err(RenderRequestValidationError::DegenerateObservationFrame);
     }
