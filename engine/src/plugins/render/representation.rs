@@ -50,7 +50,9 @@ pub enum RenderProtocolCompatibilityError {
 impl fmt::Display for RenderProtocolCompatibilityError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Unsupported { protocol } => write!(f, "representation does not support {protocol:?}"),
+            Self::Unsupported { protocol } => {
+                write!(f, "representation does not support {protocol:?}")
+            }
             Self::VersionMismatch {
                 protocol,
                 requested_revision,
@@ -87,7 +89,9 @@ impl fmt::Display for RenderRepresentationValidationError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::SemanticValue(error) => fmt::Display::fmt(error, f),
-            Self::NoProtocols => write!(f, "representation must support at least one typed protocol"),
+            Self::NoProtocols => {
+                write!(f, "representation must support at least one typed protocol")
+            }
             Self::InvalidProtocolRevision => write!(f, "protocol revision must be non-zero"),
             Self::NegativeErrorBound => write!(f, "semantic error bound must be non-negative"),
             Self::ZeroQueryDirection => write!(f, "surface-query direction must be non-zero"),
@@ -95,10 +99,16 @@ impl fmt::Display for RenderRepresentationValidationError {
                 write!(f, "surface-hit distance must be non-negative")
             }
             Self::ExactFieldSampleHasError => {
-                write!(f, "exact field-distance protocol requires zero sample error")
+                write!(
+                    f,
+                    "exact field-distance protocol requires zero sample error"
+                )
             }
             Self::FieldSampleExceedsDeclaredError => {
-                write!(f, "field-distance sample error exceeds intrinsic declared bound")
+                write!(
+                    f,
+                    "field-distance sample error exceeds intrinsic declared bound"
+                )
             }
         }
     }
@@ -145,10 +155,8 @@ impl RenderFieldDistanceGuarantee {
     pub fn conservative(
         max_absolute_error_meters: f64,
     ) -> Result<Self, RenderRepresentationValidationError> {
-        let max_absolute_error_meters = CanonicalF64::new(
-            max_absolute_error_meters,
-            "field_max_absolute_error_meters",
-        )?;
+        let max_absolute_error_meters =
+            CanonicalF64::new(max_absolute_error_meters, "field_max_absolute_error_meters")?;
         if max_absolute_error_meters.get() < 0.0 {
             return Err(RenderRepresentationValidationError::NegativeErrorBound);
         }
@@ -196,10 +204,8 @@ impl RenderRefinementEvidence {
     pub fn bounded(
         finest_absolute_error_meters: f64,
     ) -> Result<Self, RenderRepresentationValidationError> {
-        let finest_absolute_error_meters = CanonicalF64::new(
-            finest_absolute_error_meters,
-            "finest_absolute_error_meters",
-        )?;
+        let finest_absolute_error_meters =
+            CanonicalF64::new(finest_absolute_error_meters, "finest_absolute_error_meters")?;
         if finest_absolute_error_meters.get() < 0.0 {
             return Err(RenderRepresentationValidationError::NegativeErrorBound);
         }
@@ -328,9 +334,11 @@ impl RenderRepresentationRecord {
         &self,
         requested_revision: u32,
     ) -> Result<RenderSurfaceProtocolEvidence, RenderProtocolCompatibilityError> {
-        let evidence = self.surface_query.ok_or(RenderProtocolCompatibilityError::Unsupported {
-            protocol: RenderRepresentationProtocol::SurfaceQuery,
-        })?;
+        let evidence = self
+            .surface_query
+            .ok_or(RenderProtocolCompatibilityError::Unsupported {
+                protocol: RenderRepresentationProtocol::SurfaceQuery,
+            })?;
         require_revision(
             RenderRepresentationProtocol::SurfaceQuery,
             requested_revision,
@@ -343,9 +351,11 @@ impl RenderRepresentationRecord {
         &self,
         requested_revision: u32,
     ) -> Result<RenderFieldDistanceProtocolEvidence, RenderProtocolCompatibilityError> {
-        let evidence = self.field_distance.ok_or(RenderProtocolCompatibilityError::Unsupported {
-            protocol: RenderRepresentationProtocol::FieldDistance,
-        })?;
+        let evidence =
+            self.field_distance
+                .ok_or(RenderProtocolCompatibilityError::Unsupported {
+                    protocol: RenderRepresentationProtocol::FieldDistance,
+                })?;
         require_revision(
             RenderRepresentationProtocol::FieldDistance,
             requested_revision,
@@ -506,9 +516,8 @@ impl RenderFieldDistanceSample {
     }
 
     pub fn safe_distance_lower_bound_meters(self) -> f64 {
-        (self.signed_distance_estimate_meters.get().abs()
-            - self.max_absolute_error_meters.get())
-        .max(0.0)
+        (self.signed_distance_estimate_meters.get().abs() - self.max_absolute_error_meters.get())
+            .max(0.0)
     }
 }
 
@@ -519,7 +528,9 @@ pub struct RenderFieldTransformClassification {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum RenderFieldTransformKind {
-    Exact { distance_scale: CanonicalF64 },
+    Exact {
+        distance_scale: CanonicalF64,
+    },
     Conservative {
         distance_scale_lower_bound: CanonicalF64,
     },
@@ -528,7 +539,8 @@ enum RenderFieldTransformKind {
 
 impl RenderFieldTransformClassification {
     fn exact(distance_scale: f64) -> Option<Self> {
-        let distance_scale = CanonicalF64::new(distance_scale, "field_exact_distance_scale").ok()?;
+        let distance_scale =
+            CanonicalF64::new(distance_scale, "field_exact_distance_scale").ok()?;
         (distance_scale.get() > 0.0).then_some(Self {
             kind: RenderFieldTransformKind::Exact { distance_scale },
         })
@@ -605,8 +617,7 @@ pub fn classify_field_distance_transform(
     let d02 = dot(c0, c2);
     let d12 = dot(c1, c2);
 
-    let determinant = b[0] * (b[4] * b[8] - b[5] * b[7])
-        - b[1] * (b[3] * b[8] - b[5] * b[6])
+    let determinant = b[0] * (b[4] * b[8] - b[5] * b[7]) - b[1] * (b[3] * b[8] - b[5] * b[6])
         + b[2] * (b[3] * b[7] - b[4] * b[6]);
     if determinant == 0.0 {
         return RenderFieldTransformClassification::invalid();
@@ -647,11 +658,7 @@ fn canonical_unit_direction(
         CanonicalF64::new(direction[1], "surface_query_direction")?.get(),
         CanonicalF64::new(direction[2], "surface_query_direction")?.get(),
     ];
-    let scale = values
-        .iter()
-        .copied()
-        .map(f64::abs)
-        .fold(0.0_f64, f64::max);
+    let scale = values.iter().copied().map(f64::abs).fold(0.0_f64, f64::max);
     if scale == 0.0 {
         return Err(RenderRepresentationValidationError::ZeroQueryDirection);
     }
@@ -755,8 +762,8 @@ mod tests {
         let supported = record
             .field_distance_protocol(RENDER_FIELD_DISTANCE_PROTOCOL_REVISION)
             .expect("field protocol should be supported");
-        let query = RenderFieldDistanceQuery::new([0.0, 0.0, 2.0], instant())
-            .expect("valid field query");
+        let query =
+            RenderFieldDistanceQuery::new([0.0, 0.0, 2.0], instant()).expect("valid field query");
         assert_eq!(query.position_scene_meters(), [0.0, 0.0, 2.0]);
 
         let sample = RenderFieldDistanceSample::new(2.0, 0.25).expect("bounded sample");
@@ -809,7 +816,10 @@ mod tests {
             None,
         )
         .expect("valid representation");
-        assert_eq!(record.refinement().finest_absolute_error_meters(), Some(0.01));
+        assert_eq!(
+            record.refinement().finest_absolute_error_meters(),
+            Some(0.01)
+        );
         assert_eq!(record.temporal_support().bounded_interval(), Some(interval));
         assert_eq!(
             record.spatial_coverage().axis_aligned_bounds_value(),
