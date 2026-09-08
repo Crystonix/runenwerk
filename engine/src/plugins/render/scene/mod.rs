@@ -1024,7 +1024,10 @@ mod tests {
         let mut insert = RenderSceneUpdate::new();
         insert.insert_with_state(object_id, initial.clone());
         let insert_commit = store.commit(insert).expect("stateful insert should commit");
-        assert_eq!(insert_commit.change_set().inserted(), Some(&[object_id][..]));
+        assert_eq!(
+            insert_commit.change_set().inserted(),
+            Some(&[object_id][..])
+        );
         assert_eq!(insert_commit.change_set().spatial_changed(), Some(&[][..]));
         assert_eq!(insert_commit.change_set().temporal_changed(), Some(&[][..]));
         assert_eq!(store.snapshot().object_state(object_id), Some(&initial));
