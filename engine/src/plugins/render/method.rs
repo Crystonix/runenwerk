@@ -174,9 +174,11 @@ impl RenderMethodOutputSupport {
 
     pub fn supports_value(self, value: RenderOutputValue) -> bool {
         match value {
-            RenderOutputValue::Radiance { representation } => self.radiance.is_some_and(|support| {
-                support.contains_wavelength_meters(representation.wavelength_meters())
-            }),
+            RenderOutputValue::Radiance { representation } => {
+                self.radiance.is_some_and(|support| {
+                    support.contains_wavelength_meters(representation.wavelength_meters())
+                })
+            }
             RenderOutputValue::Distance { .. } => self.distance,
             RenderOutputValue::ObjectIdentity => self.object_identity,
         }
