@@ -289,20 +289,44 @@ impl RenderObservationSpec {
     }
 }
 
+/// Renderer-semantic radiometric representation independent of result topology and numeric storage.
+///
+/// R2 deliberately starts with one precise founding domain rather than an underspecified RGB/color
+/// alias: spectral radiance at one explicit wavelength. The represented scalar is spectral radiance
+/// per unit wavelength with units W·sr⁻¹·m⁻³. Colorimetric reconstruction, channel sets, and broader
+/// representation families remain later concerns.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum RenderRadiometricRepresentation {
-    Monochromatic,
-    Rgb,
+pub struct RenderRadiometricRepresentation {
+    wavelength_meters: CanonicalF64,
+}
+
+impl RenderRadiometricRepresentation {
+    pub fn spectral_at_wavelength_meters(
+        wavelength_meters: f64,
+    ) -> Result<Self, RenderRequestValidationError> {
+        let wavelength_meters =
+            CanonicalF64::new(wavelength_meters, "radiometric_wavelength_meters")?;
+        if wavelength_meters.get() <= 0.0 {
+            return Err(RenderRequestValidationError::NonPositive {
+                field: "radiometric_wavelength_meters",
+            });
+        }
+        Ok(Self { wavelength_meters })
+    }
+
+    pub fn wavelength_meters(self) -> f64 {
+        self.wavelength_meters.get()
+    }
 }
 
 /// Semantic distance meaning relative to the observation frame.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum RenderDistanceConvention {
-    /// Euclidean distance in renderer scene-coordinate units from the observation origin to the
-    /// represented point along the logical sample ray.
+    /// Euclidean distance in metres from the observation origin to the represented point along the
+    /// logical sample ray.
     RayDistance,
-    /// Scalar projection of the represented point displacement onto the observation frame's
-    /// transformed -Z forward direction, measured in renderer scene-coordinate units.
+    /// Scalar projection in metres of the represented point displacement onto the normalized
+    /// scene-space direction obtained by transforming the observation frame's -Z forward vector.
     ObservationForwardDepth,
 }
 
@@ -368,6 +392,11 @@ impl RenderResultTopology {
     }
 }
 
+/// Semantic acceptance tolerance, independent of physical numeric storage and packing.
+///
+/// Absolute tolerance is expressed in the semantic units of the requested output value. Relative
+/// tolerance is dimensionless. Neither chooses an `f16`/`f32`/`f64`, texture format, quantization,
+/// or execution method.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct RenderSemanticTolerance {
     kind: RenderSemanticToleranceKind,
@@ -579,7 +608,7 @@ mod tests {
         .expect("ordered interval")
     }
 
-    fn probe(shutter: RenderTimeInterval) -> RenderObservationSpec {
+    fn probe_observation(shutter: RenderTimeInterval) -> RenderObservationSpec {
         RenderObservationSpec::Probe(
             RenderProbeObservation::new(
                 RenderAffineTransform3::identity(),
@@ -593,7 +622,10 @@ mod tests {
     fn radiance(topology: RenderResultTopology) -> RenderOutputSpec {
         RenderOutputSpec::new(
             RenderOutputValue::Radiance {
-                representation: RenderRadiometricRepresentation::Rgb,
+                representation: RenderRadiometricRepresentation::spectral_at_wavelength_meters(
+                    550e-9,
+                )
+                .expect("valid radiometric wavelength"),
             },
             topology,
             RenderSemanticTolerance::relative(0.01).expect("valid tolerance"),
@@ -676,7 +708,7 @@ mod tests {
     #[test]
     fn probe_request_uses_scalar_topology_without_image_lattice() {
         let render_interval = interval(0.0, 1.0);
-        let probe = probe(interval(0.25, 0.25));
+        let probe = probe_observation(interval(0.25, 0.25));
         let output = RenderRequestedOutput::new(0, radiance(RenderResultTopology::scalar()));
         let request = RenderRequest::new(render_interval, vec![probe], vec![output])
             .expect("scalar probe request should validate");
@@ -696,7 +728,7 @@ mod tests {
             )
             .expect("valid perspective"),
         );
-        let probe = probe(interval(0.5, 0.5));
+        let probe = probe_observation(interval(0.5, 0.5));
         let lattice = RenderResultTopology::sample_lattice_2d(640, 480).expect("valid lattice");
         let request = RenderRequest::new(
             render_interval,
@@ -719,12 +751,12 @@ mod tests {
 
     #[test]
     fn probe_rejects_image_lattice_and_observation_shutter_must_fit_request() {
-        let probe = probe(interval(2.0, 2.0));
+        let outside_probe = probe_observation(interval(2.0, 2.0));
         let lattice = RenderResultTopology::sample_lattice_2d(4, 4).expect("valid lattice");
         assert_eq!(
             RenderRequest::new(
                 interval(0.0, 1.0),
-                vec![probe],
+                vec![outside_probe],
                 vec![RenderRequestedOutput::new(0, radiance(lattice))]
             ),
             Err(
@@ -734,11 +766,11 @@ mod tests {
             )
         );
 
-        let probe = probe(interval(0.5, 0.5));
+        let inside_probe = probe_observation(interval(0.5, 0.5));
         assert_eq!(
             RenderRequest::new(
                 interval(0.0, 1.0),
-                vec![probe],
+                vec![inside_probe],
                 vec![RenderRequestedOutput::new(0, radiance(lattice))]
             ),
             Err(RenderRequestValidationError::ProbeRequiresScalarTopology {
@@ -749,7 +781,7 @@ mod tests {
 
     #[test]
     fn request_rejects_invalid_output_references_and_unserved_observations() {
-        let first = probe(interval(0.0, 0.0));
+        let first = probe_observation(interval(0.0, 0.0));
         assert_eq!(
             RenderRequest::new(
                 interval(0.0, 1.0),
@@ -764,8 +796,8 @@ mod tests {
             })
         );
 
-        let first = probe(interval(0.0, 0.0));
-        let second = probe(interval(1.0, 1.0));
+        let first = probe_observation(interval(0.0, 0.0));
+        let second = probe_observation(interval(1.0, 1.0));
         assert_eq!(
             RenderRequest::new(
                 interval(0.0, 1.0),
@@ -779,6 +811,26 @@ mod tests {
                 observation_index: 1
             })
         );
+    }
+
+    #[test]
+    fn spectral_radiance_requires_explicit_positive_wavelength() {
+        let representation =
+            RenderRadiometricRepresentation::spectral_at_wavelength_meters(550e-9)
+                .expect("positive wavelength should validate");
+        assert_eq!(representation.wavelength_meters(), 550e-9);
+        assert_eq!(
+            RenderRadiometricRepresentation::spectral_at_wavelength_meters(0.0),
+            Err(RenderRequestValidationError::NonPositive {
+                field: "radiometric_wavelength_meters"
+            })
+        );
+        assert!(matches!(
+            RenderRadiometricRepresentation::spectral_at_wavelength_meters(f64::NAN),
+            Err(RenderRequestValidationError::SemanticValue(
+                RenderSemanticValueError::NonFinite { .. }
+            ))
+        ));
     }
 
     #[test]
