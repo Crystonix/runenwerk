@@ -12,10 +12,12 @@ pub mod params;
 pub mod pipelines;
 pub mod procedural;
 pub mod renderer;
+pub mod request;
 pub mod residency;
 pub mod resource;
 pub mod scene;
 pub mod shader;
+pub mod space_time;
 mod texture_upload;
 
 mod plugin;
