@@ -105,7 +105,7 @@ jobs:
 
           path.write_text(text)
 
-      - name: Verify canonical repaired scene
+      - name: Verify and expose canonical repaired scene
         shell: bash
         run: |
           set -euo pipefail
@@ -114,6 +114,8 @@ jobs:
           git diff --check
           actual="$(git hash-object engine/src/plugins/render/scene/mod.rs)"
           echo "canonical repaired scene blob: $actual"
-          git diff --stat -- engine/src/plugins/render/scene/mod.rs
-          grep -n "representation_allocator_exhaustion_is_explicit_and_revision_neutral\|duplicate_same_object_r3_replacement_rejects_without_publication" engine/src/plugins/render/scene/mod.rs
+          test "$actual" = "66b251daca86b5d0f24da9c0098bc8d7a8f2939f"
+          echo "--- canonical scene diff ---"
+          git diff -- engine/src/plugins/render/scene/mod.rs
+          echo "--- end canonical scene diff ---"
           echo "Diagnostic only: no repository write is performed by this workflow."
