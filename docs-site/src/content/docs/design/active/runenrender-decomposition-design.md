@@ -232,8 +232,12 @@ small change must not require a mandatory deep copy proportional to the total sc
 
 ### `RenderSceneUpdate`
 
-The foundational update contract contains ordinary renderer-semantic insert, replace,
-and remove operations plus whatever concrete R1 validation is actually owned.
+The R1 foundational update contract mutates renderer-object presence through atomic
+insert and remove operations plus whatever concrete R1 validation is actually owned.
+R1 does not define same-identity replacement because identity/presence contains no
+replaceable renderer-semantic record. Replacement begins only in the first later phase
+that owns concrete replaceable object state and defines its equality, revision, and
+change-evidence law.
 
 Generic producer identity, contribution identity, producer retirement semantics, and
 producer namespaces are not part of the renderer scene kernel.
@@ -955,7 +959,7 @@ Internal RunenRender proof eventually requires:
 
 1. renderer scene commits/snapshots without Runenwerk/ECS/WGPU/RunenSDF/RunenUI types;
 2. no mandatory deep copy per commit;
-3. deterministic insert/replace/remove and atomic reject behavior;
+3. deterministic insert/remove presence mutation and atomic reject behavior;
 4. equivalent full and incremental semantic result;
 5. explicit change evidence and full-resynchronization fallback;
 6. stable renderer object identity across representation replacement;
