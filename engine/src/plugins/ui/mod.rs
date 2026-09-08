@@ -10,6 +10,7 @@ pub mod events;
 pub mod host;
 pub mod mount;
 pub mod plugin;
+pub(crate) mod render_scene;
 pub mod render_publish;
 pub mod report;
 pub mod resources;

@@ -16,6 +16,10 @@ pub(crate) mod shared;
 pub mod time;
 pub mod ui;
 pub mod world;
+
+#[cfg(test)]
+mod runenrender_r1_proof_tests;
+
 pub use debug_metrics::*;
 pub use diagnostics::{
     DiagnosticsAttachment, DiagnosticsConfigResource, DiagnosticsConsoleFeedResource,
