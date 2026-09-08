@@ -24,6 +24,7 @@ impl RenderRepresentationId {
         NonZeroU64::new(raw).map(Self)
     }
 
+    #[cfg(test)]
     pub(crate) const fn raw(self) -> u64 {
         self.0.get()
     }

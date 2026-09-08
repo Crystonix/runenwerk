@@ -953,9 +953,13 @@ impl RenderSceneStore {
 
                     let current = self.objects.object_participation(object_id);
                     let next = participation.as_ref();
-                    let representations_differ = current
+                    let current_representations = current
                         .map(RenderObjectParticipation::representations)
-                        != next.map(RenderObjectParticipation::representations);
+                        .unwrap_or(&[]);
+                    let next_representations = next
+                        .map(RenderObjectParticipation::representations)
+                        .unwrap_or(&[]);
+                    let representations_differ = current_representations != next_representations;
                     let material_differs = current
                         .and_then(RenderObjectParticipation::material_assignment)
                         != next.and_then(RenderObjectParticipation::material_assignment);
