@@ -28,7 +28,7 @@ struct Health(i32);
 #[derive(Debug, Clone, PartialEq, Eq, ecs::Component, ecs::Resource)]
 struct Name(String);
 
-#[derive(Debug, PartialEq, ecs::Component, ecs::Resource)]
+#[derive(Debug, PartialEq, Eq, ecs::Component, ecs::Resource)]
 struct Frame(u64);
 
 #[derive(Debug, PartialEq, ecs::Bundle)]
