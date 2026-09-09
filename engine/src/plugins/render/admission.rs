@@ -8,7 +8,6 @@
 
 use super::method::RenderAbstractExecutionRequirement;
 use super::representation::RenderRepresentationId;
-use super::request::RenderResultTopology;
 use super::scene::{RenderObjectId, RenderSceneRevision};
 use super::semantic_plan::{
     RenderApplicableRepresentationUse, RenderOutputApproximation, RenderPlan, RenderPlanCandidate,
@@ -265,7 +264,9 @@ pub enum RenderExecutionAdmissionFailure {
 impl fmt::Display for RenderExecutionAdmissionFailure {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::InvalidInput(error) => write!(formatter, "invalid render admission input: {error:?}"),
+            Self::InvalidInput(error) => {
+                write!(formatter, "invalid render admission input: {error:?}")
+            }
             Self::NoExecutableCandidate { .. } => {
                 formatter.write_str("no semantically planned render candidate can execute now")
             }
@@ -472,9 +473,7 @@ fn validate_output_binding(
                 ));
             }
             let extent = descriptor.extent();
-            if extent.width() != width
-                || extent.height() != height
-                || extent.depth_or_layers() != 1
+            if extent.width() != width || extent.height() != height || extent.depth_or_layers() != 1
             {
                 return Err(RenderExecutionAdmissionFailure::InvalidInput(
                     RenderAdmissionInputError::LatticeTextureExtent {
@@ -586,9 +585,11 @@ fn validate_current_execution(
     current: CurrentExecutionFacts,
 ) -> Result<(), RenderCandidateAdmissionRejectionReason> {
     if current.lifecycle != GpuExecutionLifecycleState::Running {
-        return Err(RenderCandidateAdmissionRejectionReason::ExecutionLifecycle {
-            state: current.lifecycle,
-        });
+        return Err(
+            RenderCandidateAdmissionRejectionReason::ExecutionLifecycle {
+                state: current.lifecycle,
+            },
+        );
     }
     for requirement in candidate.abstract_execution_requirements() {
         match requirement {
@@ -628,15 +629,16 @@ mod tests {
     };
     use crate::plugins::render::request::{
         RenderDistanceConvention, RenderObservationSpec, RenderOutputSpec, RenderOutputValue,
-        RenderProbeObservation, RenderRequestedOutput, RenderSamplingSupport, RenderSemanticTolerance,
+        RenderPerspectiveObservation, RenderProbeObservation, RenderRequestedOutput,
+        RenderResultTopology, RenderSamplingSupport, RenderSemanticTolerance,
     };
     use crate::plugins::render::scene::{RenderObjectState, RenderSceneStore, RenderSceneUpdate};
+    use crate::plugins::render::semantic_plan::plan_render;
     use crate::plugins::render::space_time::{
         RenderAffineTransform3, RenderHandedness, RenderObjectSpatialState,
         RenderObjectTemporalState, RenderSpaceSpec, RenderSpatialCoverage, RenderTemporalSupport,
         RenderTimeInterval, RenderTimePoint,
     };
-    use crate::plugins::render::semantic_plan::plan_render;
     use runen_gpu::{
         GpuBufferDescriptor, GpuBufferInitialization, GpuBufferUsages, GpuMemoryIntent,
         GpuReconstruction, GpuResourceCommon, GpuResourceLabel, GpuResourceLifetime,
@@ -686,6 +688,34 @@ mod tests {
         .expect("request")
     }
 
+    fn lattice_distance_request(width: u32, height: u32) -> super::super::request::RenderRequest {
+        let shutter = interval(0.0);
+        let observation = RenderObservationSpec::Perspective(
+            RenderPerspectiveObservation::new(
+                RenderAffineTransform3::identity(),
+                std::f64::consts::FRAC_PI_2,
+                f64::from(width) / f64::from(height),
+                shutter,
+                RenderSamplingSupport::ideal_ray(),
+            )
+            .expect("perspective"),
+        );
+        let output = RenderOutputSpec::new(
+            RenderOutputValue::Distance {
+                convention: RenderDistanceConvention::RayDistance,
+            },
+            RenderResultTopology::sample_lattice_2d(width, height).expect("lattice topology"),
+            RenderSemanticTolerance::exact(),
+        )
+        .expect("output");
+        super::super::request::RenderRequest::new(
+            shutter,
+            vec![observation],
+            vec![RenderRequestedOutput::new(0, output)],
+        )
+        .expect("request")
+    }
+
     fn surface_requirement() -> RenderMethodRepresentationRequirement {
         RenderMethodRepresentationRequirement::new(
             RenderRepresentationProtocolRequirement::SurfaceQuery {
@@ -696,9 +726,9 @@ mod tests {
         .expect("requirement")
     }
 
-    fn method() -> RenderMethodContract {
+    fn method(observation_kind: RenderObservationKind) -> RenderMethodContract {
         let output = RenderMethodOutputContract::new(
-            RenderObservationKind::Probe,
+            observation_kind,
             RenderMethodOutputKind::Distance {
                 convention: RenderDistanceConvention::RayDistance,
             },
@@ -715,7 +745,8 @@ mod tests {
         .expect("method")
     }
 
-    fn plan_with_two_surface_representations() -> (RenderPlan, RenderRepresentationId, RenderRepresentationId) {
+    fn plan_with_two_surface_representations()
+    -> (RenderPlan, RenderRepresentationId, RenderRepresentationId) {
         let mut store = RenderSceneStore::new();
         let object_id = store.allocate_object_id().expect("object id");
         let mut insert = RenderSceneUpdate::new();
@@ -752,9 +783,49 @@ mod tests {
         attach.replace_participation(object_id, participation);
         store.commit(attach).expect("attach");
 
-        let plan = plan_render(&store.snapshot(), &scalar_distance_request(), &[method()])
-            .expect("plan");
+        let plan = plan_render(
+            &store.snapshot(),
+            &scalar_distance_request(),
+            &[method(RenderObservationKind::Probe)],
+        )
+        .expect("plan");
         (plan, first_id, second_id)
+    }
+
+    fn lattice_plan(width: u32, height: u32) -> RenderPlan {
+        let mut store = RenderSceneStore::new();
+        let object_id = store.allocate_object_id().expect("object id");
+        let mut insert = RenderSceneUpdate::new();
+        insert.insert_with_state(object_id, object_state());
+        store.commit(insert).expect("insert");
+
+        let representation_id = store
+            .allocate_representation_id(object_id)
+            .expect("representation id");
+        let representation = RenderRepresentationRecord::new(
+            representation_id,
+            RenderSpatialCoverage::unbounded(),
+            RenderTemporalSupport::unbounded(),
+            RenderRefinementEvidence::none(),
+            Some(
+                RenderSurfaceProtocolEvidence::exact(RENDER_SURFACE_QUERY_PROTOCOL_REVISION)
+                    .expect("surface evidence"),
+            ),
+            None,
+        )
+        .expect("representation");
+        let participation =
+            RenderObjectParticipation::new(vec![representation], None, None).expect("participation");
+        let mut attach = RenderSceneUpdate::new();
+        attach.replace_participation(object_id, participation);
+        store.commit(attach).expect("attach");
+
+        plan_render(
+            &store.snapshot(),
+            &lattice_distance_request(width, height),
+            &[method(RenderObservationKind::Perspective)],
+        )
+        .expect("plan")
     }
 
     fn available_execution() -> CurrentExecutionFacts {
@@ -777,13 +848,9 @@ mod tests {
         )
         .expect("common");
         let usages = GpuBufferUsages::new(&label, [GpuBufferUsage::Storage]).expect("usages");
-        let descriptor = GpuBufferDescriptor::new(
-            common,
-            16,
-            usages,
-            GpuBufferInitialization::Uninitialized,
-        )
-        .expect("descriptor");
+        let descriptor =
+            GpuBufferDescriptor::new(common, 16, usages, GpuBufferInitialization::Uninitialized)
+                .expect("descriptor");
         let mut allocator = GpuWorkResourceIdAllocator::new();
         let buffer = allocator
             .allocate_buffer_handle(descriptor)
@@ -830,7 +897,8 @@ mod tests {
     fn availability_is_invocation_scoped_and_order_independent() {
         let (plan, first_id, second_id) = plan_with_two_surface_representations();
         let before = plan.scene_revision();
-        let bindings = normalize_output_bindings(&plan, &[scalar_buffer_binding()]).expect("bindings");
+        let bindings =
+            normalize_output_bindings(&plan, &[scalar_buffer_binding()]).expect("bindings");
         let first_order = normalize_availability(&[
             RenderRepresentationAvailabilityFact::new(
                 first_id,
@@ -881,7 +949,8 @@ mod tests {
     #[test]
     fn unavailable_is_not_unsupported_and_unknown_is_explicit() {
         let (plan, first_id, second_id) = plan_with_two_surface_representations();
-        let bindings = normalize_output_bindings(&plan, &[scalar_buffer_binding()]).expect("bindings");
+        let bindings =
+            normalize_output_bindings(&plan, &[scalar_buffer_binding()]).expect("bindings");
         let unavailable = normalize_availability(&[
             RenderRepresentationAvailabilityFact::new(
                 first_id,
@@ -968,32 +1037,59 @@ mod tests {
         current.compute_enabled = false;
         assert_eq!(
             validate_current_execution(candidate, current),
-            Err(RenderCandidateAdmissionRejectionReason::RequiredCapabilityNotEnabled {
-                feature: GpuCapabilityFeature::Compute,
-            })
+            Err(
+                RenderCandidateAdmissionRejectionReason::RequiredCapabilityNotEnabled {
+                    feature: GpuCapabilityFeature::Compute,
+                }
+            )
         );
 
         let mut current = available_execution();
         current.lifecycle = GpuExecutionLifecycleState::ShuttingDown;
         assert_eq!(
             validate_current_execution(candidate, current),
-            Err(RenderCandidateAdmissionRejectionReason::ExecutionLifecycle {
-                state: GpuExecutionLifecycleState::ShuttingDown,
-            })
+            Err(
+                RenderCandidateAdmissionRejectionReason::ExecutionLifecycle {
+                    state: GpuExecutionLifecycleState::ShuttingDown,
+                }
+            )
         );
     }
 
     #[test]
-    fn lattice_texture_validation_is_structural_not_semantic_format_mapping() {
-        // This helper proves the physical texture facts are independent from R2 semantic value
-        // meaning. R5 does not interpret R8/R32/depth channels as renderer semantics.
-        let texture = lattice_texture(4, 3, true);
-        assert_eq!(texture.descriptor().format(), GpuTextureFormat::R8Unorm);
-        assert_eq!(texture.descriptor().extent().width(), 4);
-        assert_eq!(texture.descriptor().extent().height(), 3);
-        assert!(texture
-            .descriptor()
-            .usages()
-            .contains(GpuTextureUsage::CopyDestination));
+    fn lattice_binding_validation_uses_topology_extent_and_writability_not_semantic_format() {
+        let plan = lattice_plan(4, 3);
+        let valid = RenderOutputBinding::new(
+            0,
+            RenderOutputDestination::SampleLatticeTexture(lattice_texture(4, 3, true)),
+        );
+        normalize_output_bindings(&plan, &[valid]).expect("matching writable lattice binding");
+
+        let wrong_extent = RenderOutputBinding::new(
+            0,
+            RenderOutputDestination::SampleLatticeTexture(lattice_texture(5, 3, true)),
+        );
+        assert!(matches!(
+            normalize_output_bindings(&plan, &[wrong_extent]),
+            Err(RenderExecutionAdmissionFailure::InvalidInput(
+                RenderAdmissionInputError::LatticeTextureExtent {
+                    output_index: 0,
+                    expected_width: 4,
+                    expected_height: 3,
+                    ..
+                }
+            ))
+        ));
+
+        let not_writable = RenderOutputBinding::new(
+            0,
+            RenderOutputDestination::SampleLatticeTexture(lattice_texture(4, 3, false)),
+        );
+        assert!(matches!(
+            normalize_output_bindings(&plan, &[not_writable]),
+            Err(RenderExecutionAdmissionFailure::InvalidInput(
+                RenderAdmissionInputError::LatticeTextureNotWritable { output_index: 0 }
+            ))
+        ));
     }
 }
