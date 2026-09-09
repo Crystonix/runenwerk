@@ -12,6 +12,7 @@ pub mod inspect;
 pub mod lowering;
 pub mod material_compiler;
 pub mod method;
+pub mod output_result;
 pub mod params;
 pub mod participation;
 pub mod pipelines;
