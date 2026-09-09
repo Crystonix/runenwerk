@@ -276,3 +276,5 @@ Do not put completed phase evidence here.
 Do not use design documents as roadmaps.
 
 Do not leave accepted designs mixed with active design drafts.
+
+Do not create one giant design document for unrelated domains.
