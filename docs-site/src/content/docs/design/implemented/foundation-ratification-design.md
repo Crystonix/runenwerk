@@ -1,16 +1,22 @@
 ---
 title: Foundation Ratification Design
 description: Reusable candidate acceptance-report vocabulary for generated, projected, imported, migrated, or externally supplied state.
-status: active
+status: implemented
 owner: foundation
 layer: foundation
 canonical: true
-last_reviewed: 2026-04-27
+last_reviewed: 2026-09-09
 related_adrs:
   - ../../adr/accepted/0003-ratification-is-domain-specific.md
 ---
 
 # `foundation/ratification` Design
+
+## Implementation status
+
+This design is implemented and has been checked against the current `foundation/ratification` public surface and crate documentation. The crate owns `RatificationStatus`, `RatificationSeverity`, `RatificationIssue`, `RatificationReport`, `Ratifier`, and the optional diagnostics bridge described here while preserving the foundation/domain/editor ownership split.
+
+Some API spellings in the older design sections below were explicitly directional rather than exact commitments. Current code and `foundation/ratification/README.md` own the exact API. In particular, the landed `Ratifier<Candidate>` uses `Code` and `Subject` associated types without a separate `Context` associated type, and the landed report helpers use names such as `from_issue`, `from_issues`, `push`, `has_blocking_issues`, and `is_fatal` rather than every candidate helper name listed in the original proposal. These are naming/surface refinements, not ownership or semantic divergence.
 
 ## Purpose
 
@@ -691,7 +697,7 @@ Evaluate whether editor_core governance wants optional precondition reports, wit
 
 ## Phase 5 Evaluation Outcome
 
-Phase 5 is closed by `foundation-ratification-phase5-evaluation.md`.
+Phase 5 is closed by [Foundation Ratification Phase 5 Evaluation](../../reports/closeouts/foundation-ratification-phase5-evaluation.md).
 
 Outcome:
 

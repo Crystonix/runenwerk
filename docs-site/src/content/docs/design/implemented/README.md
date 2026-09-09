@@ -5,7 +5,7 @@ status: active
 owner: workspace
 layer: workspace
 canonical: true
-last_reviewed: 2026-05-16
+last_reviewed: 2026-09-09
 ---
 
 # Implemented Designs
@@ -20,6 +20,7 @@ checked against code, tests, closeout evidence, and known drift.
 ### Foundation
 
 - [Foundation Commands](foundation-commands-design.md)
+- [Foundation Ratification](foundation-ratification-design.md)
 - [Foundation Schema](foundation-schema-design.md)
 - [Foundation Vocabulary Crates](foundation-vocabulary-crates-design.md)
 

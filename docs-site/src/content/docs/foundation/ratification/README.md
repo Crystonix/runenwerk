@@ -5,10 +5,10 @@ status: active
 owner: foundation
 layer: foundation
 canonical: true
-last_reviewed: 2026-05-05
+last_reviewed: 2026-09-09
 related:
-  - ../../design/active/foundation-ratification-design.md
-  - ../../design/active/foundation-ratification-phase5-evaluation.md
+  - ../../design/implemented/foundation-ratification-design.md
+  - ../../reports/closeouts/foundation-ratification-phase5-evaluation.md
 ---
 
 # Ratification

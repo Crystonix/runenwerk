@@ -1,12 +1,16 @@
 ---
 title: Foundation Ratification Phase 5 Evaluation
 description: Evaluation outcome for editor_core governance precondition reports and diagnostics completion before schema work.
-status: active
+status: completed
 owner: foundation
-layer: foundation
+layer: reports
 canonical: true
-last_reviewed: 2026-04-28
+last_reviewed: 2026-09-09
 related_adrs: []
+related_docs:
+  - ../../design/implemented/foundation-ratification-design.md
+  - ../../foundation/ratification/README.md
+  - ../../design/implemented/foundation-schema-design.md
 ---
 
 # Foundation Ratification Phase 5 Evaluation

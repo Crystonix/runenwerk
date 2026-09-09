@@ -5,7 +5,7 @@ status: active
 owner: workspace
 layer: workspace
 canonical: true
-last_reviewed: 2026-04-29
+last_reviewed: 2026-09-09
 ---
 
 # Design Documents
@@ -46,7 +46,6 @@ Index:
 Examples:
 
 ```text
-active/foundation-ratification-design.md
 active/editor-ui-workspace-tool-surface-architecture.md
 active/workspace-viewport-expression-upgrade-design.md
 ```
@@ -97,6 +96,12 @@ A design belongs here only when the implementation exists, tests pass, and any k
 Index:
 
 - [`implemented/README.md`](implemented/README.md)
+
+Examples:
+
+```text
+implemented/foundation-ratification-design.md
+```
 
 ## `rejected/`
 

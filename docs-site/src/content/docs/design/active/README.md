@@ -5,7 +5,7 @@ status: active
 owner: workspace
 layer: workspace
 canonical: true
-last_reviewed: 2026-08-25
+last_reviewed: 2026-09-09
 ---
 
 # Active Designs
@@ -36,11 +36,6 @@ active design contains older conflicting target language.
 - [Runenwerk Domain Workbench North Star Compatibility Pointer](runenwerk-domain-workbench-north-star.md) — noncanonical path-stable pointer used only by two legacy UI design consumers pending the separate RunenUI legacy/adoption cleanup under #205. Do not add new references.
 
 ## Current Designs
-
-### Foundation
-
-- [Foundation Ratification Phase 5 Evaluation](foundation-ratification-phase5-evaluation.md)
-- [Foundation Ratification](foundation-ratification-design.md)
 
 ### Editor Domain
 
