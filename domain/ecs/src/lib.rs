@@ -37,8 +37,6 @@ pub use system::{
 };
 pub use world::{
     ChangeExtractionFilter, ChangeExtractionWindow, ComponentChangeKind, ComponentChangeRecord,
-    ComponentStructuralDelta, ComponentTypeKey, EntityMut, EntityRef, Mut, OwnerId, OwnerRole,
-    OwnerState, OwnershipTarget, OwnershipTransferRecord, ResourceChangeKind, ResourceChangeRecord,
-    ResourceOwnerKey, ResourceOwnershipDescriptor, ResourceStructuralDelta, ResourceTypeKey,
-    StructuralDeltaBatch, World,
+    ComponentStructuralDelta, ComponentTypeKey, EntityMut, EntityRef, Mut, ResourceChangeKind,
+    ResourceChangeRecord, ResourceStructuralDelta, ResourceTypeKey, StructuralDeltaBatch, World,
 };
