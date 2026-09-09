@@ -499,6 +499,11 @@ fn evaluate_representation_use(
                 .surface_query_protocol(revision)
                 .map_err(protocol_rejection)?;
         }
+        RenderRepresentationProtocolRequirement::OrientedSurfaceQuery { revision } => {
+            representation
+                .oriented_surface_query_protocol(revision)
+                .map_err(protocol_rejection)?;
+        }
         RenderRepresentationProtocolRequirement::FieldDistance { revision, input } => {
             let evidence = representation
                 .field_distance_protocol(revision)
@@ -660,8 +665,9 @@ mod tests {
         RenderMaterialAssignment, RenderObjectParticipation,
     };
     use crate::plugins::render::representation::{
-        RENDER_FIELD_DISTANCE_PROTOCOL_REVISION, RENDER_SURFACE_QUERY_PROTOCOL_REVISION,
-        RenderFieldDistanceGuarantee, RenderFieldDistanceProtocolEvidence,
+        RENDER_FIELD_DISTANCE_PROTOCOL_REVISION, RENDER_ORIENTED_SURFACE_QUERY_PROTOCOL_REVISION,
+        RENDER_SURFACE_QUERY_PROTOCOL_REVISION, RenderFieldDistanceGuarantee,
+        RenderFieldDistanceProtocolEvidence, RenderOrientedSurfaceProtocolEvidence,
         RenderRefinementEvidence, RenderRepresentationRecord, RenderSurfaceProtocolEvidence,
     };
     use crate::plugins::render::request::{
@@ -800,6 +806,20 @@ mod tests {
         .expect("surface requirement")
     }
 
+    fn oriented_surface_requirement() -> RenderMethodRepresentationRequirement {
+        oriented_surface_requirement_revision(RENDER_ORIENTED_SURFACE_QUERY_PROTOCOL_REVISION)
+    }
+
+    fn oriented_surface_requirement_revision(
+        revision: u32,
+    ) -> RenderMethodRepresentationRequirement {
+        RenderMethodRepresentationRequirement::new(
+            RenderRepresentationProtocolRequirement::OrientedSurfaceQuery { revision },
+            None,
+        )
+        .expect("oriented surface requirement")
+    }
+
     fn field_requirement_exact(refinement: Option<f64>) -> RenderMethodRepresentationRequirement {
         RenderMethodRepresentationRequirement::new(
             RenderRepresentationProtocolRequirement::FieldDistance {
@@ -903,6 +923,33 @@ mod tests {
         .expect("surface representation")
     }
 
+    fn oriented_surface_representation(
+        store: &mut RenderSceneStore,
+        object_id: RenderObjectId,
+        surface_revision: u32,
+        oriented_revision: u32,
+        temporal_support: RenderTemporalSupport,
+        refinement: RenderRefinementEvidence,
+    ) -> RenderRepresentationRecord {
+        let id = store
+            .allocate_representation_id(object_id)
+            .expect("representation id");
+        let oriented = RenderOrientedSurfaceProtocolEvidence::exact(oriented_revision)
+            .expect("oriented surface protocol");
+        let surface = RenderSurfaceProtocolEvidence::exact(surface_revision)
+            .expect("surface protocol")
+            .with_oriented_surface(oriented);
+        RenderRepresentationRecord::new(
+            id,
+            RenderSpatialCoverage::unbounded(),
+            temporal_support,
+            refinement,
+            Some(surface),
+            None,
+        )
+        .expect("oriented surface representation")
+    }
+
     fn field_representation(
         store: &mut RenderSceneStore,
         object_id: RenderObjectId,
@@ -939,6 +986,26 @@ mod tests {
             store,
             object_id,
             revision,
+            temporal_support,
+            RenderRefinementEvidence::none(),
+        );
+        attach(store, object_id, vec![representation], with_material);
+        object_id
+    }
+
+    fn insert_oriented_surface(
+        store: &mut RenderSceneStore,
+        surface_revision: u32,
+        oriented_revision: u32,
+        temporal_support: RenderTemporalSupport,
+        with_material: bool,
+    ) -> RenderObjectId {
+        let object_id = insert_object(store, RenderTemporalSupport::unbounded());
+        let representation = oriented_surface_representation(
+            store,
+            object_id,
+            surface_revision,
+            oriented_revision,
             temporal_support,
             RenderRefinementEvidence::none(),
         );
@@ -1096,6 +1163,91 @@ mod tests {
         assert_eq!(
             objects[1].uses()[0].requirement().protocol().protocol(),
             RenderRepresentationProtocol::FieldDistance
+        );
+    }
+
+    #[test]
+    fn oriented_surface_requirement_rejects_plain_surface_and_accepts_compatible_evidence() {
+        let request = distance_request(RenderSemanticTolerance::exact(), instant(0.0));
+        let oriented_method = method(
+            1,
+            vec![probe_distance_contract(
+                RenderMethodOutputGuarantee::Exact,
+                vec![oriented_surface_requirement()],
+            )],
+        );
+
+        let mut plain_store = RenderSceneStore::new();
+        insert_surface_only(
+            &mut plain_store,
+            RENDER_SURFACE_QUERY_PROTOCOL_REVISION,
+            RenderTemporalSupport::unbounded(),
+            false,
+        );
+        let unsupported = plan_render(
+            &plain_store.snapshot(),
+            &request,
+            std::slice::from_ref(&oriented_method),
+        )
+        .expect_err("plain surface evidence must not imply oriented surface support");
+        assert_eq!(
+            only_requirement_reason(unsupported),
+            RenderRepresentationRejectionReason::ProtocolUnsupported {
+                protocol: RenderRepresentationProtocol::OrientedSurfaceQuery,
+            }
+        );
+
+        let mut oriented_store = RenderSceneStore::new();
+        insert_oriented_surface(
+            &mut oriented_store,
+            RENDER_SURFACE_QUERY_PROTOCOL_REVISION,
+            RENDER_ORIENTED_SURFACE_QUERY_PROTOCOL_REVISION,
+            RenderTemporalSupport::unbounded(),
+            false,
+        );
+        let plan = plan_render(
+            &oriented_store.snapshot(),
+            &request,
+            std::slice::from_ref(&oriented_method),
+        )
+        .expect("compatible oriented evidence should use the ordinary R4 planning path");
+        assert_eq!(
+            plan.candidates()[0].outputs()[0].object_representations()[0].uses()[0]
+                .requirement()
+                .protocol()
+                .protocol(),
+            RenderRepresentationProtocol::OrientedSurfaceQuery
+        );
+
+        let mut mismatch_store = RenderSceneStore::new();
+        insert_oriented_surface(
+            &mut mismatch_store,
+            RENDER_SURFACE_QUERY_PROTOCOL_REVISION,
+            RENDER_ORIENTED_SURFACE_QUERY_PROTOCOL_REVISION + 1,
+            RenderTemporalSupport::unbounded(),
+            false,
+        );
+        let mismatch = plan_render(
+            &mismatch_store.snapshot(),
+            &request,
+            &[method(
+                1,
+                vec![probe_distance_contract(
+                    RenderMethodOutputGuarantee::Exact,
+                    vec![oriented_surface_requirement_revision(
+                        RENDER_ORIENTED_SURFACE_QUERY_PROTOCOL_REVISION,
+                    )],
+                )],
+            )],
+        )
+        .expect_err("oriented protocol revision must match exactly");
+        assert_eq!(
+            only_requirement_reason(mismatch),
+            RenderRepresentationRejectionReason::ProtocolVersionMismatch {
+                protocol: RenderRepresentationProtocol::OrientedSurfaceQuery,
+                requested_revision: RENDER_ORIENTED_SURFACE_QUERY_PROTOCOL_REVISION,
+                supported_revision: RENDER_ORIENTED_SURFACE_QUERY_PROTOCOL_REVISION + 1,
+            }
         );
     }
 
@@ -1612,9 +1764,10 @@ mod tests {
     #[test]
     fn asymmetric_r6_observation_output_shape_is_representable() {
         let mut store = RenderSceneStore::new();
-        insert_surface_only(
+        insert_oriented_surface(
             &mut store,
             RENDER_SURFACE_QUERY_PROTOCOL_REVISION,
+            RENDER_ORIENTED_SURFACE_QUERY_PROTOCOL_REVISION,
             RenderTemporalSupport::unbounded(),
             true,
         );
@@ -1625,7 +1778,7 @@ mod tests {
                 RenderObservationKind::Perspective,
                 RenderMethodOutputKind::Radiance { spectral },
                 RenderMethodOutputGuarantee::Exact,
-                vec![surface_requirement()],
+                vec![oriented_surface_requirement()],
                 true,
             )
             .expect("perspective radiance"),
@@ -1651,7 +1804,7 @@ mod tests {
                 RenderObservationKind::Probe,
                 RenderMethodOutputKind::Radiance { spectral },
                 RenderMethodOutputGuarantee::Exact,
-                vec![surface_requirement()],
+                vec![oriented_surface_requirement()],
                 true,
             )
             .expect("probe radiance"),
@@ -1722,7 +1875,36 @@ mod tests {
         .expect("R6-shaped request");
         let plan = plan_render(&store.snapshot(), &request, &[method(1, outputs)])
             .expect("asymmetric observation/output relation is representable");
-        assert_eq!(plan.candidates()[0].outputs().len(), 4);
+        let planned = plan.candidates()[0].outputs();
+        assert_eq!(planned.len(), 4);
+        assert_eq!(
+            planned[0].object_representations()[0].uses()[0]
+                .requirement()
+                .protocol()
+                .protocol(),
+            RenderRepresentationProtocol::OrientedSurfaceQuery
+        );
+        assert_eq!(
+            planned[1].object_representations()[0].uses()[0]
+                .requirement()
+                .protocol()
+                .protocol(),
+            RenderRepresentationProtocol::SurfaceQuery
+        );
+        assert_eq!(
+            planned[2].object_representations()[0].uses()[0]
+                .requirement()
+                .protocol()
+                .protocol(),
+            RenderRepresentationProtocol::SurfaceQuery
+        );
+        assert_eq!(
+            planned[3].object_representations()[0].uses()[0]
+                .requirement()
+                .protocol()
+                .protocol(),
+            RenderRepresentationProtocol::OrientedSurfaceQuery
+        );
     }
 
     #[test]

@@ -193,6 +193,9 @@ pub enum RenderRepresentationProtocolRequirement {
     SurfaceQuery {
         revision: u32,
     },
+    OrientedSurfaceQuery {
+        revision: u32,
+    },
     FieldDistance {
         revision: u32,
         input: RenderFieldDistanceInputRequirement,
@@ -202,13 +205,16 @@ pub enum RenderRepresentationProtocolRequirement {
 impl RenderRepresentationProtocolRequirement {
     pub const fn revision(self) -> u32 {
         match self {
-            Self::SurfaceQuery { revision } | Self::FieldDistance { revision, .. } => revision,
+            Self::SurfaceQuery { revision }
+            | Self::OrientedSurfaceQuery { revision }
+            | Self::FieldDistance { revision, .. } => revision,
         }
     }
 
     pub const fn protocol(self) -> RenderRepresentationProtocol {
         match self {
             Self::SurfaceQuery { .. } => RenderRepresentationProtocol::SurfaceQuery,
+            Self::OrientedSurfaceQuery { .. } => RenderRepresentationProtocol::OrientedSurfaceQuery,
             Self::FieldDistance { .. } => RenderRepresentationProtocol::FieldDistance,
         }
     }
@@ -216,7 +222,8 @@ impl RenderRepresentationProtocolRequirement {
     const fn sort_key(self) -> u8 {
         match self {
             Self::SurfaceQuery { .. } => 0,
-            Self::FieldDistance { .. } => 1,
+            Self::OrientedSurfaceQuery { .. } => 1,
+            Self::FieldDistance { .. } => 2,
         }
     }
 }
@@ -478,7 +485,8 @@ impl Error for RenderMethodValidationError {}
 mod tests {
     use super::*;
     use crate::plugins::render::representation::{
-        RENDER_FIELD_DISTANCE_PROTOCOL_REVISION, RENDER_SURFACE_QUERY_PROTOCOL_REVISION,
+        RENDER_FIELD_DISTANCE_PROTOCOL_REVISION, RENDER_ORIENTED_SURFACE_QUERY_PROTOCOL_REVISION,
+        RENDER_SURFACE_QUERY_PROTOCOL_REVISION,
     };
 
     fn surface_requirement() -> RenderMethodRepresentationRequirement {
@@ -489,6 +497,16 @@ mod tests {
             None,
         )
         .expect("surface requirement")
+    }
+
+    fn oriented_surface_requirement() -> RenderMethodRepresentationRequirement {
+        RenderMethodRepresentationRequirement::new(
+            RenderRepresentationProtocolRequirement::OrientedSurfaceQuery {
+                revision: RENDER_ORIENTED_SURFACE_QUERY_PROTOCOL_REVISION,
+            },
+            None,
+        )
+        .expect("oriented surface requirement")
     }
 
     fn field_requirement() -> RenderMethodRepresentationRequirement {
@@ -513,7 +531,11 @@ mod tests {
                 convention: RenderDistanceConvention::RayDistance,
             },
             RenderMethodOutputGuarantee::Exact,
-            vec![field_requirement(), surface_requirement()],
+            vec![
+                field_requirement(),
+                oriented_surface_requirement(),
+                surface_requirement(),
+            ],
             false,
         )
         .expect("distance output contract");
@@ -547,7 +569,7 @@ mod tests {
             perspective.observation_kind(),
             RenderObservationKind::Perspective
         );
-        assert_eq!(perspective.representation_requirements().len(), 2);
+        assert_eq!(perspective.representation_requirements().len(), 3);
         assert_eq!(
             perspective.representation_requirements()[0]
                 .protocol()
@@ -556,6 +578,12 @@ mod tests {
         );
         assert_eq!(
             perspective.representation_requirements()[1]
+                .protocol()
+                .protocol(),
+            RenderRepresentationProtocol::OrientedSurfaceQuery
+        );
+        assert_eq!(
+            perspective.representation_requirements()[2]
                 .protocol()
                 .protocol(),
             RenderRepresentationProtocol::FieldDistance

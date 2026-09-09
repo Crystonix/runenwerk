@@ -14,6 +14,7 @@ use std::fmt;
 use std::num::NonZeroU64;
 
 pub const RENDER_SURFACE_QUERY_PROTOCOL_REVISION: u32 = 1;
+pub const RENDER_ORIENTED_SURFACE_QUERY_PROTOCOL_REVISION: u32 = 1;
 pub const RENDER_FIELD_DISTANCE_PROTOCOL_REVISION: u32 = 1;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -33,6 +34,7 @@ impl RenderRepresentationId {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum RenderRepresentationProtocol {
     SurfaceQuery,
+    OrientedSurfaceQuery,
     FieldDistance,
 }
 
@@ -76,6 +78,7 @@ pub enum RenderRepresentationValidationError {
     NegativeErrorBound,
     ZeroQueryDirection,
     NegativeSurfaceHitDistance,
+    ZeroSurfaceNormal,
     ExactFieldSampleHasError,
     FieldSampleExceedsDeclaredError,
 }
@@ -99,6 +102,9 @@ impl fmt::Display for RenderRepresentationValidationError {
             Self::NegativeSurfaceHitDistance => {
                 write!(f, "surface-hit distance must be non-negative")
             }
+            Self::ZeroSurfaceNormal => {
+                write!(f, "oriented surface geometric normal must be non-zero")
+            }
             Self::ExactFieldSampleHasError => {
                 write!(
                     f,
@@ -117,12 +123,18 @@ impl fmt::Display for RenderRepresentationValidationError {
 
 impl Error for RenderRepresentationValidationError {}
 
+/// Exact oriented-surface query evidence.
+///
+/// The oriented protocol refines exact surface-query semantics with one representation-defined
+/// geometric front-side normal in canonical scene coordinates. Because every oriented result
+/// contains a valid exact surface hit, oriented capability is advertised through the corresponding
+/// surface evidence rather than as an unrelated representation-family field.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct RenderSurfaceProtocolEvidence {
+pub struct RenderOrientedSurfaceProtocolEvidence {
     revision: u32,
 }
 
-impl RenderSurfaceProtocolEvidence {
+impl RenderOrientedSurfaceProtocolEvidence {
     pub fn exact(revision: u32) -> Result<Self, RenderRepresentationValidationError> {
         validate_protocol_revision(revision)?;
         Ok(Self { revision })
@@ -130,6 +142,38 @@ impl RenderSurfaceProtocolEvidence {
 
     pub const fn revision(self) -> u32 {
         self.revision
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct RenderSurfaceProtocolEvidence {
+    revision: u32,
+    oriented_surface: Option<RenderOrientedSurfaceProtocolEvidence>,
+}
+
+impl RenderSurfaceProtocolEvidence {
+    pub fn exact(revision: u32) -> Result<Self, RenderRepresentationValidationError> {
+        validate_protocol_revision(revision)?;
+        Ok(Self {
+            revision,
+            oriented_surface: None,
+        })
+    }
+
+    pub const fn with_oriented_surface(
+        mut self,
+        evidence: RenderOrientedSurfaceProtocolEvidence,
+    ) -> Self {
+        self.oriented_surface = Some(evidence);
+        self
+    }
+
+    pub const fn revision(self) -> u32 {
+        self.revision
+    }
+
+    pub const fn oriented_surface(self) -> Option<RenderOrientedSurfaceProtocolEvidence> {
+        self.oriented_surface
     }
 }
 
@@ -342,6 +386,24 @@ impl RenderRepresentationRecord {
             })?;
         require_revision(
             RenderRepresentationProtocol::SurfaceQuery,
+            requested_revision,
+            evidence.revision(),
+        )?;
+        Ok(evidence)
+    }
+
+    pub fn oriented_surface_query_protocol(
+        &self,
+        requested_revision: u32,
+    ) -> Result<RenderOrientedSurfaceProtocolEvidence, RenderProtocolCompatibilityError> {
+        let evidence = self
+            .surface_query
+            .and_then(RenderSurfaceProtocolEvidence::oriented_surface)
+            .ok_or(RenderProtocolCompatibilityError::Unsupported {
+                protocol: RenderRepresentationProtocol::OrientedSurfaceQuery,
+            })?;
+        require_revision(
+            RenderRepresentationProtocol::OrientedSurfaceQuery,
             requested_revision,
             evidence.revision(),
         )?;
@@ -716,6 +778,51 @@ mod tests {
         let hit = result.hit().expect("surface should hit");
         assert_eq!(hit.distance_meters(), 2.0);
         assert_eq!(hit.position_scene_meters(), [0.0, 0.0, 1.0]);
+    }
+
+    #[test]
+    fn oriented_surface_protocol_refines_but_is_not_implied_by_plain_surface_query() {
+        let plain = representation(
+            1,
+            Some(
+                RenderSurfaceProtocolEvidence::exact(RENDER_SURFACE_QUERY_PROTOCOL_REVISION)
+                    .expect("plain surface protocol"),
+            ),
+            None,
+        );
+        assert_eq!(
+            plain.oriented_surface_query_protocol(RENDER_ORIENTED_SURFACE_QUERY_PROTOCOL_REVISION),
+            Err(RenderProtocolCompatibilityError::Unsupported {
+                protocol: RenderRepresentationProtocol::OrientedSurfaceQuery,
+            })
+        );
+
+        let oriented = RenderOrientedSurfaceProtocolEvidence::exact(
+            RENDER_ORIENTED_SURFACE_QUERY_PROTOCOL_REVISION,
+        )
+        .expect("oriented surface protocol");
+        let surface = RenderSurfaceProtocolEvidence::exact(RENDER_SURFACE_QUERY_PROTOCOL_REVISION)
+            .expect("surface protocol")
+            .with_oriented_surface(oriented);
+        let record = representation(2, Some(surface), None);
+        assert_eq!(
+            record.surface_query_protocol(RENDER_SURFACE_QUERY_PROTOCOL_REVISION),
+            Ok(surface)
+        );
+        assert_eq!(
+            record.oriented_surface_query_protocol(RENDER_ORIENTED_SURFACE_QUERY_PROTOCOL_REVISION),
+            Ok(oriented)
+        );
+        assert_eq!(
+            record.oriented_surface_query_protocol(
+                RENDER_ORIENTED_SURFACE_QUERY_PROTOCOL_REVISION + 1,
+            ),
+            Err(RenderProtocolCompatibilityError::VersionMismatch {
+                protocol: RenderRepresentationProtocol::OrientedSurfaceQuery,
+                requested_revision: RENDER_ORIENTED_SURFACE_QUERY_PROTOCOL_REVISION + 1,
+                supported_revision: RENDER_ORIENTED_SURFACE_QUERY_PROTOCOL_REVISION,
+            })
+        );
     }
 
     #[test]
