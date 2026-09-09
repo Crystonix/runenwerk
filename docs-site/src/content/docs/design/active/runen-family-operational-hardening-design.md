@@ -11,7 +11,7 @@ related_docs:
   - ../../adr/accepted/0015-separate-gpu-execution-from-rendering.md
   - ./runengpu-architecture-design.md
   - ./runengpu-g3-access-work-graph-design.md
-  - ./runenrender-decomposition-design.md
+  - ../accepted/runenrender-decomposition-design.md
   - ./runenrender-internal-decomposition-execution-plan.md
   - ../../reports/investigations/runengpu-industry-comparison.md
   - ../../reports/investigations/runengpu-runenrender-application-domain-fit.md
