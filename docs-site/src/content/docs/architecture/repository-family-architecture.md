@@ -19,7 +19,7 @@ related_docs:
   - ../design/accepted/runenecs-extraction-boundary-design.md
   - ../design/active/runengpu-architecture-design.md
   - ../design/active/runengpu-g4-context-program-realization-design.md
-  - ../design/active/runenrender-decomposition-design.md
+  - ../design/accepted/runenrender-decomposition-design.md
   - ../design/active/runenrender-internal-decomposition-execution-plan.md
   - ../design/active/runen-family-operational-hardening-design.md
   - ../workspace/specs/pt-runengpu-g4a-context-admission.ron
