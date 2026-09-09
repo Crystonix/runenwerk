@@ -4,7 +4,6 @@ use super::change_tracking::{
     ResourceMeta,
 };
 use super::component_indexes::{ComponentIndexKey, ComponentIndexStorage};
-use super::ownership::OwnershipRegistry;
 use crate::entity::{Entity, EntityAllocator, WorldScopeId};
 use crate::storage::{ArchetypeRegistry, EntityLocationMap};
 use std::any::{Any, TypeId};
@@ -28,9 +27,6 @@ pub struct World {
     pub(super) next_resource_id: u32,
     pub(super) resources: HashMap<TypeId, Box<dyn Any>>,
     pub(super) resource_type_registry: HashMap<TypeId, ResourceMeta>,
-
-    pub(super) current_frame_index: u64,
-    pub(super) ownership: OwnershipRegistry,
 
     pub(super) component_indexes:
         RefCell<HashMap<ComponentIndexKey, Box<dyn ComponentIndexStorage>>>,
@@ -63,9 +59,6 @@ impl World {
             next_resource_id: 0,
             resources: HashMap::new(),
             resource_type_registry: HashMap::new(),
-
-            current_frame_index: 0,
-            ownership: OwnershipRegistry::default(),
 
             component_indexes: RefCell::new(HashMap::new()),
 

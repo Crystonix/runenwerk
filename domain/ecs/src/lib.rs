@@ -36,9 +36,6 @@ pub use system::{
     SystemConfigExt, SystemId, SystemParam, SystemParamContext, SystemParamError,
 };
 pub use world::{
-    ChangeExtractionFilter, ChangeExtractionWindow, ComponentChangeKind, ComponentChangeRecord,
-    ComponentStructuralDelta, ComponentTypeKey, EntityMut, EntityRef, Mut, OwnerId, OwnerRole,
-    OwnerState, OwnershipTarget, OwnershipTransferRecord, ResourceChangeKind, ResourceChangeRecord,
-    ResourceOwnerKey, ResourceOwnershipDescriptor, ResourceStructuralDelta, ResourceTypeKey,
-    StructuralDeltaBatch, StructuralDeltaRef, World,
+    ComponentChangeKind, ComponentChangeRecord, ComponentTypeKey, EntityMut, EntityRef, Mut,
+    ResourceChangeKind, ResourceChangeRecord, ResourceTypeKey, World,
 };

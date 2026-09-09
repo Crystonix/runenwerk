@@ -5,8 +5,6 @@ use super::super::adapters::resources::{
 use super::super::chunks::lifecycle::WorldChunkRuntimeMapResource;
 use super::super::plugin::WorldAuthorityState;
 use crate::runtime::WorldMut;
-use ecs::{ChangeExtractionFilter, OwnerState, ResourceTypeKey};
-use std::collections::BTreeSet;
 use world_ops::{
     ChunkContentDelta, ChunkHeaderDelta, ChunkResidencyHint, OpWindowDelta, OperationId,
     RegionInvalidationDelta,
@@ -15,57 +13,24 @@ use world_ops::{
 #[derive(Debug, Copy, Clone, Default, ecs::Component, ecs::Resource)]
 pub struct WorldReplicationExtractionCursor {
     pub last_tick: u64,
-    pub last_frame: u64,
+}
+
+fn world_replication_inputs_changed(world: &ecs::World, since_tick: u64) -> bool {
+    world.resource_changed_since::<OperationLogResource>(since_tick)
+        || world.resource_changed_since::<SdfChunkStoreResource>(since_tick)
+        || world.resource_changed_since::<WorldChunkRuntimeMapResource>(since_tick)
+        || world.resource_changed_since::<RegionInvalidationJournalResource>(since_tick)
+        || world.resource_changed_since::<WorldAuthorityState>(since_tick)
 }
 
 pub fn rebuild_world_replication_state_system(mut world: WorldMut) {
     let current_tick = world.current_change_tick();
-    let current_frame = world.current_frame_index();
-
-    let previous_cursor = world
+    let previous_tick = world
         .resource::<WorldReplicationExtractionCursor>()
-        .copied()
+        .map(|cursor| cursor.last_tick)
         .unwrap_or_default();
 
-    let tracked_resource_keys = [
-        world.resource_type_key::<WorldChunkRuntimeMapResource>(),
-        world.resource_type_key::<SdfChunkStoreResource>(),
-        world.resource_type_key::<OperationLogResource>(),
-        world.resource_type_key::<RegionInvalidationJournalResource>(),
-    ]
-    .into_iter()
-    .flatten()
-    .collect::<BTreeSet<_>>();
-
-    let tracked_resource_keys_ref = &tracked_resource_keys;
-    let resource_key_filter = |key: ResourceTypeKey| tracked_resource_keys_ref.contains(&key);
-    let allows_owner =
-        |owner: OwnerState| matches!(owner, OwnerState::Unowned | OwnerState::WorldOwned);
-    let component_ownership_filter =
-        |_: ecs::Entity, owner: OwnerState, _: ecs::ComponentTypeKey| allows_owner(owner);
-    let resource_ownership_filter = |_: ResourceTypeKey, owner: OwnerState| allows_owner(owner);
-
-    let extraction = world.extract_structural_deltas(
-        ecs::ChangeExtractionWindow {
-            tick_start_exclusive: previous_cursor.last_tick,
-            tick_end_inclusive: current_tick,
-            frame_start_exclusive: u64::MAX,
-            frame_end_inclusive: u64::MAX,
-        },
-        ChangeExtractionFilter {
-            component_key_filter: None,
-            resource_key_filter: Some(&resource_key_filter),
-            component_ownership_filter: Some(&component_ownership_filter),
-            resource_ownership_filter: Some(&resource_ownership_filter),
-            interest_filter: None,
-        },
-    );
-
-    if extraction.is_empty() {
-        if let Ok(cursor) = world.resource_mut::<WorldReplicationExtractionCursor>() {
-            cursor.last_tick = current_tick;
-            cursor.last_frame = current_frame;
-        }
+    if !world_replication_inputs_changed(&world, previous_tick) {
         return;
     }
 
@@ -199,6 +164,81 @@ pub fn rebuild_world_replication_state_system(mut world: WorldMut) {
 
     if let Ok(cursor) = world.resource_mut::<WorldReplicationExtractionCursor>() {
         cursor.last_tick = current_tick;
-        cursor.last_frame = current_frame;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[derive(Debug, Copy, Clone, ecs::Component)]
+    struct UnrelatedComponent;
+
+    #[derive(Debug, Copy, Clone, Default, ecs::Resource)]
+    struct UnrelatedResource;
+
+    fn world_with_replication_inputs() -> ecs::World {
+        let mut world = ecs::World::new();
+        world.insert_resource(OperationLogResource::default());
+        world.insert_resource(SdfChunkStoreResource::default());
+        world.insert_resource(WorldChunkRuntimeMapResource::default());
+        world.insert_resource(RegionInvalidationJournalResource::default());
+        world.insert_resource(WorldAuthorityState::default());
+        world
+    }
+
+    #[test]
+    fn dirty_detection_ignores_unrelated_component_and_resource_changes() {
+        let mut world = world_with_replication_inputs();
+        let baseline = world.current_change_tick();
+
+        world
+            .spawn(UnrelatedComponent)
+            .expect("unrelated component should spawn");
+        world.insert_resource(UnrelatedResource);
+
+        assert!(!world_replication_inputs_changed(&world, baseline));
+    }
+
+    #[test]
+    fn dirty_detection_tracks_each_replication_input() {
+        let mut world = world_with_replication_inputs();
+
+        let baseline = world.current_change_tick();
+        let _ = world
+            .resource_mut::<OperationLogResource>()
+            .expect("operation log should exist");
+        assert!(world_replication_inputs_changed(&world, baseline));
+
+        let baseline = world.current_change_tick();
+        let _ = world
+            .resource_mut::<SdfChunkStoreResource>()
+            .expect("SDF chunk store should exist");
+        assert!(world_replication_inputs_changed(&world, baseline));
+
+        let baseline = world.current_change_tick();
+        let _ = world
+            .resource_mut::<WorldChunkRuntimeMapResource>()
+            .expect("world chunk runtime map should exist");
+        assert!(world_replication_inputs_changed(&world, baseline));
+
+        let baseline = world.current_change_tick();
+        let _ = world
+            .resource_mut::<RegionInvalidationJournalResource>()
+            .expect("region invalidation journal should exist");
+        assert!(world_replication_inputs_changed(&world, baseline));
+    }
+
+    #[test]
+    fn dirty_detection_tracks_world_authority_independently() {
+        let mut world = world_with_replication_inputs();
+        let baseline = world.current_change_tick();
+
+        world
+            .resource_mut::<WorldAuthorityState>()
+            .expect("world authority state should exist")
+            .world_revision = world_ops::WorldRevision(7);
+
+        assert!(world_replication_inputs_changed(&world, baseline));
     }
 }

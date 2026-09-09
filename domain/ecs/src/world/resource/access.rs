@@ -136,7 +136,6 @@ impl World {
         self.resource_change_log
             .push(crate::world::change_tracking::ResourceChangeRecord {
                 tick: self.change_tick,
-                frame: self.current_frame_index,
                 resource_type,
                 resource_key,
                 resource_name,

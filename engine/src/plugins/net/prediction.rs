@@ -1,7 +1,7 @@
 use super::*;
 use crate::WorldMut;
 use anyhow::Context;
-use ecs::{OwnerRole, World};
+use ecs::World;
 use engine_net::replication::{InputDriver, ReplicationDriver, SnapshotApplyDriver};
 use engine_net::*;
 use engine_sim::{AuthorityRole, SimulationProfileConfig, SimulationTick};
@@ -21,13 +21,6 @@ fn active_connections(world: &World) -> Vec<ConnectionHandle> {
         .unwrap_or_default();
     connections.sort_by_key(|connection| connection.get());
     connections
-}
-
-fn sole_active_connection(world: &World) -> Option<ConnectionHandle> {
-    let projection = world.resource::<RunenNetSessionProjection>().ok()?;
-    let mut connections = projection.active_connections();
-    let first = connections.next()?;
-    connections.next().is_none().then_some(first)
 }
 
 pub fn replication_step_system<TDriver>(mut world: WorldMut) -> anyhow::Result<()>
@@ -261,12 +254,6 @@ where
         .map_err(|error| map_driver_error::<TDriver>(error, "take local input"))?;
     let mut staged_commands = Vec::with_capacity(commands.len());
     if !commands.is_empty() {
-        if matches!(authority, AuthorityRole::Client | AuthorityRole::Peer)
-            && let Some(connection) = sole_active_connection(&world)
-        {
-            let _ = ensure_owner_for_connection(&mut world, connection, OwnerRole::Active);
-        }
-
         let staging = world.resource_mut::<NetworkInputStaging<TDriver::Input>>()?;
         for command in commands {
             match staging.stage(tick, command.clone()) {

@@ -8,6 +8,8 @@ const SYSTEM_PARAMS_RS: &str = include_str!("../src/system/params.rs");
 const WORLD_MOD_RS: &str = include_str!("../src/world/mod.rs");
 const WORLD_STATE_RS: &str = include_str!("../src/world/state.rs");
 const WORLD_CAPABILITY_RS: &str = include_str!("../src/world/capability.rs");
+const WORLD_RUNTIME_RS: &str = include_str!("../src/world/runtime.rs");
+const CHANGE_TRACKING_RS: &str = include_str!("../src/world/change_tracking.rs");
 const TELEMETRY_RS: &str = include_str!("../src/telemetry.rs");
 const BUNDLE_RS: &str = include_str!("../src/bundle.rs");
 const COMPONENT_ACCESS_RS: &str = include_str!("../src/world/component/access.rs");
@@ -72,6 +74,44 @@ fn c6_messaging_authority_is_absent_from_ecs_surfaces() {
             );
         }
     }
+}
+
+#[test]
+fn c7_ownership_lifecycle_and_structural_extraction_are_absent_from_ecs_surfaces() {
+    const REMOVED: &[&str] = &[
+        "OwnerId",
+        "OwnerRole",
+        "OwnerState",
+        "OwnershipTarget",
+        "OwnershipTransferRecord",
+        "ResourceOwnerKey",
+        "ResourceOwnershipDescriptor",
+        "ChangeExtractionFilter",
+        "ChangeExtractionWindow",
+        "ComponentStructuralDelta",
+        "ResourceStructuralDelta",
+        "StructuralDeltaBatch",
+        "current_frame_index",
+        "advance_change_frame",
+    ];
+
+    for source in [
+        LIB_RS,
+        PRELUDE_RS,
+        WORLD_MOD_RS,
+        WORLD_STATE_RS,
+        WORLD_CAPABILITY_RS,
+        WORLD_RUNTIME_RS,
+    ] {
+        for removed in REMOVED {
+            assert!(
+                !source.contains(removed),
+                "deleted C7 authority leaked through ECS source surface: {removed}"
+            );
+        }
+    }
+
+    assert!(!CHANGE_TRACKING_RS.contains("pub frame:"));
 }
 
 #[test]

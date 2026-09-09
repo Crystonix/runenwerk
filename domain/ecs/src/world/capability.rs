@@ -77,7 +77,6 @@ pub struct QueryCapability<'world> {
     component_type_registry: NonNull<HashMap<TypeId, ComponentMeta>>,
     component_indexes: NonNull<RefCell<HashMap<ComponentIndexKey, Box<dyn ComponentIndexStorage>>>>,
     change_tick: NonNull<u64>,
-    current_frame_index: NonNull<u64>,
     component_change_ticks: NonNull<HashMap<TypeId, u64>>,
     component_change_log: NonNull<Vec<ComponentChangeRecord>>,
     removed_component_records: NonNull<HashMap<TypeId, Vec<RemovedComponentRecord>>>,
@@ -105,7 +104,6 @@ impl<'world> QueryCapability<'world> {
             component_type_registry: NonNull::from(&world.component_type_registry),
             component_indexes: NonNull::from(&world.component_indexes),
             change_tick: NonNull::from(&world.change_tick),
-            current_frame_index: NonNull::from(&world.current_frame_index),
             component_change_ticks: NonNull::from(&world.component_change_ticks),
             component_change_log: NonNull::from(&world.component_change_log),
             removed_component_records: NonNull::from(&world.removed_component_records),
@@ -122,7 +120,6 @@ impl<'world> QueryCapability<'world> {
             component_type_registry: NonNull::from(&mut world.component_type_registry),
             component_indexes: NonNull::from(&mut world.component_indexes),
             change_tick: NonNull::from(&mut world.change_tick),
-            current_frame_index: NonNull::from(&mut world.current_frame_index),
             component_change_ticks: NonNull::from(&mut world.component_change_ticks),
             component_change_log: NonNull::from(&mut world.component_change_log),
             removed_component_records: NonNull::from(&mut world.removed_component_records),
@@ -151,9 +148,6 @@ impl<'world> QueryCapability<'world> {
             },
             change_tick: unsafe {
                 NonNull::new_unchecked(std::ptr::addr_of_mut!((*world_ptr).change_tick))
-            },
-            current_frame_index: unsafe {
-                NonNull::new_unchecked(std::ptr::addr_of_mut!((*world_ptr).current_frame_index))
             },
             component_change_ticks: unsafe {
                 NonNull::new_unchecked(std::ptr::addr_of_mut!((*world_ptr).component_change_ticks))
@@ -337,7 +331,6 @@ impl<'world> QueryCapability<'world> {
                 .as_mut()
                 .push(ComponentChangeRecord {
                     tick,
-                    frame: *self.current_frame_index.as_ptr(),
                     entity,
                     component_type,
                     component_key,
@@ -427,7 +420,6 @@ pub(crate) struct ResourceMutationCapability<'world> {
     next_resource_id: NonNull<u32>,
     resource_type_registry: NonNull<HashMap<TypeId, ResourceMeta>>,
     change_tick: NonNull<u64>,
-    current_frame_index: NonNull<u64>,
     resource_change_ticks: NonNull<HashMap<TypeId, u64>>,
     resource_change_log: NonNull<Vec<ResourceChangeRecord>>,
     _marker: PhantomData<&'world mut World>,
@@ -460,7 +452,6 @@ impl<'world> ResourceMutationCapability<'world> {
                 .as_mut()
                 .push(ResourceChangeRecord {
                     tick,
-                    frame: *self.current_frame_index.as_ptr(),
                     resource_type: type_id,
                     resource_key: key,
                     resource_name: name,
@@ -507,9 +498,6 @@ impl World {
                 },
                 change_tick: unsafe {
                     NonNull::new_unchecked(std::ptr::addr_of_mut!((*world_ptr).change_tick))
-                },
-                current_frame_index: unsafe {
-                    NonNull::new_unchecked(std::ptr::addr_of_mut!((*world_ptr).current_frame_index))
                 },
                 resource_change_ticks: unsafe {
                     NonNull::new_unchecked(std::ptr::addr_of_mut!(
