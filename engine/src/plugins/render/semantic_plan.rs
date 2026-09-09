@@ -12,7 +12,9 @@ use super::representation::{
     RenderFieldDistanceProtocolEvidence, RenderProtocolCompatibilityError, RenderRepresentationId,
     RenderRepresentationProtocol, RenderRepresentationRecord,
 };
-use super::request::{RenderOutputValue, RenderRequest, RenderRequestedOutput, RenderSemanticTolerance};
+use super::request::{
+    RenderOutputValue, RenderRequest, RenderRequestedOutput, RenderSemanticTolerance,
+};
 use super::scene::{RenderObjectId, RenderSceneRevision, RenderSceneSnapshot};
 use super::space_time::{CanonicalF64, RenderTimeInterval};
 use std::error::Error;
@@ -487,10 +489,12 @@ fn validate_refinement(
         return Err(RenderRepresentationRejectionReason::RefinementEvidenceMissing);
     };
     if available > required {
-        return Err(RenderRepresentationRejectionReason::RefinementInsufficient {
-            required_max_error_meters: distance_bound(required),
-            available_finest_error_meters: distance_bound(available),
-        });
+        return Err(
+            RenderRepresentationRejectionReason::RefinementInsufficient {
+                required_max_error_meters: distance_bound(required),
+                available_finest_error_meters: distance_bound(available),
+            },
+        );
     }
     Ok(())
 }
@@ -505,7 +509,9 @@ fn evaluate_field_distance(
     }
     let max_error = guarantee.max_absolute_error_meters();
     validate_distance_approximation(request, max_error)?;
-    Ok(RenderRepresentationApproximation::bounded_distance(max_error))
+    Ok(RenderRepresentationApproximation::bounded_distance(
+        max_error,
+    ))
 }
 
 fn protocol_rejection(
@@ -1201,12 +1207,8 @@ mod tests {
             Vec::new(),
         )
         .expect("method");
-        let failure = plan_render(
-            &store.snapshot(),
-            &request,
-            &[domain_mismatch, unsupported],
-        )
-        .expect_err("neither method may substitute another output meaning");
+        let failure = plan_render(&store.snapshot(), &request, &[domain_mismatch, unsupported])
+            .expect_err("neither method may substitute another output meaning");
         let RenderPlanningFailure::NoSemanticSolution { rejections } = failure else {
             panic!("expected semantic no-solution failure");
         };
