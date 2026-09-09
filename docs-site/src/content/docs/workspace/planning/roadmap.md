@@ -16,7 +16,7 @@ related_docs:
   - ../../design/active/runengpu-architecture-design.md
   - ../../design/active/runengpu-post-g5c-hardening-design.md
   - ../../design/active/runengpu-phase-requirements-proof-matrix.md
-  - ../../design/active/runenrender-decomposition-design.md
+  - ../../design/accepted/runenrender-decomposition-design.md
 ---
 
 # Roadmap
