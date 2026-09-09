@@ -185,7 +185,7 @@ RenderSceneSnapshot
     -> conditional RenderPlan
 
 RenderPlan
-+ current request-scoped semantic bindings declared by the plan, if any
++ current request-scoped semantic bindings for prerequisites declared by the plan, if any
     -> semantic binding admission
 
 semantically admitted candidates
