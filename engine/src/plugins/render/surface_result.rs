@@ -226,12 +226,9 @@ mod tests {
 
     #[test]
     fn oriented_surface_result_reuses_query_consistent_hit_and_canonicalizes_normal() {
-        let result = RenderOrientedSurfaceQueryResult::hit_at_distance(
-            query(),
-            2.0,
-            [0.0, 3.0, 4.0],
-        )
-        .expect("valid oriented hit");
+        let result =
+            RenderOrientedSurfaceQueryResult::hit_at_distance(query(), 2.0, [0.0, 3.0, 4.0])
+                .expect("valid oriented hit");
         let hit = result.hit().expect("oriented hit");
         assert_eq!(hit.surface_hit().distance_meters(), 2.0);
         assert_eq!(hit.surface_hit().position_scene_meters(), [0.0, 0.0, 1.0]);
@@ -240,12 +237,9 @@ mod tests {
 
     #[test]
     fn oriented_surface_normal_is_not_implicitly_flipped_against_query_ray() {
-        let result = RenderOrientedSurfaceQueryResult::hit_at_distance(
-            query(),
-            2.0,
-            [0.0, 0.0, -5.0],
-        )
-        .expect("valid representation-defined orientation");
+        let result =
+            RenderOrientedSurfaceQueryResult::hit_at_distance(query(), 2.0, [0.0, 0.0, -5.0])
+                .expect("valid representation-defined orientation");
         assert_eq!(
             result.hit().expect("oriented hit").geometric_normal_scene(),
             [0.0, 0.0, -1.0]
@@ -259,11 +253,7 @@ mod tests {
             Err(RenderRepresentationValidationError::ZeroSurfaceNormal)
         );
         assert!(matches!(
-            RenderOrientedSurfaceQueryResult::hit_at_distance(
-                query(),
-                2.0,
-                [f64::NAN, 0.0, 1.0]
-            ),
+            RenderOrientedSurfaceQueryResult::hit_at_distance(query(), 2.0, [f64::NAN, 0.0, 1.0]),
             Err(RenderRepresentationValidationError::SemanticValue(
                 RenderSemanticValueError::NonFinite { .. }
             ))
