@@ -442,10 +442,7 @@ fn validate_output_binding(
 ) -> Result<(), RenderExecutionAdmissionFailure> {
     let output_index = binding.output_index();
     let topology = plan.outputs()[output_index].spec().topology();
-    match (
-        topology.sample_lattice_dimensions(),
-        binding.destination(),
-    ) {
+    match (topology.sample_lattice_dimensions(), binding.destination()) {
         (None, RenderOutputDestination::ScalarBuffer(buffer)) if topology.is_scalar() => {
             let usages = buffer.descriptor().usages();
             if !usages.contains(GpuBufferUsage::Storage)
@@ -814,8 +811,8 @@ mod tests {
             None,
         )
         .expect("representation");
-        let participation =
-            RenderObjectParticipation::new(vec![representation], None, None).expect("participation");
+        let participation = RenderObjectParticipation::new(vec![representation], None, None)
+            .expect("participation");
         let mut attach = RenderSceneUpdate::new();
         attach.replace_participation(object_id, participation);
         store.commit(attach).expect("attach");
