@@ -101,9 +101,8 @@ pub struct RenderDerivedSceneDependencies {
 impl RenderDerivedSceneDependencies {
     pub fn new(dependencies: impl IntoIterator<Item = RenderDerivedSceneDependency>) -> Self {
         let mut dependencies = dependencies.into_iter().collect::<Vec<_>>();
-        dependencies.sort_unstable_by_key(|dependency| {
-            (dependency.object_id(), dependency.facet_rank())
-        });
+        dependencies
+            .sort_unstable_by_key(|dependency| (dependency.object_id(), dependency.facet_rank()));
         dependencies.dedup();
         Self { dependencies }
     }
