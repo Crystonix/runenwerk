@@ -12,7 +12,7 @@ related_docs:
   - ./runengpu-g4-context-program-realization-design.md
   - ./runengpu-g4b-contracts-g4c-delivery-design.md
   - ./runengpu-shader-authoring-artifact-boundary.md
-  - ./runenrender-decomposition-design.md
+  - ../accepted/runenrender-decomposition-design.md
   - ./runen-family-operational-hardening-design.md
   - ../../reports/investigations/2026-08-04-runenrender-long-term-capability-and-scalability-review.md
   - ../../reports/investigations/runenrender-extraction-investigation.md
