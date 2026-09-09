@@ -5,7 +5,7 @@ status: active
 owner: workspace
 layer: workspace
 canonical: true
-last_reviewed: 2026-09-08
+last_reviewed: 2026-09-09
 related_docs:
   - ../engineering-workflow.md
   - ../../architecture/runenwerk-platform-architecture.md
@@ -168,7 +168,7 @@ R4  RenderMethod plus conditional device-independent semantic planning
 R5  semantic bindings, binding admission, operational availability/output bindings, and execution admission
 R6  first complete semantic renderer and public RunenGPU lowering
 R7  derived state, reconstruction/history/sessions, multiview/multi-output, and advanced output integration
-R8  generality, scale, conformance, and extraction readiness
+R8  generality, scale, public-surface qualification, conformance, and extraction readiness
 RX  standalone RunenRender transfer and clean cutover
 ```
 

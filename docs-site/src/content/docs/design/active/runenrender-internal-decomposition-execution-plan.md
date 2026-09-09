@@ -107,7 +107,7 @@ Every phase preserves:
 - Runenwerk owns product recovery, compatibility policy, persisted capture/reproducibility
   artifacts, authoring policy, and artifact encoding;
 - proof categories remain separated: correctness, integration, operations, recovery,
-  performance, and showcase;
+  performance, showcase, and public-boundary/usability qualification;
 - each implementation phase migrates consumers of replaced authority and deletes that
   authority in the same accepted slice;
 - exact-head validation and repository CI remain merge evidence.
@@ -477,10 +477,17 @@ device-generation invalidation for realized derived state, compatible continuati
 incompatible-continuation rejection, reconstruction under pressure, and cache-hit
 semantic neutrality.
 
-## R8 — generalization, scale, conformance, and extraction readiness
+Real R7 result, readback, presentation, and continuity consumers may supply pressure for
+the eventual ordinary public API and meaningful visual integration evidence. R7 does not
+freeze that public surface merely because proof machinery exists. Any visual proof must
+remain separate from semantic/GPU correctness evidence, and persisted image or media
+encoding policy remains Runenwerk-owned.
+
+## R8 — generalization, scale, public-surface qualification, conformance, and extraction readiness
 
 R8 validates the architecture rather than inventing new foundations merely to satisfy a
-matrix.
+matrix. It also qualifies the future standalone Rust surface from real R7 consumer
+pressure rather than promoting proof-private R6 machinery by default.
 
 Required evidence includes:
 
@@ -505,7 +512,46 @@ Required evidence includes:
 - public RunenGPU-only physical lowering and no private reach-through;
 - simpler direct renderer comparison for representative proof;
 - exact provenance/reproducibility evidence;
+- a curated future standalone public export surface rather than a copy of the current
+  mixed `engine::plugins::render` module tree or proof-only implementation vocabulary;
+- an ordinary public path with progressive disclosure that does not require manual
+  orchestration of planning, binding admission, execution admission, or lowering for a
+  representative render, while any retained advanced inspection path converges on the
+  same semantic spine and authority;
+- structured human-readable public diagnostics for representative request,
+  compatibility, binding/admission, availability, execution, and result-definedness
+  failures without requiring private backend interpretation;
+- at least one independent downstream public-API conformance consumer of the internal
+  future-public RunenRender boundary and at least one real maintained Runenwerk consumer
+  using that same future-transferable surface, without private in-workspace bypasses or
+  proof-only constructors;
+- no speculative `runen-render` product package or external repository created merely
+  to manufacture R8 conformance; when package-level isolation would require premature
+  extraction, the downstream consumer may depend on the containing Runenwerk package
+  while importing only the candidate public RunenRender surface, and RX repeats
+  package-level conformance against the real standalone successor;
+- retained executable public examples covering conventional image-grid rendering,
+  non-image-grid/scalar observation, and advanced planning/admission/provenance
+  inspection when that advanced path remains public;
+- at least one meaningful real renderer visual integration/showcase proof through the
+  ordinary public path, kept separate from correctness/conformance oracles and without
+  transferring artifact-encoding policy into RunenRender;
+- crate/public API documentation for purpose/ownership, ordinary use, the
+  scene/request/result model, result definedness, retained extension points,
+  diagnostics, advanced inspection when public, and RunenGPU/Runenwerk relationships,
+  with examples compiled or doctested where practical;
+- result ergonomics that preserve semantic definedness/provenance without requiring
+  callers to understand physical sentinels, payload packing, or product artifact
+  formats;
+- an exact public-export census and anti-cheating audit proving examples, downstream
+  conformance, maintained Runenwerk dogfood, documentation, and representative execution
+  all use the same candidate standalone boundary;
 - standalone extraction readiness.
+
+Exact ordinary API names and signatures remain consumer-gated until real R7 pressure
+exists. Pre-1.0 clean cutovers remain allowed; diagnostic API-diff tooling may be used
+after a candidate public surface is deliberately frozen, but R8 does not create a stable
+SemVer promise or justify compatibility aliases.
 
 Performance evidence remains diagnostic until a separately accepted controlled budget
 exists.
@@ -517,6 +563,8 @@ Prerequisites:
 - R0-R8 accepted;
 - exact current-source/consumer census repeated;
 - standalone boundary proven independently useful;
+- the accepted R8 candidate public boundary is ready to transfer without essential
+  maintained consumers depending on internal Runenwerk renderer bypasses;
 - exact accepted RunenGPU revision selected;
 - no private RunenGPU/WGPU reach-through;
 - every active consumer migration and predecessor deletion is ready.
@@ -526,14 +574,16 @@ Cutover:
 1. populate `dornglut/runen-render` from accepted Runenwerk semantic authority;
 2. validate standalone;
 3. pin exact accepted RunenGPU revision;
-4. accept the standalone successor through its repository-owned workflow;
+4. accept the standalone successor through its repository-owned workflow, including
+   package-level downstream public-API conformance against the real `runen-render`
+   package;
 5. migrate maintained Runenwerk consumers to the accepted successor revision;
 6. delete predecessor Runenwerk semantic-rendering authority and temporary seams;
 7. prove no source mirror, forwarding namespace, compatibility package, source include,
    submodule, moving-branch dependency, or duplicate renderer remains;
 8. record provenance and closeout.
 
-RX is transfer/cutover, not architecture invention.
+RX is transfer/cutover, not architecture invention or public-surface repair.
 
 ## A1 — reusable adapter review
 
