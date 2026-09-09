@@ -122,7 +122,7 @@ impl RenderPlanCandidate {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RenderPlan {
-    scene_revision: RenderSceneRevision,
+    scene: RenderSceneSnapshot,
     request: RenderRequest,
     candidates: Vec<RenderPlanCandidate>,
     rejected_methods: Vec<RenderMethodRejection>,
@@ -130,7 +130,16 @@ pub struct RenderPlan {
 
 impl RenderPlan {
     pub const fn scene_revision(&self) -> RenderSceneRevision {
-        self.scene_revision
+        self.scene.revision()
+    }
+
+    /// The exact immutable R1-R3 semantic scene dependency anchor used to derive this plan.
+    ///
+    /// `RenderSceneSnapshot` is structurally shared, so retaining it preserves material/emitter,
+    /// object-state, participation, and representation semantics without copying or mirroring scene
+    /// authority and without later stages reaching back into mutable scene state.
+    pub const fn scene(&self) -> &RenderSceneSnapshot {
+        &self.scene
     }
 
     /// The complete accepted R2 semantic request whose obligations this plan preserves.
@@ -293,8 +302,9 @@ impl Error for RenderPlanningFailure {}
 /// Build one CPU-only, device-independent conditional semantic plan.
 ///
 /// The founding implementation scans the explicitly supplied method set and represented objects.
-/// The public plan retains request output obligations and eligible representation/protocol uses; it
-/// does not materialize a Cartesian product of representation choices or expose execution topology.
+/// The public plan retains the immutable semantic scene/request dependencies, request output
+/// obligations, and eligible representation/protocol uses; it does not materialize a Cartesian
+/// product of representation choices or expose execution topology.
 pub fn plan_render(
     scene: &RenderSceneSnapshot,
     request: &RenderRequest,
@@ -333,7 +343,7 @@ pub fn plan_render(
     }
 
     Ok(RenderPlan {
-        scene_revision: scene.revision(),
+        scene: scene.clone(),
         request: request.clone(),
         candidates,
         rejected_methods,
@@ -999,6 +1009,7 @@ mod tests {
         );
         attach(&mut store, object_id, vec![field, surface], false);
 
+        let snapshot = store.snapshot();
         let request = distance_request(RenderSemanticTolerance::exact(), instant(0.0));
         let methods = vec![
             method(
@@ -1016,11 +1027,12 @@ mod tests {
                 )],
             ),
         ];
-        let first = plan_render(&store.snapshot(), &request, &methods).expect("plan");
+        let first = plan_render(&snapshot, &request, &methods).expect("plan");
         let reversed = vec![methods[1].clone(), methods[0].clone()];
-        let second = plan_render(&store.snapshot(), &request, &reversed).expect("plan");
+        let second = plan_render(&snapshot, &request, &reversed).expect("plan");
 
         assert_eq!(first, second);
+        assert_eq!(first.scene(), &snapshot);
         assert_eq!(first.request(), &request);
         assert_eq!(first.candidates().len(), 2);
         assert_eq!(first.candidates()[0].method_id().raw(), 1);
@@ -1747,6 +1759,7 @@ mod tests {
         let retained_again = plan_render(&retained, &request, &[method])
             .expect("old snapshot remains independently plannable");
         assert_eq!(first, retained_again);
+        assert_eq!(retained_again.scene(), &retained);
         assert_eq!(retained_again.scene_revision(), retained_revision);
         assert_eq!(store.revision(), current_revision);
     }
