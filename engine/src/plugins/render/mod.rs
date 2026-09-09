@@ -4,6 +4,7 @@ pub mod api;
 pub mod appearance;
 pub mod backend;
 pub mod composition;
+pub mod derived_state;
 pub mod features;
 pub mod frame;
 pub mod gpu_primitives;
