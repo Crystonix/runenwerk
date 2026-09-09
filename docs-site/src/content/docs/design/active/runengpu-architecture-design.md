@@ -14,7 +14,7 @@ related_docs:
   - ./runengpu-g3r-definite-initialization-correction.md
   - ./runengpu-g4-context-program-realization-design.md
   - ./runengpu-post-g5c-hardening-design.md
-  - ./runenrender-decomposition-design.md
+  - ../accepted/runenrender-decomposition-design.md
   - ./runenrender-internal-decomposition-execution-plan.md
   - ./runen-family-operational-hardening-design.md
   - ../../reports/investigations/runengpu-g4-context-program-realization-investigation.md

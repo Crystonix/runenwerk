@@ -12,7 +12,7 @@ related_adrs:
   - ./0017-cross-authority-consistency-and-graph-semantics.md
   - ./0018-semantic-federation-and-physical-realization.md
 related_docs:
-  - ../../design/active/runenrender-decomposition-design.md
+  - ../../design/accepted/runenrender-decomposition-design.md
   - ../../design/active/runenrender-internal-decomposition-execution-plan.md
   - ../../architecture/repository-family-architecture.md
   - ../../workspace/planning/roadmap.md

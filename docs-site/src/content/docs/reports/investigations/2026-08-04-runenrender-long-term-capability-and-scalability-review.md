@@ -7,7 +7,7 @@ layer: investigation
 canonical: false
 last_reviewed: 2026-08-04
 related_docs:
-  - ../../design/active/runenrender-decomposition-design.md
+  - ../../design/accepted/runenrender-decomposition-design.md
   - ../../design/active/runenrender-internal-decomposition-execution-plan.md
   - ../../design/active/runen-family-operational-hardening-design.md
   - ../../design/active/runengpu-architecture-design.md
@@ -26,7 +26,7 @@ future renderer algorithms, scene representations, world scales, output products
 hardware capabilities, and application domains without another foundational rewrite.
 
 It is supporting investigation evidence. The canonical decisions are recorded in
-[RunenRender Architecture and Decomposition Design](../../design/active/runenrender-decomposition-design.md).
+[RunenRender Architecture and Decomposition Design](../../design/accepted/runenrender-decomposition-design.md).
 
 The review does not authorize Rust implementation, external package creation, new
 dependencies, shader changes, or activation of an R phase.

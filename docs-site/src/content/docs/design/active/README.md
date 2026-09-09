@@ -130,7 +130,6 @@ active design contains older conflicting target language.
 - [RunenGPU G5 Execution Lifecycle Design](runengpu-g5-execution-lifecycle-design.md)
 - [RunenGPU Post-G5C Hardening Design](runengpu-post-g5c-hardening-design.md)
 - [RunenGPU Phase Requirements and Proof Matrix](runengpu-phase-requirements-proof-matrix.md)
-- [RunenRender Architecture and Decomposition Design](runenrender-decomposition-design.md)
 - [RunenGPU and RunenRender Decomposition Execution Plan](runenrender-internal-decomposition-execution-plan.md)
 - [Runen Family Operational Hardening Design](runen-family-operational-hardening-design.md)
 
