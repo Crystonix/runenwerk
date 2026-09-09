@@ -4,11 +4,10 @@ pub use crate::replication::{
     NetComponentMetadata, NetEntity, NetEntityMap, NetEntityMapEvent, NetEntityMetadata,
     NetResourceMetadata, PredictionMode, Reliability, Replicate, Replicated,
     ReplicatedComponentDescriptor, ReplicatedEntityDescriptor, ReplicatedResourceDescriptor,
-    ReplicationDriver, ReplicationExtractionFilter, ReplicationProfile, ReplicationProfilePreset,
-    ReplicationRegistry, ReplicationSemantics, ReplicationSemanticsOverrides, ReplicationStats,
-    SnapshotAckOutcome, SnapshotAckRejection, SnapshotApplyDriver, SnapshotCursor,
-    SnapshotTimeline, allows_replication, apply_delta_payload, delta_debug_dump,
-    extract_replication_deltas, normalize_delta_payload, snapshot_debug_dump,
+    ReplicationDriver, ReplicationProfile, ReplicationProfilePreset, ReplicationRegistry,
+    ReplicationSemantics, ReplicationSemanticsOverrides, ReplicationStats, SnapshotAckOutcome,
+    SnapshotAckRejection, SnapshotApplyDriver, SnapshotCursor, SnapshotTimeline, allows_replication,
+    apply_delta_payload, delta_debug_dump, normalize_delta_payload, snapshot_debug_dump,
 };
 pub use crate::simulation::*;
 pub use crate::{
