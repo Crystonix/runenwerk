@@ -1,4 +1,5 @@
 pub mod adapters;
+pub mod admission;
 pub mod api;
 pub mod appearance;
 pub mod backend;
