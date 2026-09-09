@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use crate::runtime::publication::PublicationBoundary;
 use anyhow::Result;
 use ecs::World;
 use product::{
@@ -9,15 +10,14 @@ use product::{
     QuerySnapshotPublicationReport, QuerySnapshotPublicationStatus, evaluate_product_consumption,
     ratify_query_snapshot_product,
 };
-use scheduler::plan::{BarrierKind, ExecutionBarrier};
 
 const QUERY_SNAPSHOT_JOURNAL_LIMIT: usize = 512;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct QuerySnapshotJournalEntry {
-    pub barrier_index: usize,
-    pub phase_index: usize,
-    pub after_wave_index: Option<usize>,
+    pub publication_boundary_index: usize,
+    pub schedule_label: &'static str,
+    pub stage_index: usize,
     pub product_id: ProductIdentity,
     pub source_generation: u64,
     pub response_generation: u64,
@@ -73,11 +73,11 @@ impl QuerySnapshotRuntimeResource {
         &self.last_report
     }
 
-    pub fn publish_staged(&mut self, barrier: &ExecutionBarrier) -> QuerySnapshotPublicationReport {
+    pub fn publish_staged(
+        &mut self,
+        boundary: &PublicationBoundary,
+    ) -> QuerySnapshotPublicationReport {
         self.last_published_entries.clear();
-        if barrier.kind != BarrierKind::QuerySnapshotPublication {
-            return QuerySnapshotPublicationReport::default();
-        }
 
         let mut staged = std::mem::take(&mut self.staged);
         staged.sort_by_key(|snapshot| {
@@ -90,7 +90,7 @@ impl QuerySnapshotRuntimeResource {
 
         let mut report = QuerySnapshotPublicationReport::default();
         for snapshot in staged {
-            self.publish_one(snapshot, barrier, &mut report);
+            self.publish_one(snapshot, boundary, &mut report);
         }
         self.last_report = report.clone();
         report
@@ -99,7 +99,7 @@ impl QuerySnapshotRuntimeResource {
     fn publish_one(
         &mut self,
         snapshot: QuerySnapshotProductDescriptor,
-        barrier: &ExecutionBarrier,
+        boundary: &PublicationBoundary,
         report: &mut QuerySnapshotPublicationReport,
     ) {
         let diagnostics = snapshot_rejection_diagnostics(&snapshot);
@@ -108,7 +108,7 @@ impl QuerySnapshotRuntimeResource {
                 report.record_status(QuerySnapshotPublicationStatus::Preserved);
                 report.extend_diagnostics(diagnostics.clone());
                 self.push_journal(
-                    barrier,
+                    boundary,
                     &snapshot,
                     QuerySnapshotPublicationStatus::Preserved,
                     diagnostics,
@@ -117,7 +117,7 @@ impl QuerySnapshotRuntimeResource {
                 report.record_status(QuerySnapshotPublicationStatus::Rejected);
                 report.extend_diagnostics(diagnostics.clone());
                 self.push_journal(
-                    barrier,
+                    boundary,
                     &snapshot,
                     QuerySnapshotPublicationStatus::Rejected,
                     diagnostics,
@@ -135,7 +135,7 @@ impl QuerySnapshotRuntimeResource {
             report.record_status(QuerySnapshotPublicationStatus::Invalidated);
             report.extend_diagnostics([diagnostic.clone()]);
             self.push_journal(
-                barrier,
+                boundary,
                 &previous,
                 QuerySnapshotPublicationStatus::Invalidated,
                 vec![diagnostic],
@@ -144,7 +144,7 @@ impl QuerySnapshotRuntimeResource {
 
         report.record_status(QuerySnapshotPublicationStatus::Published);
         self.push_journal(
-            barrier,
+            boundary,
             &snapshot,
             QuerySnapshotPublicationStatus::Published,
             Vec::new(),
@@ -154,15 +154,15 @@ impl QuerySnapshotRuntimeResource {
 
     fn push_journal(
         &mut self,
-        barrier: &ExecutionBarrier,
+        boundary: &PublicationBoundary,
         snapshot: &QuerySnapshotProductDescriptor,
         status: QuerySnapshotPublicationStatus,
         diagnostics: Vec<FieldProductDiagnostic>,
     ) {
         let entry = QuerySnapshotJournalEntry {
-            barrier_index: barrier.index,
-            phase_index: barrier.phase_index,
-            after_wave_index: barrier.after_wave_index,
+            publication_boundary_index: boundary.index,
+            schedule_label: boundary.schedule_label,
+            stage_index: boundary.stage_index,
             product_id: snapshot.product_id(),
             source_generation: snapshot.source_generation,
             response_generation: snapshot.response_generation,
@@ -178,9 +178,12 @@ impl QuerySnapshotRuntimeResource {
     }
 }
 
-pub fn publish_staged_query_snapshots(barrier: &ExecutionBarrier, world: &mut World) -> Result<()> {
+pub fn publish_staged_query_snapshots(
+    boundary: &PublicationBoundary,
+    world: &mut World,
+) -> Result<()> {
     if let Ok(snapshots) = world.resource_mut::<QuerySnapshotRuntimeResource>() {
-        snapshots.publish_staged(barrier);
+        snapshots.publish_staged(boundary);
     }
     Ok(())
 }
@@ -235,13 +238,8 @@ mod tests {
         ProductScaleBand, ProductScope,
     };
 
-    fn barrier(index: usize, kind: BarrierKind) -> ExecutionBarrier {
-        ExecutionBarrier {
-            index,
-            phase_index: 0,
-            after_wave_index: Some(0),
-            kind,
-        }
+    fn boundary(index: usize) -> PublicationBoundary {
+        PublicationBoundary::new(index, "Update", 0)
     }
 
     fn descriptor(id: u64, generation: u64) -> ProductDescriptorCore {
@@ -272,22 +270,21 @@ mod tests {
     }
 
     #[test]
-    fn query_snapshot_staged_snapshots_publish_only_at_query_snapshot_barrier() {
+    fn query_snapshot_staged_snapshots_publish_at_engine_publication_boundary() {
         let mut resource = QuerySnapshotRuntimeResource::default();
         resource.stage(snapshot(1, 10));
 
-        let non_snapshot_report =
-            resource.publish_staged(&barrier(1, BarrierKind::ProductPublication));
-        assert_eq!(non_snapshot_report.published_count, 0);
         assert_eq!(resource.staged().len(), 1);
         assert!(resource.current_snapshots().is_empty());
 
-        let report = resource.publish_staged(&barrier(2, BarrierKind::QuerySnapshotPublication));
+        let report = resource.publish_staged(&boundary(2));
 
         assert_eq!(report.published_count, 1);
         assert_eq!(resource.staged().len(), 0);
         assert!(resource.current_snapshot(ProductIdentity::new(1)).is_some());
-        assert_eq!(resource.journal()[0].barrier_index, 2);
+        assert_eq!(resource.journal()[0].publication_boundary_index, 2);
+        assert_eq!(resource.journal()[0].schedule_label, "Update");
+        assert_eq!(resource.journal()[0].stage_index, 0);
         assert_eq!(resource.last_published_entries().len(), 1);
         assert_eq!(resource.last_published_entries()[0].product_id.raw(), 1);
     }
@@ -296,10 +293,10 @@ mod tests {
     fn query_snapshot_invalidates_previous_generation_deterministically() {
         let mut resource = QuerySnapshotRuntimeResource::default();
         resource.stage(snapshot(3, 10));
-        resource.publish_staged(&barrier(1, BarrierKind::QuerySnapshotPublication));
+        resource.publish_staged(&boundary(1));
 
         resource.stage(snapshot(3, 11));
-        let report = resource.publish_staged(&barrier(2, BarrierKind::QuerySnapshotPublication));
+        let report = resource.publish_staged(&boundary(2));
 
         assert_eq!(report.invalidated_count, 1);
         assert_eq!(report.published_count, 1);
@@ -329,13 +326,13 @@ mod tests {
     fn query_snapshot_strict_rejected_snapshot_preserves_existing_current_snapshot() {
         let mut resource = QuerySnapshotRuntimeResource::default();
         resource.stage(snapshot(5, 10));
-        resource.publish_staged(&barrier(1, BarrierKind::QuerySnapshotPublication));
+        resource.publish_staged(&boundary(1));
 
         let mut rejected = snapshot(5, 11);
         rejected.descriptor.freshness = ProductFreshness::Stale;
         rejected.freshness = ProductFreshness::Stale;
         resource.stage(rejected);
-        let report = resource.publish_staged(&barrier(2, BarrierKind::QuerySnapshotPublication));
+        let report = resource.publish_staged(&boundary(2));
 
         assert_eq!(report.preserved_count, 1);
         assert_eq!(
@@ -357,7 +354,7 @@ mod tests {
         rejected.descriptor.residency = ProductResidency::NonResident;
         resource.stage(rejected);
 
-        let report = resource.publish_staged(&barrier(1, BarrierKind::QuerySnapshotPublication));
+        let report = resource.publish_staged(&boundary(1));
 
         assert_eq!(report.rejected_count, 1);
         assert!(resource.current_snapshot(ProductIdentity::new(7)).is_none());
@@ -369,10 +366,7 @@ mod tests {
         let mut resource = QuerySnapshotRuntimeResource::default();
         for index in 0..(QUERY_SNAPSHOT_JOURNAL_LIMIT as u64 + 4) {
             resource.stage(snapshot(1000 + index, 10));
-            resource.publish_staged(&barrier(
-                index as usize,
-                BarrierKind::QuerySnapshotPublication,
-            ));
+            resource.publish_staged(&boundary(index as usize));
         }
 
         assert_eq!(resource.journal().len(), QUERY_SNAPSHOT_JOURNAL_LIMIT);

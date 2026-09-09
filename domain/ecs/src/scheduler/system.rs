@@ -1,8 +1,9 @@
-use crate::access::{AccessConflict, SystemAccess};
-use crate::label::{ScheduleKey, ScheduleLabel, SystemSet, SystemSetKey};
+use crate::World;
+use crate::scheduler::access::{AccessConflict, SystemAccess};
+use crate::scheduler::label::{ScheduleKey, ScheduleLabel, SystemSet, SystemSetKey};
 use anyhow::Result;
 
-pub type RunnableSystemFn<C> = Box<dyn FnMut(&mut C) -> Result<()>>;
+pub type RunnableSystemFn = Box<dyn FnMut(&mut World) -> Result<()>>;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct SystemId(u64);
@@ -66,7 +67,7 @@ impl ParamSlotDescriptor {
     }
 }
 
-pub struct RegisteredSystem<C> {
+pub struct RegisteredSystem {
     id: SystemId,
     name: String,
     label: ScheduleKey,
@@ -75,14 +76,14 @@ pub struct RegisteredSystem<C> {
     after_sets: Vec<SystemSetKey>,
     param_slots: Vec<ParamSlotDescriptor>,
     access: SystemAccess,
-    run: RunnableSystemFn<C>,
+    run: RunnableSystemFn,
 }
 
-impl<C> RegisteredSystem<C> {
+impl RegisteredSystem {
     pub fn new<L>(
         name: impl Into<String>,
         access: SystemAccess,
-        run: impl FnMut(&mut C) -> Result<()> + 'static,
+        run: impl FnMut(&mut World) -> Result<()> + 'static,
     ) -> Result<Self>
     where
         L: ScheduleLabel,
@@ -91,7 +92,6 @@ impl<C> RegisteredSystem<C> {
         access
             .validate_internal()
             .map_err(|conflict| internal_access_error(&name, &conflict))?;
-
         Ok(Self {
             id: SystemId::unassigned(),
             name,
@@ -177,8 +177,8 @@ impl<C> RegisteredSystem<C> {
         &self.param_slots
     }
 
-    pub fn run(&mut self, ctx: &mut C) -> Result<()> {
-        (self.run)(ctx)
+    pub fn run(&mut self, world: &mut World) -> Result<()> {
+        (self.run)(world)
     }
 
     pub(crate) fn assign_id(&mut self, id: SystemId) {

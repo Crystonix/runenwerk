@@ -16,9 +16,9 @@ pub use gpu_ink::{
 };
 pub use ink::{
     DrawingPreviewInkJobProcessReport, process_drawing_preview_ink_jobs,
-    publish_drawing_ink_products, publish_drawing_ink_products_at_barrier,
+    publish_drawing_ink_products, publish_drawing_ink_products_at_boundary,
     publish_drawing_ink_products_with_executor_and_cache, publish_drawing_ink_query_snapshots,
-    publish_drawing_ink_query_snapshots_at_barrier,
+    publish_drawing_ink_query_snapshots_at_boundary,
 };
 pub use ink_jobs::{
     DrawingCommittedInkTileJob, DrawingCommittedInkTileJobOutput, DrawingPreviewInkTileJob,

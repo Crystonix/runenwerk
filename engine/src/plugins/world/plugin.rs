@@ -3,8 +3,8 @@ use crate::plugin::Plugin;
 use crate::runtime::{
     CoreSet, FixedUpdate, IntoSystemSetKey, RenderPrepare, Res, ResMut, SystemConfigExt,
 };
+use ecs::SystemSetKey;
 use engine_sim::{AuthorityRole, SimulationProfileConfig};
-use scheduler::SystemSetKey;
 
 use super::build::integration::{
     integrate_completed_build_outputs_system, sync_world_runtime_debug_metrics_system,

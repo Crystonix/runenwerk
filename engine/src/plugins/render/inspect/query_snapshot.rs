@@ -41,20 +41,15 @@ pub fn inspect_query_snapshots(resource: &QuerySnapshotRuntimeResource) -> Query
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::runtime::PublicationBoundary;
     use product::{
         ProductAuthorityClass, ProductConsumerClass, ProductDescriptorCore, ProductFamily,
         ProductIdentity, ProductKind, ProductLineage, ProductQueryPolicy, ProductResidency,
         ProductScaleBand, ProductScope, QuerySnapshotProductDescriptor,
     };
-    use scheduler::plan::{BarrierKind, ExecutionBarrier};
 
-    fn barrier() -> ExecutionBarrier {
-        ExecutionBarrier {
-            index: 1,
-            phase_index: 0,
-            after_wave_index: Some(0),
-            kind: BarrierKind::QuerySnapshotPublication,
-        }
+    fn boundary() -> PublicationBoundary {
+        PublicationBoundary::new(1, "RenderPrepare", 0)
     }
 
     fn snapshot() -> QuerySnapshotProductDescriptor {
@@ -78,7 +73,7 @@ mod tests {
     fn render_query_snapshot_inspection_exposes_decisions_without_backend_handles() {
         let mut resource = QuerySnapshotRuntimeResource::default();
         resource.stage(snapshot());
-        resource.publish_staged(&barrier());
+        resource.publish_staged(&boundary());
 
         let inspection = inspect_query_snapshots(&resource);
 

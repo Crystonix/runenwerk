@@ -22,10 +22,7 @@ pub(crate) fn world_scene_update_system(
     manager.world_runtime.ctx.delta_seconds =
         fixed_time.step_seconds.clamp(1.0 / 240.0, 1.0 / 30.0);
     manager.world_runtime.ctx.fixed_step_seconds = manager.world_runtime.ctx.delta_seconds;
-    manager
-        .world_runtime
-        .scheduler
-        .run(&mut manager.world_runtime.ctx)?;
+    manager.world_runtime.run()?;
     let outbound = std::mem::take(&mut manager.world_runtime.ctx.outbound_notifications);
     manager.channels.world_to_overlay.extend(outbound);
     publish_scene_state(manager, &mut scene_state, &mut gameplay, &mut overlay);

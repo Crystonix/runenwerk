@@ -1,5 +1,4 @@
 use ecs::prelude::*;
-use scheduler::ScheduleLabel;
 
 #[derive(ecs::Component, ecs::Resource)]
 struct Position {

@@ -1,5 +1,6 @@
 use crate::plugins::time::domain::Time;
 use crate::runtime::fixed_time::{CatchupBudget, FixedTimeConfig, FixedTimeState, SimulationTick};
+use crate::runtime::publication::run_schedule_with_publication;
 use crate::runtime::schedules::FixedUpdate;
 use anyhow::Result;
 use ecs::{Runtime, World};
@@ -84,7 +85,7 @@ pub(crate) fn run_fixed_update_frame(world: &mut World, scheduler: &mut Runtime)
             tick.0 = tick.0.saturating_add(1);
         }
 
-        scheduler.run_schedule::<FixedUpdate>(world)?;
+        run_schedule_with_publication::<FixedUpdate>(world, scheduler)?;
         steps = steps.saturating_add(1);
 
         let fixed_state = world

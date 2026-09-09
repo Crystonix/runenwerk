@@ -2,9 +2,6 @@ use crate::plugins::scene::ui::{
     ConsoleUiRuntimeState, initialize_console_ui, load_console_template,
 };
 use anyhow::Result;
-use scheduler::builder::SchedulerBuilder;
-use scheduler::node::Node;
-use scheduler::scheduler_core::Scheduler;
 use serde::{Deserialize, Serialize};
 use std::time::SystemTime;
 
@@ -161,8 +158,17 @@ pub struct WorldSceneContext {
 }
 
 pub struct WorldSceneRuntime {
-    pub scheduler: Scheduler<WorldSceneContext>,
     pub ctx: WorldSceneContext,
+}
+
+impl WorldSceneRuntime {
+    /// Executes the fixed Engine-owned scene update contract in explicit order.
+    pub fn run(&mut self) -> Result<()> {
+        world_scene_input_gate_system(&mut self.ctx)?;
+        world_scene_tick_system(&mut self.ctx)?;
+        world_scene_debug_motion_system(&mut self.ctx)?;
+        Ok(())
+    }
 }
 
 pub struct OverlaySceneRuntime {
@@ -347,24 +353,7 @@ pub fn build_world_scene_runtime(scene: SceneId) -> Result<WorldSceneRuntime> {
         outbound_notifications: Vec::new(),
     };
 
-    let scheduler = SchedulerBuilder::<WorldSceneContext>::new()
-        .add_node(
-            "world_input_gate",
-            Node::new("world_input_gate", world_scene_input_gate_system),
-        )
-        .add_node_with_edges(
-            "world_tick",
-            Node::new("world_tick", world_scene_tick_system),
-            &["world_input_gate"],
-        )
-        .add_node_with_edges(
-            "world_debug_motion",
-            Node::new("world_debug_motion", world_scene_debug_motion_system),
-            &["world_tick"],
-        )
-        .build()?;
-
-    Ok(WorldSceneRuntime { scheduler, ctx })
+    Ok(WorldSceneRuntime { ctx })
 }
 
 #[cfg(test)]
@@ -404,10 +393,7 @@ mod tests {
             .get::<WorldDebugPosition>(runtime.ctx.debug_entity)
             .expect("position component should exist")
             .to_owned();
-        runtime
-            .scheduler
-            .run(&mut runtime.ctx)
-            .expect("world scheduler should run");
+        runtime.run().expect("world scene runtime should run");
         assert_eq!(runtime.ctx.frame_count, 0);
         let blocked_pos = runtime
             .ctx
@@ -419,10 +405,7 @@ mod tests {
         assert_eq!(blocked_pos.y, initial_pos.y);
 
         runtime.ctx.overlay_consumed = false;
-        runtime
-            .scheduler
-            .run(&mut runtime.ctx)
-            .expect("world scheduler should run");
+        runtime.run().expect("world scene runtime should run");
         assert_eq!(runtime.ctx.frame_count, 1);
         let value = runtime
             .ctx
@@ -446,10 +429,7 @@ mod tests {
             build_world_scene_runtime(SceneId::GameplayStub).expect("runtime should build");
         runtime.ctx.overlay_consumed = false;
         for _ in 0..60 {
-            runtime
-                .scheduler
-                .run(&mut runtime.ctx)
-                .expect("world scheduler should run");
+            runtime.run().expect("world scene runtime should run");
         }
         assert_eq!(runtime.ctx.frame_count, 60);
         assert!(

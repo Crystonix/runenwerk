@@ -8,6 +8,7 @@ mod errors;
 pub mod prelude;
 pub mod query;
 pub mod reflect;
+mod scheduler;
 mod storage;
 pub mod system;
 pub mod telemetry;
@@ -29,11 +30,13 @@ pub use reflect::{
     StructInfo, StructValueMut, StructValueRef, TypeInfo, TypeRegistry,
 };
 pub use system::{
-    ConfiguredSystem, IntoSystem, IntoSystemConfigs, IntoSystemSetKey, ParamSlotDescriptor,
-    ParamSlotId, ParamSlotMetadata, Res, ResMut, ResView, Runtime, RuntimePlanBarrierReport,
-    RuntimePlanConflictReport, RuntimePlanDiagnosticReport, RuntimePlanPhaseReport,
-    RuntimePlanReport, RuntimePlanStageReport, RuntimePlanSystemReport, RuntimePlanWaveReport,
-    SystemConfigExt, SystemId, SystemParam, SystemParamContext, SystemParamError,
+    AccessConflict, AccessDomain, AccessKey, ConfiguredSystem, ConflictKind, ExecutionConflict,
+    ExecutionPlan, ExecutionStage, IntoSystem, IntoSystemConfigs, IntoSystemSetKey,
+    ParamSlotDescriptor, ParamSlotId, ParamSlotMetadata, Res, ResMut, ResView, Runtime,
+    RuntimePlanConflictReport, RuntimePlanReport, RuntimePlanStageReport, RuntimePlanSystemReport,
+    ScheduleBoundary, ScheduleKey, ScheduleLabel, ScheduleValidationError, SystemAccess,
+    SystemConfigExt, SystemId, SystemParam, SystemParamContext, SystemParamError, SystemSet,
+    SystemSetKey,
 };
 pub use world::{
     ComponentChangeKind, ComponentChangeRecord, ComponentTypeKey, EntityMut, EntityRef, Mut,

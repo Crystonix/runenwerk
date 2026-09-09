@@ -1,4 +1,6 @@
-use ecs::{QueryAccess, SystemParam, SystemParamContext, SystemParamError, World};
+use ecs::{
+    ParamSlotDescriptor, QueryAccess, SystemParam, SystemParamContext, SystemParamError, World,
+};
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 use std::ptr::NonNull;
@@ -34,12 +36,8 @@ unsafe impl<'param> SystemParam for WorldMut<'param> {
     fn access(_: &Self::State) -> QueryAccess {
         QueryAccess::exclusive_world()
     }
-    fn slot_descriptor() -> scheduler::system::ParamSlotDescriptor {
-        scheduler::system::ParamSlotDescriptor::leaf(
-            "world_mut",
-            "WorldMut",
-            std::any::type_name::<Self>(),
-        )
+    fn slot_descriptor() -> ParamSlotDescriptor {
+        ParamSlotDescriptor::leaf("world_mut", "WorldMut", std::any::type_name::<Self>())
     }
     unsafe fn extract<'world, 'state>(
         _: &'state mut Self::State,

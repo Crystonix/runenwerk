@@ -1,4 +1,5 @@
 use crate::runtime::fixed_step_executor::run_fixed_update_frame;
+use crate::runtime::publication::run_schedule_with_publication;
 use crate::runtime::schedules::{
     FrameEnd, PreUpdate, RenderPrepare, RenderSubmit, Startup, Update,
 };
@@ -29,15 +30,12 @@ pub(crate) fn run_startup_if_needed(
         return Ok(());
     }
 
-    scheduler.run_schedule::<Startup>(world)?;
+    run_schedule_with_publication::<Startup>(world, scheduler)?;
     *startup_ran = true;
     Ok(())
 }
 
-/// Runs one runtime frame using the canonical execution-fabric phase order.
-///
-/// Each schedule below maps to a scheduler `ExecutionPhase`. Batch 1 keeps the
-/// execution serial and delegates wave/barrier semantics to the ECS runtime:
+/// Runs one runtime frame using the canonical Engine-owned lifecycle order:
 ///
 /// 1. `PreUpdate`
 /// 2. fixed-step loop (`FixedUpdate` zero or more times)
@@ -45,13 +43,17 @@ pub(crate) fn run_startup_if_needed(
 /// 4. `RenderPrepare`
 /// 5. `RenderSubmit`
 /// 6. `FrameEnd`
+///
+/// RunenECS executes each generic schedule and reports ECS-neutral stage
+/// boundaries after deferred commands are applied. Engine publication policy is
+/// dispatched at those boundaries.
 pub(crate) fn run_frame(world: &mut World, scheduler: &mut Runtime) -> Result<()> {
-    scheduler.run_schedule::<PreUpdate>(world)?;
+    run_schedule_with_publication::<PreUpdate>(world, scheduler)?;
     run_fixed_update_frame(world, scheduler)?;
-    scheduler.run_schedule::<Update>(world)?;
-    scheduler.run_schedule::<RenderPrepare>(world)?;
-    scheduler.run_schedule::<RenderSubmit>(world)?;
-    scheduler.run_schedule::<FrameEnd>(world)?;
+    run_schedule_with_publication::<Update>(world, scheduler)?;
+    run_schedule_with_publication::<RenderPrepare>(world, scheduler)?;
+    run_schedule_with_publication::<RenderSubmit>(world, scheduler)?;
+    run_schedule_with_publication::<FrameEnd>(world, scheduler)?;
     Ok(())
 }
 

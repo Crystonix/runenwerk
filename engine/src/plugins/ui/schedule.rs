@@ -1,5 +1,5 @@
 use crate::runtime::IntoSystemSetKey;
-use scheduler::label::SystemSetKey;
+use ecs::SystemSetKey;
 
 /// Stable system labels reserved for the engine-owned UI runtime.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

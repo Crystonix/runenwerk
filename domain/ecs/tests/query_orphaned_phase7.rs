@@ -1,6 +1,4 @@
 use ecs::prelude::*;
-use scheduler::ScheduleLabel;
-use scheduler::label::SystemSet;
 
 #[derive(Copy, Clone)]
 struct Update;
@@ -454,7 +452,10 @@ fn query_orphaned_does_not_conflict_with_live_mut_query_access() {
     let mut runtime = Runtime::new();
     runtime.add_systems::<Update, _, _>(&mut world, (mutate_live, observe_orphaned));
 
-    let plan = runtime.plan_for::<Update>().unwrap().clone();
+    let plan = runtime
+        .plan_for::<Update>()
+        .expect("schedule plan should validate")
+        .expect("registered update schedule should have a plan");
     assert_eq!(plan.conflicts.len(), 0);
     assert_eq!(plan.stages.len(), 1);
     assert_eq!(plan.stages[0].system_indices.len(), 2);

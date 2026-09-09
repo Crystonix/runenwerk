@@ -1,4 +1,4 @@
-use ecs::World;
+use ecs::{SystemSetKey, World};
 use engine::plugins::render::backend::RenderSurfaceRegistryResource;
 use engine::plugins::render::{
     PreparedRenderProductSelectionResource, RenderDynamicTextureTargetRequestRegistryResource,
@@ -6,9 +6,8 @@ use engine::plugins::render::{
     RenderGpuResidencyResource, RenderRuntimeSet, SurfaceFrameSubmissionRegistryResource,
 };
 use engine::prelude::*;
-use engine::runtime::ProductPublicationRuntimeResource;
 use engine::runtime::{CoreSet, IntoSystemSetKey, SystemConfigExt, WindowStateRegistryResource};
-use engine::{BarrierKind, ExecutionBarrier, SystemSetKey};
+use engine::runtime::{ProductPublicationRuntimeResource, PublicationBoundary};
 
 use crate::asset_pipeline::publish_pending_field_product_publications;
 use crate::material_lab::publish_pending_material_preview_publications;
@@ -17,7 +16,7 @@ use crate::runtime::composition::{
     dispatch_editor_target_input_system, sync_editor_composition_transitions_system,
 };
 use crate::runtime::procgen::{
-    publish_procgen_products_at_barrier, publish_procgen_query_snapshots_at_barrier,
+    publish_procgen_products_at_boundary, publish_procgen_query_snapshots_at_boundary,
     sync_procgen_viewport_overlay_system,
 };
 use crate::runtime::resources::{
@@ -40,7 +39,7 @@ use crate::runtime::viewport::{
     ViewportRenderStateCommandQueueResource, ViewportRenderStateResource,
     ViewportRuntimeSettingsHydrationResource, ViewportSurfaceSetResource,
     apply_viewport_render_state_commands_system, prepare_viewport_render_product_selections_system,
-    publish_viewport_query_snapshots_at_barrier, summarize_viewport_gpu_residency_system,
+    publish_viewport_query_snapshots_at_boundary, summarize_viewport_gpu_residency_system,
     sync_viewport_presentation_products_system, sync_viewport_product_targets_system,
     sync_viewport_render_jobs_system,
 };
@@ -154,26 +153,11 @@ impl Plugin for EditorAppPlugin {
         app.init_resource::<PreparedRenderProductSelectionResource>();
         app.init_resource::<RenderGpuResidencyResource>();
         app.init_resource::<RenderGpuResidencyBudgetResource>();
-        app.add_barrier_handler(
-            BarrierKind::ProductPublication,
-            publish_editor_field_products_at_barrier,
-        );
-        app.add_barrier_handler(
-            BarrierKind::ProductPublication,
-            publish_procgen_products_at_barrier,
-        );
-        app.add_barrier_handler(
-            BarrierKind::ProductPublication,
-            publish_editor_material_preview_products_at_barrier,
-        );
-        app.add_barrier_handler(
-            BarrierKind::QuerySnapshotPublication,
-            publish_viewport_query_snapshots_at_barrier,
-        );
-        app.add_barrier_handler(
-            BarrierKind::QuerySnapshotPublication,
-            publish_procgen_query_snapshots_at_barrier,
-        );
+        app.add_product_publication_handler(publish_editor_field_products_at_boundary);
+        app.add_product_publication_handler(publish_procgen_products_at_boundary);
+        app.add_product_publication_handler(publish_editor_material_preview_products_at_boundary);
+        app.add_query_snapshot_publication_handler(publish_viewport_query_snapshots_at_boundary);
+        app.add_query_snapshot_publication_handler(publish_procgen_query_snapshots_at_boundary);
 
         app.add_systems(Startup, bootstrap_editor_demo_system);
         app.add_systems(Startup, seed_viewport_runtime_contracts_system);
@@ -345,8 +329,8 @@ fn sync_editor_window_presentation_requests(
     synced
 }
 
-fn publish_editor_field_products_at_barrier(
-    barrier: &ExecutionBarrier,
+fn publish_editor_field_products_at_boundary(
+    boundary: &PublicationBoundary,
     world: &mut World,
 ) -> anyhow::Result<()> {
     let Some(mut host) = world.remove_resource::<EditorHostResource>() else {
@@ -358,15 +342,15 @@ fn publish_editor_field_products_at_barrier(
         return Ok(());
     };
 
-    publish_pending_field_product_publications(&mut host.app, &mut publications, barrier);
+    publish_pending_field_product_publications(&mut host.app, &mut publications, boundary);
 
     world.insert_resource(publications);
     world.insert_resource(host);
     Ok(())
 }
 
-fn publish_editor_material_preview_products_at_barrier(
-    barrier: &ExecutionBarrier,
+fn publish_editor_material_preview_products_at_boundary(
+    boundary: &PublicationBoundary,
     world: &mut World,
 ) -> anyhow::Result<()> {
     let Some(mut host) = world.remove_resource::<EditorHostResource>() else {
@@ -378,7 +362,7 @@ fn publish_editor_material_preview_products_at_barrier(
         return Ok(());
     };
 
-    publish_pending_material_preview_publications(&mut host.app, &mut publications, barrier);
+    publish_pending_material_preview_publications(&mut host.app, &mut publications, boundary);
 
     world.insert_resource(publications);
     world.insert_resource(host);

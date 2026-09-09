@@ -31,13 +31,11 @@ impl App {
     }
 
     pub(crate) fn prepare_for_run(&mut self, headless: bool) -> Result<()> {
-        // Applies per-run window/runtime flags, then runs Startup exactly once.
         prepare_world_for_run(&mut self.world, &self.title, headless);
         run_startup_if_needed(&mut self.world, &mut self.scheduler, &mut self.startup_ran)
     }
 
     pub(crate) fn run_frame(&mut self) -> Result<()> {
-        // Delegates to the canonical runtime frame order shared by all runners.
         run_runtime_frame(&mut self.world, &mut self.scheduler)
     }
 }

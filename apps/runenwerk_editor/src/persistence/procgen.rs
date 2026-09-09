@@ -121,16 +121,10 @@ mod tests {
     use super::*;
     use crate::editor_app::RunenwerkEditorApp;
     use crate::runtime::procgen::bake_procgen_products;
-    use engine::runtime::ProductPublicationRuntimeResource;
-    use engine::{BarrierKind, ExecutionBarrier};
+    use engine::runtime::{ProductPublicationRuntimeResource, PublicationBoundary};
 
-    fn barrier(kind: BarrierKind) -> ExecutionBarrier {
-        ExecutionBarrier {
-            index: 17,
-            phase_index: 0,
-            after_wave_index: Some(0),
-            kind,
-        }
+    fn boundary() -> PublicationBoundary {
+        PublicationBoundary::new(17, "Update", 0)
     }
 
     fn temp_archive_path(name: &str) -> std::path::PathBuf {
@@ -147,11 +141,7 @@ mod tests {
     fn procgen_bake_archive_roundtrips_last_accepted_bake() {
         let mut app = RunenwerkEditorApp::new();
         let mut publications = ProductPublicationRuntimeResource::default();
-        let bake_report = bake_procgen_products(
-            &mut app,
-            &mut publications,
-            &barrier(BarrierKind::ProductPublication),
-        );
+        let bake_report = bake_procgen_products(&mut app, &mut publications, &boundary());
         assert!(bake_report.accepted);
 
         let path = temp_archive_path("roundtrip");

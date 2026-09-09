@@ -1,6 +1,5 @@
 use asset::{AssetArtifactDescriptor, AssetArtifactId, AssetDiagnosticCode, AssetDiagnosticRecord};
-use engine::runtime::ProductPublicationRuntimeResource;
-use engine::{BarrierKind, ExecutionBarrier};
+use engine::runtime::{ProductPublicationRuntimeResource, PublicationBoundary};
 use material_graph::MaterialProductId;
 use product::{
     FieldProductDiagnostic, FieldProductDiagnosticCode, ProductIdentity, ProductPublicationOutcome,
@@ -66,12 +65,8 @@ impl EditorMaterialPreviewPublication {
 pub fn publish_pending_material_preview_publications(
     app: &mut RunenwerkEditorApp,
     publications: &mut ProductPublicationRuntimeResource,
-    barrier: &ExecutionBarrier,
+    boundary: &PublicationBoundary,
 ) -> ProductPublicationReport {
-    if barrier.kind != BarrierKind::ProductPublication {
-        return ProductPublicationReport::default();
-    }
-
     let pending = app.take_pending_material_preview_publications();
     if pending.is_empty() {
         return ProductPublicationReport::default();
@@ -84,7 +79,7 @@ pub fn publish_pending_material_preview_publications(
     }
 
     let journal_start = publications.journal().len();
-    let report = publications.publish_staged(barrier);
+    let report = publications.publish_staged(boundary);
     let published_entries = &publications.journal()[journal_start..];
 
     for diagnostic in &report.diagnostics {
@@ -143,10 +138,10 @@ pub fn publish_pending_material_preview_publications(
             status: pending_publication.status,
         });
         app.append_console_line(format!(
-            "[material] preview publication {:?} artifact {} via barrier {}",
+            "[material] preview publication {:?} artifact {} via publication boundary {}",
             pending_publication.status,
             pending_publication.artifact_id().raw(),
-            barrier.index
+            boundary.index
         ));
     }
 

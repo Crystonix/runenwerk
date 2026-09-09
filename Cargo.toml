@@ -8,7 +8,6 @@ members = [
     "domain/product",
     "domain/world_ops",
     "domain/world_sdf",
-    "domain/scheduler",
     "domain/scene",
     "domain/graph",
     "domain/texture",

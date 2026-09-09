@@ -7,9 +7,6 @@ pub enum AccessDomain {
     Component,
     OrphanedComponent,
     Resource,
-    BroadcastStream,
-    WorkQueue,
-    TickBuffer,
     Structural,
     World,
 }
@@ -34,10 +31,6 @@ impl AccessKey {
         }
     }
 
-    pub fn resource<T: 'static>(name: &'static str) -> Self {
-        Self::resource_by_id(TypeId::of::<T>(), name)
-    }
-
     pub fn orphaned_component<T: 'static>(name: &'static str) -> Self {
         Self::orphaned_component_by_id(TypeId::of::<T>(), name)
     }
@@ -50,45 +43,13 @@ impl AccessKey {
         }
     }
 
+    pub fn resource<T: 'static>(name: &'static str) -> Self {
+        Self::resource_by_id(TypeId::of::<T>(), name)
+    }
+
     pub fn resource_by_id(type_id: TypeId, name: &'static str) -> Self {
         Self {
             domain: AccessDomain::Resource,
-            type_id: Some(type_id),
-            name,
-        }
-    }
-
-    pub fn broadcast_stream<T: 'static>(name: &'static str) -> Self {
-        Self::broadcast_stream_by_id(TypeId::of::<T>(), name)
-    }
-
-    pub fn broadcast_stream_by_id(type_id: TypeId, name: &'static str) -> Self {
-        Self {
-            domain: AccessDomain::BroadcastStream,
-            type_id: Some(type_id),
-            name,
-        }
-    }
-
-    pub fn work_queue<T: 'static>(name: &'static str) -> Self {
-        Self::work_queue_by_id(TypeId::of::<T>(), name)
-    }
-
-    pub fn work_queue_by_id(type_id: TypeId, name: &'static str) -> Self {
-        Self {
-            domain: AccessDomain::WorkQueue,
-            type_id: Some(type_id),
-            name,
-        }
-    }
-
-    pub fn tick_buffer<T: 'static>(name: &'static str) -> Self {
-        Self::tick_buffer_by_id(TypeId::of::<T>(), name)
-    }
-
-    pub fn tick_buffer_by_id(type_id: TypeId, name: &'static str) -> Self {
-        Self {
-            domain: AccessDomain::TickBuffer,
             type_id: Some(type_id),
             name,
         }
@@ -127,9 +88,6 @@ impl AccessKey {
             AccessDomain::Component => "component",
             AccessDomain::OrphanedComponent => "orphaned component",
             AccessDomain::Resource => "resource",
-            AccessDomain::BroadcastStream => "broadcast stream",
-            AccessDomain::WorkQueue => "work queue",
-            AccessDomain::TickBuffer => "tick buffer",
             AccessDomain::Structural => "structural access",
             AccessDomain::World => "world access",
         };
@@ -142,7 +100,6 @@ impl PartialEq for AccessKey {
         if self.domain != other.domain {
             return false;
         }
-
         match self.domain {
             AccessDomain::Structural | AccessDomain::World => self.name == other.name,
             _ => self.type_id == other.type_id,
@@ -166,9 +123,6 @@ impl Hash for AccessKey {
 pub enum ConflictKind {
     ReadWrite,
     WriteWrite,
-    ReadDrain,
-    WriteDrain,
-    DrainDrain,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -182,9 +136,6 @@ impl ConflictKind {
         match self {
             ConflictKind::ReadWrite => "read/write",
             ConflictKind::WriteWrite => "write/write",
-            ConflictKind::ReadDrain => "read/drain",
-            ConflictKind::WriteDrain => "write/drain",
-            ConflictKind::DrainDrain => "drain/drain",
         }
     }
 }
@@ -203,10 +154,8 @@ impl AccessConflict {
 pub struct SystemAccess {
     reads: HashSet<AccessKey>,
     writes: HashSet<AccessKey>,
-    drains: HashSet<AccessKey>,
     read_order: Vec<AccessKey>,
     write_order: Vec<AccessKey>,
-    drain_order: Vec<AccessKey>,
     exclusive_world_accesses: usize,
     has_immediate_world_access: bool,
 }
@@ -222,10 +171,6 @@ impl SystemAccess {
 
     pub fn writes(&self) -> &HashSet<AccessKey> {
         &self.writes
-    }
-
-    pub fn drains(&self) -> &HashSet<AccessKey> {
-        &self.drains
     }
 
     pub fn exclusive_world_accesses(&self) -> usize {
@@ -254,15 +199,6 @@ impl SystemAccess {
         }
     }
 
-    pub fn add_drain(&mut self, key: AccessKey) {
-        if key.domain() != AccessDomain::Structural {
-            self.has_immediate_world_access = true;
-        }
-        if self.drains.insert(key) {
-            self.drain_order.push(key);
-        }
-    }
-
     pub fn with_read(mut self, key: AccessKey) -> Self {
         self.add_read(key);
         self
@@ -273,18 +209,10 @@ impl SystemAccess {
         self
     }
 
-    pub fn with_drain(mut self, key: AccessKey) -> Self {
-        self.add_drain(key);
-        self
-    }
-
     pub fn conflicts_with(&self, other: &Self) -> Vec<AccessConflict> {
         let mut conflicts = Vec::new();
-
         for key in self.ordered_conflicts(&self.write_order, &other.writes) {
             if key.domain() == AccessDomain::Structural {
-                // Deferred structural mutation is merged at stage end; multiple producers can
-                // coexist in a stage and are serialized by deterministic system order.
                 continue;
             }
             conflicts.push(AccessConflict {
@@ -292,56 +220,18 @@ impl SystemAccess {
                 kind: ConflictKind::WriteWrite,
             });
         }
-
         for key in self.ordered_conflicts(&self.write_order, &other.reads) {
             conflicts.push(AccessConflict {
                 key: *key,
                 kind: ConflictKind::ReadWrite,
             });
         }
-
         for key in self.ordered_conflicts(&self.read_order, &other.writes) {
             conflicts.push(AccessConflict {
                 key: *key,
                 kind: ConflictKind::ReadWrite,
             });
         }
-
-        for key in self.ordered_conflicts(&self.read_order, &other.drains) {
-            conflicts.push(AccessConflict {
-                key: *key,
-                kind: ConflictKind::ReadDrain,
-            });
-        }
-
-        for key in self.ordered_conflicts(&self.drain_order, &other.reads) {
-            conflicts.push(AccessConflict {
-                key: *key,
-                kind: ConflictKind::ReadDrain,
-            });
-        }
-
-        for key in self.ordered_conflicts(&self.write_order, &other.drains) {
-            conflicts.push(AccessConflict {
-                key: *key,
-                kind: ConflictKind::WriteDrain,
-            });
-        }
-
-        for key in self.ordered_conflicts(&self.drain_order, &other.writes) {
-            conflicts.push(AccessConflict {
-                key: *key,
-                kind: ConflictKind::WriteDrain,
-            });
-        }
-
-        for key in self.ordered_conflicts(&self.drain_order, &other.drains) {
-            conflicts.push(AccessConflict {
-                key: *key,
-                kind: ConflictKind::DrainDrain,
-            });
-        }
-
         if (self.exclusive_world_accesses > 0
             && (other.exclusive_world_accesses > 0 || other.has_immediate_world_access))
             || (other.exclusive_world_accesses > 0 && self.has_immediate_world_access)
@@ -351,7 +241,6 @@ impl SystemAccess {
                 kind: ConflictKind::WriteWrite,
             });
         }
-
         self.sort_conflicts(&mut conflicts);
         conflicts
     }
@@ -365,30 +254,13 @@ impl SystemAccess {
                 kind: ConflictKind::WriteWrite,
             });
         }
-
         let mut conflicts = Vec::new();
-
         for key in self.ordered_conflicts(&self.read_order, &self.writes) {
             conflicts.push(AccessConflict {
                 key: *key,
                 kind: ConflictKind::ReadWrite,
             });
         }
-
-        for key in self.ordered_conflicts(&self.read_order, &self.drains) {
-            conflicts.push(AccessConflict {
-                key: *key,
-                kind: ConflictKind::ReadDrain,
-            });
-        }
-
-        for key in self.ordered_conflicts(&self.write_order, &self.drains) {
-            conflicts.push(AccessConflict {
-                key: *key,
-                kind: ConflictKind::WriteDrain,
-            });
-        }
-
         self.sort_conflicts(&mut conflicts);
         conflicts.into_iter().next().map_or(Ok(()), Err)
     }
@@ -415,12 +287,7 @@ impl SystemAccess {
 
     fn access_order_index(&self) -> HashMap<AccessKey, usize> {
         let mut order = HashMap::new();
-        for key in self
-            .read_order
-            .iter()
-            .chain(self.write_order.iter())
-            .chain(self.drain_order.iter())
-        {
+        for key in self.read_order.iter().chain(self.write_order.iter()) {
             let next = order.len();
             order.entry(*key).or_insert(next);
         }

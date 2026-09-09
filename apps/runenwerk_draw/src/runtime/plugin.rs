@@ -1,7 +1,6 @@
 //! Drawing app runtime plugin.
 
-use engine::BarrierKind;
-use engine::SystemSetKey;
+use ecs::SystemSetKey;
 use engine::plugins::render::SurfaceFrameSubmissionRegistryResource;
 use engine::prelude::*;
 use engine::runtime::{
@@ -13,7 +12,7 @@ use crate::runtime::gpu_ink::{
     DrawingInkGpuValidationReportCursorResource, process_drawing_ink_gpu_validation_report_system,
 };
 use crate::runtime::ink::{
-    publish_drawing_ink_products_at_barrier, publish_drawing_ink_query_snapshots_at_barrier,
+    publish_drawing_ink_products_at_boundary, publish_drawing_ink_query_snapshots_at_boundary,
 };
 use crate::runtime::resources::{DrawingHostResource, DrawingInkUploadTrackerResource};
 use crate::runtime::systems::{
@@ -56,14 +55,8 @@ impl Plugin for DrawingAppPlugin {
         app.init_resource::<DrawingInkUploadTrackerResource>();
         app.init_resource::<DrawingInkGpuValidationReportCursorResource>();
         app.init_resource::<SurfaceFrameSubmissionRegistryResource>();
-        app.add_barrier_handler(
-            BarrierKind::ProductPublication,
-            publish_drawing_ink_products_at_barrier,
-        );
-        app.add_barrier_handler(
-            BarrierKind::QuerySnapshotPublication,
-            publish_drawing_ink_query_snapshots_at_barrier,
-        );
+        app.add_product_publication_handler(publish_drawing_ink_products_at_boundary);
+        app.add_query_snapshot_publication_handler(publish_drawing_ink_query_snapshots_at_boundary);
 
         app.add_systems(
             Update,

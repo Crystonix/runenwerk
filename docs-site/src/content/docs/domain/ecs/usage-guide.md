@@ -5,14 +5,14 @@ status: active
 owner: ecs
 layer: domain
 canonical: true
-last_reviewed: 2026-04-27
+last_reviewed: 2026-09-09
 ---
 
 # ECS Usage Guide
 
 Audience: normal ECS users and gameplay/system authors using the public API.
 
-For advanced scheduling/event/channel/index topics, see [advanced-guide.md](advanced-guide.md).
+For advanced scheduling, deferred-command, and index topics, see [advanced-guide.md](advanced-guide.md).
 For internals and invariants, see [architecture.md](architecture.md).
 
 ## 1. Import the API
@@ -252,9 +252,10 @@ commands.apply(&mut world).unwrap();
 
 ## 10. Runtime Basics
 
+`ScheduleLabel` is owned by `ecs` and is available through the prelude.
+
 ```rust
 use ecs::prelude::*;
-use scheduler::ScheduleLabel;
 
 #[derive(Copy, Clone)]
 struct Update;
@@ -280,29 +281,41 @@ runtime.run_schedule::<Update>(&mut world).unwrap();
 assert_eq!(world.resource::<Frame>().unwrap().0, 1);
 ```
 
-## 11. Basic Events
+## 11. Ordering and Deferred Visibility
 
-World APIs:
-
-- `publish_broadcast<T>(event)`
-- `read_broadcast<T>()`
-- `drain_broadcast_admin<T>()`
-- `clear_broadcast_admin<T>()`
-- `event_count<T>()`
-
-System params:
-
-- `BroadcastReader<T>::iter()`
-- `BroadcastWriter<T>::send(event)`
+Use system sets and explicit `before` / `after` relations when one system must observe deferred structural changes from another.
 
 ```rust
 use ecs::prelude::*;
 
+#[derive(Copy, Clone)]
+struct Update;
+impl ScheduleLabel for Update {}
+
+#[derive(Copy, Clone)]
+struct Produce;
+impl SystemSet for Produce {}
+
+#[derive(Copy, Clone)]
+struct Observe;
+impl SystemSet for Observe {}
+
+fn produce(mut commands: Commands) {
+    commands.spawn(());
+}
+
+fn observe() {}
+
 let mut world = World::new();
-world.publish_broadcast(1_u32);
-assert_eq!(world.read_broadcast::<u32>(), &[1]);
-assert_eq!(world.drain_broadcast_admin::<u32>(), vec![1]);
+let mut runtime = Runtime::new();
+runtime.add_systems::<Update, _, _>(&mut world, produce.in_set(Produce));
+runtime.add_systems::<Update, _, _>(&mut world, observe.in_set(Observe).after(Produce));
+runtime.run_schedule::<Update>(&mut world).unwrap();
 ```
+
+The explicit set edge creates a later semantic stage. Deferred commands are applied at the semantic stage boundary before that later stage runs. Read/write access conflicts are reported independently and do not create ordering edges or extra visibility boundaries.
+
+Generic broadcast/event channels are not part of the current RunenECS public contract; see [04-events.md](04-events.md).
 
 ## 12. Change Tracking Basics
 
@@ -350,6 +363,7 @@ Common error types:
 - `ResourceError`: missing resource access
 - `QueryError`: query cardinality errors (for example `single()`)
 - `CommandError`: deferred command apply failure
+- `ScheduleValidationError`: invalid schedule structure such as an explicit ordering cycle
 
 ```rust
 use ecs::prelude::*;

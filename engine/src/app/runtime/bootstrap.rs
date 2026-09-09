@@ -108,14 +108,8 @@ impl App {
             self.world
                 .insert_resource(SimulationProfileConfig::default());
         }
-        self.scheduler.add_barrier_handler(
-            BarrierKind::ProductPublication,
-            publish_staged_product_outcomes,
-        );
-        self.scheduler.add_barrier_handler(
-            BarrierKind::QuerySnapshotPublication,
-            publish_staged_query_snapshots,
-        );
+        self.add_product_publication_handler(publish_staged_product_outcomes);
+        self.add_query_snapshot_publication_handler(publish_staged_query_snapshots);
         if !self.world.has_resource::<SimulationSessionId>() {
             self.world.insert_resource(SimulationSessionId::default());
         }

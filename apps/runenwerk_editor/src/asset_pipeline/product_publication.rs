@@ -1,6 +1,5 @@
 use asset::{AssetArtifactDescriptor, AssetArtifactId, AssetDiagnosticCode, AssetDiagnosticRecord};
-use engine::runtime::ProductPublicationRuntimeResource;
-use engine::{BarrierKind, ExecutionBarrier};
+use engine::runtime::{ProductPublicationRuntimeResource, PublicationBoundary};
 use product::{
     FieldProductDiagnostic, FieldProductDiagnosticCode, ProductIdentity, ProductPublicationOutcome,
     ProductPublicationReport, ProductPublicationStatus, ratify_product_publication,
@@ -42,12 +41,8 @@ pub struct EditorFieldProductPublicationJournalEntry {
 pub fn publish_pending_field_product_publications(
     app: &mut RunenwerkEditorApp,
     publications: &mut ProductPublicationRuntimeResource,
-    barrier: &ExecutionBarrier,
+    boundary: &PublicationBoundary,
 ) -> ProductPublicationReport {
-    if barrier.kind != BarrierKind::ProductPublication {
-        return ProductPublicationReport::default();
-    }
-
     let pending = app.take_pending_field_product_publications();
     if pending.is_empty() {
         return ProductPublicationReport::default();
@@ -58,7 +53,7 @@ pub fn publish_pending_field_product_publications(
     }
 
     let journal_start = publications.journal().len();
-    let report = publications.publish_staged(barrier);
+    let report = publications.publish_staged(boundary);
     let published_entries = &publications.journal()[journal_start..];
 
     for diagnostic in &report.diagnostics {
@@ -99,8 +94,8 @@ pub fn publish_pending_field_product_publications(
             status: pending_publication.publication.status,
         });
         app.append_console_line(format!(
-            "[product] published field product {} via barrier {}",
-            pending_publication.candidate.descriptor.product_id.0, barrier.index
+            "[product] published field product {} via publication boundary {}",
+            pending_publication.candidate.descriptor.product_id.0, boundary.index
         ));
     }
 
@@ -130,17 +125,12 @@ mod tests {
 
     use crate::asset_pipeline::run_field_product_job;
 
-    fn barrier() -> ExecutionBarrier {
-        ExecutionBarrier {
-            index: 7,
-            phase_index: 0,
-            after_wave_index: Some(0),
-            kind: BarrierKind::ProductPublication,
-        }
+    fn boundary() -> PublicationBoundary {
+        PublicationBoundary::new(7, "Update", 0)
     }
 
     #[test]
-    fn field_product_publication_updates_catalog_only_at_barrier() {
+    fn field_product_publication_updates_catalog_only_at_boundary() {
         let root = unique_temp_dir("runenwerk_editor_field_publication");
         let source = asset::AssetSourceDescriptor::new(
             asset_source_id(2),
@@ -184,7 +174,7 @@ mod tests {
         assert_eq!(app.pending_field_product_publication_count(), 1);
 
         let report =
-            publish_pending_field_product_publications(&mut app, &mut publications, &barrier());
+            publish_pending_field_product_publications(&mut app, &mut publications, &boundary());
 
         assert_eq!(report.published_count, 1);
         assert_eq!(app.pending_field_product_publication_count(), 0);
@@ -245,7 +235,7 @@ mod tests {
         let mut publications = ProductPublicationRuntimeResource::default();
 
         let report =
-            publish_pending_field_product_publications(&mut app, &mut publications, &barrier());
+            publish_pending_field_product_publications(&mut app, &mut publications, &boundary());
 
         assert_eq!(report.rejected_count, 1);
         assert_eq!(app.field_product_publication_journal().len(), 0);
@@ -315,7 +305,7 @@ mod tests {
         let mut publications = ProductPublicationRuntimeResource::default();
 
         let report =
-            publish_pending_field_product_publications(&mut app, &mut publications, &barrier());
+            publish_pending_field_product_publications(&mut app, &mut publications, &boundary());
 
         assert_eq!(report.published_count, 1);
         assert_eq!(report.rejected_count, 1);

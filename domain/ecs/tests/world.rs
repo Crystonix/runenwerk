@@ -1,7 +1,5 @@
 use ecs::prelude::*;
 use ecs::{ComponentChangeKind, QueryTypeAccess, ResourceChangeKind, SystemParam};
-use scheduler::ScheduleLabel;
-use scheduler::label::SystemSet;
 use std::any::TypeId;
 
 #[derive(Debug, Copy, Clone, PartialEq, ecs::Component, ecs::Resource)]

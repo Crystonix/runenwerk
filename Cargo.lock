@@ -715,7 +715,6 @@ dependencies = [
  "criterion",
  "ecs_macros",
  "glam 0.31.1",
- "scheduler",
  "thiserror 2.0.18",
  "trybuild",
 ]
@@ -879,7 +878,6 @@ dependencies = [
  "runen-net",
  "runen-spatial",
  "rusttype",
- "scheduler",
  "serde",
  "serde_json",
  "thiserror 2.0.18",
@@ -2869,14 +2867,6 @@ dependencies = [
  "ecs",
  "glam 0.32.1",
  "schema",
-]
-
-[[package]]
-name = "scheduler"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "tracing",
 ]
 
 [[package]]

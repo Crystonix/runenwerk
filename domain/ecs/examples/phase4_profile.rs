@@ -1,6 +1,5 @@
 use ecs::prelude::*;
 use ecs::telemetry::{self, EcsTelemetrySnapshot};
-use scheduler::{ScheduleLabel, SystemSet};
 use std::time::Instant;
 
 #[derive(Debug, Copy, Clone, ecs::Component, ecs::Resource)]

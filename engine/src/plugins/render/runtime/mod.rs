@@ -6,7 +6,7 @@ pub mod frame_prepare;
 pub mod frame_submit;
 
 use crate::runtime::IntoSystemSetKey;
-use scheduler::label::SystemSetKey;
+use ecs::SystemSetKey;
 
 pub use dynamic_targets::*;
 pub use dynamic_texture_uploads::*;

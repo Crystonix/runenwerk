@@ -1,6 +1,5 @@
 use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use ecs::prelude::*;
-use scheduler::{ScheduleLabel, SystemSet};
 use std::hint::black_box;
 
 #[derive(Debug, Copy, Clone, ecs::Component, ecs::Resource)]
@@ -406,8 +405,13 @@ fn workload_w5(c: &mut Criterion) {
     group.bench_function("scheduler_plan_build_96_systems", |b| {
         b.iter(|| {
             let (world, mut runtime) = build_runtime_for_w5(16);
-            let plan = runtime.plan_for::<W5>().map(|plan| plan.stages.len());
-            black_box(plan);
+            let stage_count = runtime
+                .plan_for::<W5>()
+                .expect("w5 plan should validate")
+                .expect("w5 plan should exist")
+                .stages
+                .len();
+            black_box(stage_count);
             black_box(world.resource::<Sink>().expect("sink resource").0)
         });
     });

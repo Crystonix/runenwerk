@@ -1,4 +1,4 @@
-use scheduler::system::{ParamSlotDescriptor, SystemId};
+use crate::scheduler::system::{ParamSlotDescriptor, SystemId};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ParamSlotId {

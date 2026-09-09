@@ -20,17 +20,9 @@ pub mod state;
 pub mod utils;
 
 pub use app::*;
+pub use ecs::{ScheduleKey, ScheduleLabel, SystemSet, SystemSetKey};
 pub use engine_replay::*;
 pub use engine_sim::*;
 pub use plugin::*;
 pub use runtime::*;
-pub use scheduler::access::*;
-pub use scheduler::builder::*;
-pub use scheduler::dag::*;
-pub use scheduler::label::*;
-pub use scheduler::node::*;
-pub use scheduler::plan::*;
-pub use scheduler::scheduler_core::*;
-pub use scheduler::system::*;
-pub use scheduler::utils::*;
 pub use state::*;
