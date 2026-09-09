@@ -5,7 +5,7 @@ status: active
 owner: render
 layer: engine/render
 canonical: true
-last_reviewed: 2026-09-08
+last_reviewed: 2026-09-09
 related_docs:
   - ./runengpu-architecture-design.md
   - ./runengpu-g3-access-work-graph-design.md
@@ -185,7 +185,7 @@ RenderSceneSnapshot
     -> conditional RenderPlan
 
 RenderPlan
-+ current request-scoped semantic bindings
++ current request-scoped semantic bindings declared by the plan, if any
     -> semantic binding admission
 
 semantically admitted candidates
@@ -199,6 +199,10 @@ semantically admitted candidates
                 -> RunenGPU
                     -> RenderResult
 ```
+
+When a plan declares no binding-dependent semantic prerequisite, the semantic-binding
+substage is vacuously satisfied. Do not create placeholder binding identity, values,
+provider state, or a generic binding store merely to instantiate that empty case.
 
 The ordinary public API may collapse stages ergonomically. Their responsibilities remain
 distinct and testable.
@@ -352,9 +356,10 @@ R4 answers:
 
 Goal:
 
-- current source-owner semantic input values/bindings/generations/provenance;
-- semantic binding admission;
-- binding-dependent representation applicability evaluation;
+- current source-owner semantic input values/bindings/generations/provenance when a
+  concrete R4 contract declares request-scoped semantic-input prerequisites;
+- semantic binding admission for those declared prerequisites;
+- binding-dependent representation applicability evaluation when such predicates exist;
 - current representation availability/realization facts;
 - `RenderOutputBinding` physical destinations;
 - execution requirements and pressure;
@@ -362,23 +367,36 @@ Goal:
 - execution admission;
 - `AdmittedRenderPlan`.
 
+R5 permanently owns request-scoped semantic binding values, generations, provenance, and
+admission, but concrete binding API/proof is consumer-gated. If the exact activation
+census contains no R4 binding-dependent prerequisite, that substage is semantically
+vacuous for the slice. Do not introduce a generic binding ID/store/schema/provider or a
+placeholder semantic-input family to make the stage non-empty.
+
 Binding admission may evaluate predicates, eliminate candidates, and specialize choices
 already declared by R4. It may **not invent a new semantic alternative outside the
-`RenderPlan` solution space**.
+`RenderPlan` solution space**. A zero-prerequisite plan may proceed directly to the R5
+operational/execution-admission facts without fabricated binding data. Once a real
+request-scoped semantic-input consumer exists, its declared prerequisites must be
+admitted before any dependent candidate can execute.
 
 Required proof:
 
-- valid current semantic binding accepted;
-- missing/stale/foreign/temporally incompatible/coverage-incompatible binding rejected;
-- binding-generation change does not automatically change `RenderSceneRevision`;
+- when concrete binding prerequisites exist, a valid current semantic binding is
+  accepted and missing/stale/foreign/temporally incompatible/coverage-incompatible
+  bindings are rejected;
+- when concrete binding identity/generation exists, binding-generation change does not
+  automatically change `RenderSceneRevision`, and semantic input identity remains
+  distinct from RunenGPU resource identity;
 - representation availability/residency change does not automatically change
   `RenderSceneRevision`;
 - RunenGPU device-generation change does not automatically change
   `RenderSceneRevision`;
 - semantic output meaning differs from physical destination;
-- semantic input identity differs from RunenGPU resource identity;
 - `unsupported != unavailable`;
 - a semantically valid `RenderPlan` can be temporarily inexecutable;
+- a zero-binding-prerequisite `RenderPlan` reaches execution admission without synthetic
+  semantic binding state;
 - legal semantics-preserving realization alternatives and bounded permitted
   approximation work;
 - semantic substitution is rejected unless explicitly authorized.
@@ -426,7 +444,10 @@ CPU reference probes
 ```
 
 The proof must use permanent R1-R5 scene, request, representation, protocol, method,
-planning, binding, admission, and output contracts.
+planning, admission, and output contracts. It must also use binding contracts/admission
+when the accepted R4 plan for the founding renderer actually declares binding-dependent
+prerequisites. R6 must not fabricate a semantic-input consumer merely to make that
+substage non-vacuous.
 
 R6 proves both conventional image rendering and the broader semantic-rendering API. It
 does not authorize public types named after SDF, direct lighting, preview, or the first
@@ -475,7 +496,9 @@ Required evidence includes:
 - at least two meaningfully distinct render-method families sufficient to prove the
   shared method/planning abstraction;
 - non-camera/non-image-grid observation;
-- GPU-produced request-scoped semantic input without CPU readback;
+- GPU-produced request-scoped semantic input without CPU readback; if no earlier phase
+  introduced a real request-scoped semantic-input consumer, this is the mandatory first
+  concrete non-vacuous binding/admission conformance proof;
 - multi-observation and multi-output sharing;
 - incremental/full equivalence;
 - session/cancellation proof if retained;
