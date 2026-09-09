@@ -1012,10 +1012,7 @@ mod tests {
                 second_id,
                 RenderRepresentationAvailabilityState::Available,
             ),
-            RenderRepresentationAvailabilityFact::new(
-                first_id,
-                RenderRepresentationAvailabilityState::Unavailable,
-            ),
+            RenderRepresentationAvailabilityState::Available,
         ])
         .expect("availability");
         let first = admit_candidate(
@@ -1121,7 +1118,7 @@ mod tests {
         assert_eq!(ordered, vec![first.clone(), second.clone()]);
 
         assert!(matches!(
-            normalize_output_bindings(&plan, &[first.clone()]),
+            normalize_output_bindings(&plan, std::slice::from_ref(&first)),
             Err(RenderExecutionAdmissionFailure::InvalidInput(
                 RenderAdmissionInputError::MissingOutputBinding { output_index: 1 }
             ))
