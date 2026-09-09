@@ -86,5 +86,5 @@ current-source inventory
 - [Cross-authority consistency and graph-semantics ADR](docs-site/src/content/docs/adr/accepted/0017-cross-authority-consistency-and-graph-semantics.md)
 - [Semantic federation and physical realization ADR](docs-site/src/content/docs/adr/accepted/0018-semantic-federation-and-physical-realization.md)
 - [RunenRender semantic-rendering ADR](docs-site/src/content/docs/adr/accepted/0021-ratify-runenrender-semantic-rendering-architecture.md)
-- [RunenRender canonical design](docs-site/src/content/docs/design/active/runenrender-decomposition-design.md)
+- [RunenRender canonical design](docs-site/src/content/docs/design/accepted/runenrender-decomposition-design.md)
 - [Dependency rules](docs-site/src/content/docs/guidelines/dependency-rules.md)
