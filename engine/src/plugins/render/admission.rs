@@ -831,7 +831,10 @@ mod tests {
         let plan = plan_render(
             &store.snapshot(),
             &request,
-            &[method_with_guarantee(RenderObservationKind::Probe, guarantee)],
+            &[method_with_guarantee(
+                RenderObservationKind::Probe,
+                guarantee,
+            )],
         )
         .expect("plan");
         (plan, first_id, second_id)
