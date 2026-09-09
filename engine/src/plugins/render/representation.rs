@@ -123,27 +123,12 @@ impl fmt::Display for RenderRepresentationValidationError {
 
 impl Error for RenderRepresentationValidationError {}
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct RenderSurfaceProtocolEvidence {
-    revision: u32,
-}
-
-impl RenderSurfaceProtocolEvidence {
-    pub fn exact(revision: u32) -> Result<Self, RenderRepresentationValidationError> {
-        validate_protocol_revision(revision)?;
-        Ok(Self { revision })
-    }
-
-    pub const fn revision(self) -> u32 {
-        self.revision
-    }
-}
-
 /// Exact oriented-surface query evidence.
 ///
-/// This capability is independent from plain `SurfaceQuery`: a representation advertises each
-/// protocol it actually supports. Oriented-surface results add one representation-defined geometric
-/// front-side unit normal in canonical scene coordinates without widening the plain surface result.
+/// The oriented protocol refines exact surface-query semantics with one representation-defined
+/// geometric front-side normal in canonical scene coordinates. Because every oriented result
+/// contains a valid exact surface hit, oriented capability is advertised through the corresponding
+/// surface evidence rather than as an unrelated representation-family field.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct RenderOrientedSurfaceProtocolEvidence {
     revision: u32,
@@ -157,6 +142,38 @@ impl RenderOrientedSurfaceProtocolEvidence {
 
     pub const fn revision(self) -> u32 {
         self.revision
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct RenderSurfaceProtocolEvidence {
+    revision: u32,
+    oriented_surface: Option<RenderOrientedSurfaceProtocolEvidence>,
+}
+
+impl RenderSurfaceProtocolEvidence {
+    pub fn exact(revision: u32) -> Result<Self, RenderRepresentationValidationError> {
+        validate_protocol_revision(revision)?;
+        Ok(Self {
+            revision,
+            oriented_surface: None,
+        })
+    }
+
+    pub const fn with_oriented_surface(
+        mut self,
+        evidence: RenderOrientedSurfaceProtocolEvidence,
+    ) -> Self {
+        self.oriented_surface = Some(evidence);
+        self
+    }
+
+    pub const fn revision(self) -> u32 {
+        self.revision
+    }
+
+    pub const fn oriented_surface(self) -> Option<RenderOrientedSurfaceProtocolEvidence> {
+        self.oriented_surface
     }
 }
 
@@ -313,7 +330,6 @@ pub struct RenderRepresentationRecord {
     temporal_support: RenderTemporalSupport,
     refinement: RenderRefinementEvidence,
     surface_query: Option<RenderSurfaceProtocolEvidence>,
-    oriented_surface_query: Option<RenderOrientedSurfaceProtocolEvidence>,
     field_distance: Option<RenderFieldDistanceProtocolEvidence>,
 }
 
@@ -324,10 +340,9 @@ impl RenderRepresentationRecord {
         temporal_support: RenderTemporalSupport,
         refinement: RenderRefinementEvidence,
         surface_query: Option<RenderSurfaceProtocolEvidence>,
-        oriented_surface_query: Option<RenderOrientedSurfaceProtocolEvidence>,
         field_distance: Option<RenderFieldDistanceProtocolEvidence>,
     ) -> Result<Self, RenderRepresentationValidationError> {
-        if surface_query.is_none() && oriented_surface_query.is_none() && field_distance.is_none() {
+        if surface_query.is_none() && field_distance.is_none() {
             return Err(RenderRepresentationValidationError::NoProtocols);
         }
         Ok(Self {
@@ -336,7 +351,6 @@ impl RenderRepresentationRecord {
             temporal_support,
             refinement,
             surface_query,
-            oriented_surface_query,
             field_distance,
         })
     }
@@ -383,7 +397,8 @@ impl RenderRepresentationRecord {
         requested_revision: u32,
     ) -> Result<RenderOrientedSurfaceProtocolEvidence, RenderProtocolCompatibilityError> {
         let evidence = self
-            .oriented_surface_query
+            .surface_query
+            .and_then(RenderSurfaceProtocolEvidence::oriented_surface)
             .ok_or(RenderProtocolCompatibilityError::Unsupported {
                 protocol: RenderRepresentationProtocol::OrientedSurfaceQuery,
             })?;
@@ -704,7 +719,6 @@ mod tests {
     fn representation(
         id: u64,
         surface: Option<RenderSurfaceProtocolEvidence>,
-        oriented_surface: Option<RenderOrientedSurfaceProtocolEvidence>,
         field: Option<RenderFieldDistanceProtocolEvidence>,
     ) -> RenderRepresentationRecord {
         RenderRepresentationRecord::new(
@@ -713,7 +727,6 @@ mod tests {
             RenderTemporalSupport::unbounded(),
             RenderRefinementEvidence::none(),
             surface,
-            oriented_surface,
             field,
         )
         .expect("valid representation")
@@ -728,7 +741,6 @@ mod tests {
                 RenderSpatialCoverage::unbounded(),
                 RenderTemporalSupport::unbounded(),
                 RenderRefinementEvidence::none(),
-                None,
                 None,
                 None,
             ),
@@ -746,7 +758,6 @@ mod tests {
                 RenderSurfaceProtocolEvidence::exact(RENDER_SURFACE_QUERY_PROTOCOL_REVISION)
                     .expect("valid protocol"),
             ),
-            None,
             None,
         );
         record
@@ -770,21 +781,37 @@ mod tests {
     }
 
     #[test]
-    fn oriented_surface_protocol_is_explicit_and_independent_from_plain_surface_query() {
-        let evidence = RenderOrientedSurfaceProtocolEvidence::exact(
-            RENDER_ORIENTED_SURFACE_QUERY_PROTOCOL_REVISION,
-        )
-        .expect("valid oriented protocol");
-        let record = representation(1, None, Some(evidence), None);
-        assert_eq!(
-            record.oriented_surface_query_protocol(RENDER_ORIENTED_SURFACE_QUERY_PROTOCOL_REVISION),
-            Ok(evidence)
+    fn oriented_surface_protocol_refines_but_is_not_implied_by_plain_surface_query() {
+        let plain = representation(
+            1,
+            Some(
+                RenderSurfaceProtocolEvidence::exact(RENDER_SURFACE_QUERY_PROTOCOL_REVISION)
+                    .expect("plain surface protocol"),
+            ),
+            None,
         );
         assert_eq!(
-            record.surface_query_protocol(RENDER_SURFACE_QUERY_PROTOCOL_REVISION),
+            plain.oriented_surface_query_protocol(RENDER_ORIENTED_SURFACE_QUERY_PROTOCOL_REVISION),
             Err(RenderProtocolCompatibilityError::Unsupported {
-                protocol: RenderRepresentationProtocol::SurfaceQuery,
+                protocol: RenderRepresentationProtocol::OrientedSurfaceQuery,
             })
+        );
+
+        let oriented = RenderOrientedSurfaceProtocolEvidence::exact(
+            RENDER_ORIENTED_SURFACE_QUERY_PROTOCOL_REVISION,
+        )
+        .expect("oriented surface protocol");
+        let surface = RenderSurfaceProtocolEvidence::exact(RENDER_SURFACE_QUERY_PROTOCOL_REVISION)
+            .expect("surface protocol")
+            .with_oriented_surface(oriented);
+        let record = representation(2, Some(surface), None);
+        assert_eq!(
+            record.surface_query_protocol(RENDER_SURFACE_QUERY_PROTOCOL_REVISION),
+            Ok(surface)
+        );
+        assert_eq!(
+            record.oriented_surface_query_protocol(RENDER_ORIENTED_SURFACE_QUERY_PROTOCOL_REVISION),
+            Ok(oriented)
         );
         assert_eq!(
             record.oriented_surface_query_protocol(
@@ -805,7 +832,7 @@ mod tests {
             RenderFieldDistanceGuarantee::conservative(0.25).expect("valid field guarantee"),
         )
         .expect("valid field protocol");
-        let record = representation(1, None, None, Some(evidence));
+        let record = representation(1, None, Some(evidence));
         let supported = record
             .field_distance_protocol(RENDER_FIELD_DISTANCE_PROTOCOL_REVISION)
             .expect("field protocol should be supported");
@@ -828,7 +855,6 @@ mod tests {
                 RenderSurfaceProtocolEvidence::exact(RENDER_SURFACE_QUERY_PROTOCOL_REVISION)
                     .expect("valid protocol"),
             ),
-            None,
             None,
         );
         assert_eq!(
@@ -861,7 +887,6 @@ mod tests {
                 RenderSurfaceProtocolEvidence::exact(RENDER_SURFACE_QUERY_PROTOCOL_REVISION)
                     .expect("valid protocol"),
             ),
-            None,
             None,
         )
         .expect("valid representation");
