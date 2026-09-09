@@ -123,6 +123,7 @@ active design contains older conflicting target language.
 
 ### Repository Family Extraction
 
+- [RunenECS Normative Semantic Model Design](domain-ecs-normative-semantic-model-design.md)
 - [RunenSDF Extraction Design](runensdf-extraction-design.md)
 - [RunenSDF Repository Identity Decision](runensdf-repository-identity-decision.md)
 - [RunenGPU Architecture Design](runengpu-architecture-design.md)
@@ -151,7 +152,7 @@ active design contains older conflicting target language.
 - [UI Game And World-Space Host Requirements](ui-game-and-worldspace-host-requirements-design.md)
 - [UI Accessibility, Internationalization, And Text Conformance](ui-accessibility-internationalization-and-text-conformance-design.md)
 - [UI Layout, Style, Theme, And Motion](ui-layout-style-theme-and-motion-design.md)
-- [UI Performance, Virtualization, Assets, And Profiling](ui-performance-virtualization-assets-and-profiling-design.md)
+- [UI Performance, Virtualization, Assets, And Profiling](ui-performance-virtualization-assets-profiling-design.md)
 - [UI Render Output And Host Renderer Boundary](ui-render-output-and-host-renderer-boundary-design.md)
 - [UI Platform Input, Windowing, And OS Integration](ui-platform-input-windowing-and-os-integration-design.md)
 - [UI Devtools, Inspection, And Workbench](ui-devtools-inspection-and-workbench-design.md)
