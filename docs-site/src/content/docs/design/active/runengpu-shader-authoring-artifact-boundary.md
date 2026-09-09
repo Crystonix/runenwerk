@@ -10,7 +10,7 @@ related_docs:
   - ./runengpu-architecture-design.md
   - ./runengpu-g4-context-program-realization-design.md
   - ./runengpu-phase-requirements-proof-matrix.md
-  - ./runenrender-decomposition-design.md
+  - ../accepted/runenrender-decomposition-design.md
   - ./runenrender-internal-decomposition-execution-plan.md
   - ../../architecture/repository-family-architecture.md
   - ../../adr/accepted/0015-separate-gpu-execution-from-rendering.md
