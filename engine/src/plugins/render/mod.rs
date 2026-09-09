@@ -9,6 +9,7 @@ pub mod frame;
 pub mod gpu_primitives;
 pub mod graph;
 pub mod inspect;
+pub mod lowering;
 pub mod material_compiler;
 pub mod method;
 pub mod params;
@@ -26,6 +27,13 @@ pub mod shader;
 pub mod space_time;
 pub mod surface_result;
 mod texture_upload;
+
+#[cfg(test)]
+mod r6_proof;
+#[cfg(test)]
+mod r6_reference_proof;
+#[cfg(test)]
+mod r6_spine_proof;
 
 mod plugin;
 pub mod runtime;
