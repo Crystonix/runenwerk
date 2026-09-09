@@ -5,7 +5,7 @@ status: active
 owner: workspace
 layer: workspace
 canonical: true
-last_reviewed: 2026-09-09
+last_reviewed: 2026-09-10
 ---
 
 # Implemented Designs
@@ -42,7 +42,8 @@ checked against code, tests, closeout evidence, and known drift.
 
 ### App / Tooling
 
-No implemented app/tooling design documents are currently tracked in this folder.
+- [Runenwerk Draw Tool Session Architecture Slice](runenwerk-draw-tool-session-architecture-slice.md)
+- [Runenwerk Draw Stroke Fidelity Phase 1 Preview Final Parity](runenwerk-draw-stroke-fidelity-phase-1-preview-final-parity.md)
 
 ### Workspace / Cross-Domain
 
