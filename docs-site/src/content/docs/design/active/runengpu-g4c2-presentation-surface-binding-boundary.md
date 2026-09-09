@@ -9,7 +9,7 @@ last_reviewed: 2026-08-11
 related_docs:
   - ./runengpu-g4b-contracts-g4c-delivery-design.md
   - ./runengpu-g4-context-program-realization-design.md
-  - ./runenrender-decomposition-design.md
+  - ../accepted/runenrender-decomposition-design.md
   - ../../adr/accepted/0015-separate-gpu-execution-from-rendering.md
   - ../../workspace/specs/pt-runengpu-g4c-wgpu-realization-cutover.ron
   - ../../workspace/specs/pt-runengpu-g4c1-resource-realization.ron
