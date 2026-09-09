@@ -359,7 +359,7 @@ pub fn admit_render_plan(
                     outputs,
                     environment: RenderExecutionAdmissionEvidence {
                         affinity: context.affinity(),
-                        lifecycle: context.execution_lifecycle_state(),
+                        lifecycle: current.lifecycle,
                         policy: context.execution_policy(),
                         stats: context.execution_stats(),
                     },
@@ -615,7 +615,7 @@ fn validate_current_execution(
 mod tests {
     use super::*;
     use crate::plugins::render::method::{
-        RenderMethodContract, RenderMethodId, RenderMethodOutputContract,
+        RenderDistanceErrorBound, RenderMethodContract, RenderMethodId, RenderMethodOutputContract,
         RenderMethodOutputGuarantee, RenderMethodOutputKind, RenderMethodRepresentationRequirement,
         RenderObservationKind, RenderRepresentationProtocolRequirement,
     };
@@ -659,7 +659,9 @@ mod tests {
         )
     }
 
-    fn scalar_distance_request() -> super::super::request::RenderRequest {
+    fn scalar_distance_request_with_tolerance(
+        tolerance: RenderSemanticTolerance,
+    ) -> super::super::request::RenderRequest {
         let shutter = interval(0.0);
         let observation = RenderObservationSpec::Probe(
             RenderProbeObservation::new(
@@ -674,13 +676,50 @@ mod tests {
                 convention: RenderDistanceConvention::RayDistance,
             },
             RenderResultTopology::scalar(),
-            RenderSemanticTolerance::exact(),
+            tolerance,
         )
         .expect("output");
         super::super::request::RenderRequest::new(
             shutter,
             vec![observation],
             vec![RenderRequestedOutput::new(0, output)],
+        )
+        .expect("request")
+    }
+
+    fn scalar_distance_request() -> super::super::request::RenderRequest {
+        scalar_distance_request_with_tolerance(RenderSemanticTolerance::exact())
+    }
+
+    fn two_scalar_distance_request() -> super::super::request::RenderRequest {
+        let shutter = interval(0.0);
+        let probe = || {
+            RenderObservationSpec::Probe(
+                RenderProbeObservation::new(
+                    RenderAffineTransform3::identity(),
+                    shutter,
+                    RenderSamplingSupport::ideal_ray(),
+                )
+                .expect("probe"),
+            )
+        };
+        let output = || {
+            RenderOutputSpec::new(
+                RenderOutputValue::Distance {
+                    convention: RenderDistanceConvention::RayDistance,
+                },
+                RenderResultTopology::scalar(),
+                RenderSemanticTolerance::exact(),
+            )
+            .expect("output")
+        };
+        super::super::request::RenderRequest::new(
+            shutter,
+            vec![probe(), probe()],
+            vec![
+                RenderRequestedOutput::new(0, output()),
+                RenderRequestedOutput::new(1, output()),
+            ],
         )
         .expect("request")
     }
@@ -723,13 +762,16 @@ mod tests {
         .expect("requirement")
     }
 
-    fn method(observation_kind: RenderObservationKind) -> RenderMethodContract {
+    fn method_with_guarantee(
+        observation_kind: RenderObservationKind,
+        guarantee: RenderMethodOutputGuarantee,
+    ) -> RenderMethodContract {
         let output = RenderMethodOutputContract::new(
             observation_kind,
             RenderMethodOutputKind::Distance {
                 convention: RenderDistanceConvention::RayDistance,
             },
-            RenderMethodOutputGuarantee::Exact,
+            guarantee,
             vec![surface_requirement()],
             false,
         )
@@ -742,8 +784,14 @@ mod tests {
         .expect("method")
     }
 
-    fn plan_with_two_surface_representations()
-    -> (RenderPlan, RenderRepresentationId, RenderRepresentationId) {
+    fn method(observation_kind: RenderObservationKind) -> RenderMethodContract {
+        method_with_guarantee(observation_kind, RenderMethodOutputGuarantee::Exact)
+    }
+
+    fn plan_with_two_surface_representations_for(
+        request: super::super::request::RenderRequest,
+        guarantee: RenderMethodOutputGuarantee,
+    ) -> (RenderPlan, RenderRepresentationId, RenderRepresentationId) {
         let mut store = RenderSceneStore::new();
         let object_id = store.allocate_object_id().expect("object id");
         let mut insert = RenderSceneUpdate::new();
@@ -782,11 +830,56 @@ mod tests {
 
         let plan = plan_render(
             &store.snapshot(),
-            &scalar_distance_request(),
-            &[method(RenderObservationKind::Probe)],
+            &request,
+            &[method_with_guarantee(RenderObservationKind::Probe, guarantee)],
         )
         .expect("plan");
         (plan, first_id, second_id)
+    }
+
+    fn plan_with_two_surface_representations()
+    -> (RenderPlan, RenderRepresentationId, RenderRepresentationId) {
+        plan_with_two_surface_representations_for(
+            scalar_distance_request(),
+            RenderMethodOutputGuarantee::Exact,
+        )
+    }
+
+    fn two_output_plan() -> (RenderPlan, RenderRepresentationId) {
+        let mut store = RenderSceneStore::new();
+        let object_id = store.allocate_object_id().expect("object id");
+        let mut insert = RenderSceneUpdate::new();
+        insert.insert_with_state(object_id, object_state());
+        store.commit(insert).expect("insert");
+
+        let representation_id = store
+            .allocate_representation_id(object_id)
+            .expect("representation id");
+        let representation = RenderRepresentationRecord::new(
+            representation_id,
+            RenderSpatialCoverage::unbounded(),
+            RenderTemporalSupport::unbounded(),
+            RenderRefinementEvidence::none(),
+            Some(
+                RenderSurfaceProtocolEvidence::exact(RENDER_SURFACE_QUERY_PROTOCOL_REVISION)
+                    .expect("surface evidence"),
+            ),
+            None,
+        )
+        .expect("representation");
+        let participation = RenderObjectParticipation::new(vec![representation], None, None)
+            .expect("participation");
+        let mut attach = RenderSceneUpdate::new();
+        attach.replace_participation(object_id, participation);
+        store.commit(attach).expect("attach");
+
+        let plan = plan_render(
+            &store.snapshot(),
+            &two_scalar_distance_request(),
+            &[method(RenderObservationKind::Probe)],
+        )
+        .expect("plan");
+        (plan, representation_id)
     }
 
     fn lattice_plan(width: u32, height: u32) -> RenderPlan {
@@ -833,8 +926,8 @@ mod tests {
         }
     }
 
-    fn scalar_buffer_binding() -> RenderOutputBinding {
-        let label = GpuResourceLabel::new("r5 scalar output").expect("label");
+    fn scalar_buffer_binding_for(output_index: usize, label_text: &str) -> RenderOutputBinding {
+        let label = GpuResourceLabel::new(label_text).expect("label");
         let provenance = GpuResourceProvenance::new(label.clone(), None, None);
         let common = GpuResourceCommon::owned(
             label.clone(),
@@ -852,7 +945,11 @@ mod tests {
         let buffer = allocator
             .allocate_buffer_handle(descriptor)
             .expect("buffer handle");
-        RenderOutputBinding::new(0, RenderOutputDestination::ScalarBuffer(buffer))
+        RenderOutputBinding::new(output_index, RenderOutputDestination::ScalarBuffer(buffer))
+    }
+
+    fn scalar_buffer_binding() -> RenderOutputBinding {
+        scalar_buffer_binding_for(0, "r5 scalar output")
     }
 
     fn lattice_texture(width: u32, height: u32, writable: bool) -> GpuTextureHandle {
@@ -1012,6 +1109,80 @@ mod tests {
     }
 
     #[test]
+    fn multi_output_bindings_are_correlated_by_index_not_input_order() {
+        let (plan, representation_id) = two_output_plan();
+        let first = scalar_buffer_binding_for(0, "r5 output zero");
+        let second = scalar_buffer_binding_for(1, "r5 output one");
+        let ordered = normalize_output_bindings(&plan, &[second.clone(), first.clone()])
+            .expect("reversed bindings normalize by output index");
+        assert_eq!(ordered, vec![first.clone(), second.clone()]);
+
+        assert!(matches!(
+            normalize_output_bindings(&plan, &[first.clone()]),
+            Err(RenderExecutionAdmissionFailure::InvalidInput(
+                RenderAdmissionInputError::MissingOutputBinding { output_index: 1 }
+            ))
+        ));
+
+        let availability = normalize_availability(&[RenderRepresentationAvailabilityFact::new(
+            representation_id,
+            RenderRepresentationAvailabilityState::Available,
+        )])
+        .expect("availability");
+        let admitted = admit_candidate(
+            plan.candidates().first().unwrap(),
+            &availability,
+            &ordered,
+            available_execution(),
+        )
+        .expect("candidate");
+        assert_eq!(admitted.len(), 2);
+        assert_eq!(admitted[0].output_index(), 0);
+        assert_eq!(admitted[1].output_index(), 1);
+        assert_eq!(admitted[0].binding(), &first);
+        assert_eq!(admitted[1].binding(), &second);
+    }
+
+    #[test]
+    fn bounded_r4_approximation_is_preserved_unchanged_through_admission() {
+        let max_error_meters = RenderDistanceErrorBound::new(0.01).expect("distance bound");
+        let request = scalar_distance_request_with_tolerance(
+            RenderSemanticTolerance::absolute(0.02).expect("tolerance"),
+        );
+        let (plan, first_id, second_id) = plan_with_two_surface_representations_for(
+            request,
+            RenderMethodOutputGuarantee::BoundedAbsoluteDistance { max_error_meters },
+        );
+        let availability = normalize_availability(&[
+            RenderRepresentationAvailabilityFact::new(
+                first_id,
+                RenderRepresentationAvailabilityState::Available,
+            ),
+            RenderRepresentationAvailabilityFact::new(
+                second_id,
+                RenderRepresentationAvailabilityState::Unavailable,
+            ),
+        ])
+        .expect("availability");
+        let bindings =
+            normalize_output_bindings(&plan, &[scalar_buffer_binding()]).expect("bindings");
+        let planned_approximation = plan.candidates()[0].outputs()[0].approximation();
+        let admitted = admit_candidate(
+            &plan.candidates()[0],
+            &availability,
+            &bindings,
+            available_execution(),
+        )
+        .expect("candidate");
+
+        assert_eq!(admitted[0].approximation(), planned_approximation);
+        assert_eq!(
+            admitted[0].approximation(),
+            RenderOutputApproximation::BoundedAbsoluteDistance { max_error_meters }
+        );
+    }
+
+    #[test]
     fn scalar_output_rejects_lattice_texture_destination() {
         let (plan, _, _) = plan_with_two_surface_representations();
         let wrong = RenderOutputBinding::new(
@@ -1030,6 +1201,17 @@ mod tests {
     fn current_execution_requires_running_lifecycle_and_enabled_compute() {
         let (plan, _, _) = plan_with_two_surface_representations();
         let candidate = plan.candidates().first().unwrap();
+        let mut current = available_execution();
+        current.compute_supported = false;
+        assert_eq!(
+            validate_current_execution(candidate, current),
+            Err(
+                RenderCandidateAdmissionRejectionReason::RequiredCapabilityUnsupported {
+                    feature: GpuCapabilityFeature::Compute,
+                }
+            )
+        );
+
         let mut current = available_execution();
         current.compute_enabled = false;
         assert_eq!(
