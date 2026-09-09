@@ -1,4 +1,4 @@
-//! R2 per-sample output-result definedness semantics.
+//! R2 per-output-sample result-definedness semantics.
 //!
 //! This module owns only whether one logical requested-output sample has a renderer-semantic value
 //! and how the current R2 output-value families interpret the absence of a represented surface hit.
@@ -14,7 +14,7 @@ use super::request::RenderOutputValue;
 /// sample are non-semantic and must not be interpreted as a distance, radiance, object identity, or
 /// other result value merely because they occupy the same storage destination.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum RenderSampleUndefinedReason {
+pub enum RenderOutputSampleUndefinedReason {
     /// The requested geometric result had no represented surface hit for this logical sample.
     NoRepresentedSurfaceHit,
 }
@@ -26,17 +26,17 @@ pub enum RenderSampleUndefinedReason {
 /// zero bits as an otherwise convenient placeholder for the undefined payload. Semantic tolerance
 /// applies only to a defined value; it does not turn an undefined sample into a numeric value.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum RenderSampleDefinedness {
+pub enum RenderOutputSampleDefinedness {
     Defined,
-    Undefined(RenderSampleUndefinedReason),
+    Undefined(RenderOutputSampleUndefinedReason),
 }
 
-impl RenderSampleDefinedness {
+impl RenderOutputSampleDefinedness {
     pub const fn is_defined(self) -> bool {
         matches!(self, Self::Defined)
     }
 
-    pub const fn undefined_reason(self) -> Option<RenderSampleUndefinedReason> {
+    pub const fn undefined_reason(self) -> Option<RenderOutputSampleUndefinedReason> {
         match self {
             Self::Defined => None,
             Self::Undefined(reason) => Some(reason),
@@ -50,8 +50,8 @@ impl RenderSampleDefinedness {
 /// `DoesNotDetermineDefinedness` means the geometric event alone says nothing about whether the
 /// requested value exists or what it is.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum RenderNoSurfaceHitSemantics {
-    Undefined(RenderSampleUndefinedReason),
+pub enum RenderOutputNoSurfaceHitSemantics {
+    Undefined(RenderOutputSampleUndefinedReason),
     DoesNotDetermineDefinedness,
 }
 
@@ -62,12 +62,14 @@ impl RenderOutputValue {
     /// they are undefined on a miss. Radiance is different: a miss does not inherently mean black
     /// or undefined because environment, emission, volume, or other transport semantics may still
     /// define radiance. The geometric miss therefore does not determine radiance definedness.
-    pub const fn no_surface_hit_semantics(self) -> RenderNoSurfaceHitSemantics {
+    pub const fn no_surface_hit_semantics(self) -> RenderOutputNoSurfaceHitSemantics {
         match self {
-            Self::Radiance { .. } => RenderNoSurfaceHitSemantics::DoesNotDetermineDefinedness,
-            Self::Distance { .. } | Self::ObjectIdentity => RenderNoSurfaceHitSemantics::Undefined(
-                RenderSampleUndefinedReason::NoRepresentedSurfaceHit,
-            ),
+            Self::Radiance { .. } => RenderOutputNoSurfaceHitSemantics::DoesNotDetermineDefinedness,
+            Self::Distance { .. } | Self::ObjectIdentity => {
+                RenderOutputNoSurfaceHitSemantics::Undefined(
+                    RenderOutputSampleUndefinedReason::NoRepresentedSurfaceHit,
+                )
+            }
         }
     }
 }
@@ -85,7 +87,7 @@ mod tests {
         defined: bool,
     }
 
-    fn proof_encode(payload: u32, definedness: RenderSampleDefinedness) -> ProofPhysicalWord {
+    fn proof_encode(payload: u32, definedness: RenderOutputSampleDefinedness) -> ProofPhysicalWord {
         ProofPhysicalWord {
             payload,
             defined: definedness.is_defined(),
@@ -94,11 +96,11 @@ mod tests {
 
     #[test]
     fn valid_zero_and_undefined_sample_are_semantically_distinct() {
-        let defined_zero = proof_encode(0, RenderSampleDefinedness::Defined);
+        let defined_zero = proof_encode(0, RenderOutputSampleDefinedness::Defined);
         let undefined_zero = proof_encode(
             0,
-            RenderSampleDefinedness::Undefined(
-                RenderSampleUndefinedReason::NoRepresentedSurfaceHit,
+            RenderOutputSampleDefinedness::Undefined(
+                RenderOutputSampleUndefinedReason::NoRepresentedSurfaceHit,
             ),
         );
 
@@ -109,8 +111,8 @@ mod tests {
 
     #[test]
     fn distance_and_identity_miss_are_undefined_without_value_sentinels() {
-        let expected = RenderNoSurfaceHitSemantics::Undefined(
-            RenderSampleUndefinedReason::NoRepresentedSurfaceHit,
+        let expected = RenderOutputNoSurfaceHitSemantics::Undefined(
+            RenderOutputSampleUndefinedReason::NoRepresentedSurfaceHit,
         );
         assert_eq!(
             RenderOutputValue::Distance {
@@ -131,12 +133,12 @@ mod tests {
             expected
         );
 
-        let undefined = RenderSampleDefinedness::Undefined(
-            RenderSampleUndefinedReason::NoRepresentedSurfaceHit,
+        let undefined = RenderOutputSampleDefinedness::Undefined(
+            RenderOutputSampleUndefinedReason::NoRepresentedSurfaceHit,
         );
         assert_eq!(
             undefined.undefined_reason(),
-            Some(RenderSampleUndefinedReason::NoRepresentedSurfaceHit)
+            Some(RenderOutputSampleUndefinedReason::NoRepresentedSurfaceHit)
         );
     }
 
@@ -148,7 +150,7 @@ mod tests {
         };
         assert_eq!(
             radiance.no_surface_hit_semantics(),
-            RenderNoSurfaceHitSemantics::DoesNotDetermineDefinedness
+            RenderOutputNoSurfaceHitSemantics::DoesNotDetermineDefinedness
         );
     }
 }
