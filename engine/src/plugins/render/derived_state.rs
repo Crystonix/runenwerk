@@ -11,7 +11,7 @@ use super::scene::{RenderObjectId, RenderSceneChangeSet};
 ///
 /// These dependencies use only renderer-owned semantic identity and accepted scene-change families.
 /// Source/ECS/product identities and RunenGPU identities remain separate authorities.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum RenderDerivedSceneDependency {
     /// Whether this renderer object is present in the semantic scene.
     ObjectPresence(RenderObjectId),
@@ -36,6 +36,17 @@ impl RenderDerivedSceneDependency {
             | Self::ObjectRepresentations(object_id)
             | Self::ObjectMaterialAssignment(object_id)
             | Self::ObjectEmitter(object_id) => object_id,
+        }
+    }
+
+    const fn facet_rank(self) -> u8 {
+        match self {
+            Self::ObjectPresence(_) => 0,
+            Self::ObjectSpatialState(_) => 1,
+            Self::ObjectTemporalState(_) => 2,
+            Self::ObjectRepresentations(_) => 3,
+            Self::ObjectMaterialAssignment(_) => 4,
+            Self::ObjectEmitter(_) => 5,
         }
     }
 
@@ -90,11 +101,16 @@ pub struct RenderDerivedSceneDependencies {
 impl RenderDerivedSceneDependencies {
     pub fn new(dependencies: impl IntoIterator<Item = RenderDerivedSceneDependency>) -> Self {
         let mut dependencies = dependencies.into_iter().collect::<Vec<_>>();
-        dependencies.sort_unstable();
+        dependencies.sort_unstable_by_key(|dependency| {
+            (dependency.object_id(), dependency.facet_rank())
+        });
         dependencies.dedup();
         Self { dependencies }
     }
 
+    /// Returns dependencies in canonical deterministic inspection order.
+    ///
+    /// The order carries no semantic priority or execution meaning.
     pub fn dependencies(&self) -> &[RenderDerivedSceneDependency] {
         &self.dependencies
     }
