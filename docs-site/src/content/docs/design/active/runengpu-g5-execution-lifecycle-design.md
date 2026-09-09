@@ -287,7 +287,7 @@ GpuRenderOperation
   color attachments
   optional depth/stencil attachment
   draws: [GpuRenderDraw]
-  timestamp_writes
+  timestamp writes
 ```
 
 Each draw owns complete effective execution state:
