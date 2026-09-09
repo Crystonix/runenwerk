@@ -1,0 +1,68 @@
+name: C8 mandatory scheduler census
+
+on:
+  push:
+    branches:
+      - issue-480-c8-runenecs-schedule-cutover
+
+permissions:
+  contents: read
+
+concurrency:
+  group: c8-census-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  census:
+    name: Census accepted main
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout accepted main, not the census commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: main
+          clean: true
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Prove clean exact accepted-main checkout
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
+          test -z "$(git status --porcelain)"
+          C8_BASE="$(git rev-parse HEAD)"
+          printf 'C8 census base: %s\n' "$C8_BASE"
+
+      - name: Run mandatory C8 census
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo '=== scheduler/type consumer census ==='
+          git grep -n -E 'scheduler::|ExecutionScheduler|ExecutionPlan|ExecutionPhase|ExecutionWave|ExecutionStage|ExecutionBarrier|BarrierKind|ExecutionPhaseKind|SystemAccess|AccessKey|AccessDomain|SystemId|RegisteredSystem|ParamSlotDescriptor|ScheduleLabel|ScheduleKey|SystemSet|SystemSetKey' -- '*.rs' 'Cargo.toml' || true
+
+          echo '=== application/lifecycle policy census ==='
+          git grep -n -E 'ProductPublication|QuerySnapshotPublication|RenderSubmit|GenerationFinalization|ReplayNetworkCapture|ApplyDeferredCommands|PreUpdate|FixedUpdate|FrameEnd' -- '*.rs' || true
+
+          echo '=== stale C6 / generic scheduler residue census ==='
+          git grep -n -E 'BroadcastStream|WorkQueue|TickBuffer|SchedulerCore|SchedulerNode|Dag|DAG|Dot|DOT|set_slow_node_logging_enabled' domain/ecs domain/scheduler engine apps adapters net -- '*.rs' 'Cargo.toml' || true
+
+          echo '=== manifest/package closure census ==='
+          git grep -n -E 'scheduler[[:space:]]*=|scheduler/' -- 'Cargo.toml' '**/Cargo.toml' || true
+
+          echo '=== recursive-pathspec-independent tracked-file verification ==='
+          pattern='scheduler::|ExecutionScheduler|ExecutionPlan|ExecutionPhase|ExecutionWave|ExecutionStage|ExecutionBarrier|BarrierKind|ExecutionPhaseKind|SystemAccess|AccessKey|AccessDomain|SystemId|RegisteredSystem|ParamSlotDescriptor|ScheduleLabel|ScheduleKey|SystemSet|SystemSetKey|ProductPublication|QuerySnapshotPublication|RenderSubmit|GenerationFinalization|ReplayNetworkCapture|ApplyDeferredCommands|PreUpdate|FixedUpdate|FrameEnd|BroadcastStream|WorkQueue|TickBuffer|SchedulerCore|SchedulerNode|Dag|DAG|Dot|DOT|set_slow_node_logging_enabled|scheduler[[:space:]]*=|scheduler/'
+          git ls-files | grep -E '(^|/)Cargo\.toml$|\.rs$' | while IFS= read -r file; do
+            grep -nH -E "$pattern" "$file" || true
+          done
+
+          echo '=== cargo tree -i scheduler --workspace --locked ==='
+          cargo tree -i scheduler --workspace --locked
+
+          echo '=== cargo tree -p ecs --locked ==='
+          cargo tree -p ecs --locked
+
+          echo '=== cargo tree -i ecs --workspace --locked ==='
+          cargo tree -i ecs --workspace --locked
