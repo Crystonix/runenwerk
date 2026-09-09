@@ -19,17 +19,17 @@ related_docs:
 
 This architecture is implemented and has been checked against current Draw presentation/state code and the #492 Draw disposition audit. Domain-formed preview products are the primary formed stroke representation; `UiPrimitive::Stroke` survives only as a bounded, non-authoritative tail for samples not yet covered by preview products and disappears when formed coverage catches up. Pointer-up/released preview visibility remains bridged until committed replacement passes the existing product/query acceptance barriers.
 
-The proposed `ActiveStrokePreviewSession` name and other type-level decomposition below were directional rather than required API spellings. Current code and tests own exact behavior; the design below remains the durable ownership and lifecycle contract. Paper Response Phase 6A remains separately deferred and is not activated by this promotion.
+The proposed `ActiveStrokePreviewSession` name and other type-level decomposition below were directional rather than required API spellings. Current code and tests own exact behavior. Sections describing the “current” lifecycle or investigation findings record the design-time baseline and are retained as rationale. Paper Response Phase 6A remains separately deferred and is not activated by this promotion.
 
 ## Summary
 
-Stroke Fidelity Phase 1 defines the long-term stroke visualization architecture for eliminating the split between app-local immediate stroke polylines and domain-formed CPU ink products.
+Stroke Fidelity Phase 1 plans the long-term stroke visualization architecture for eliminating the split between app-local immediate stroke polylines and domain-formed CPU ink products.
 
-Sample-count or range metadata may exist as scheduling and progress metadata inside the active preview pipeline, but it must not define visual truth. Active preview is represented primarily by domain-formed preview ink products, and committed output replaces provisional preview products through the existing product/query barriers.
+The previous sample-count watermark plus immediate tail overlay approach is no longer the main solution. Sample-count or range metadata may still exist as scheduling and progress metadata inside the active preview pipeline, but it must not define visual truth. Active preview should be represented primarily by domain-formed preview ink products, and committed output should replace provisional preview products through the existing product/query barriers.
 
-This design does not alter `ProductPublication` or `QuerySnapshotPublication` semantics, move drawing truth out of `domain/drawing`, or activate Paper Response Phase 6A.
+The sections below retain the original implementation-planning contract. Current code/tests own behavior; this design does not alter `ProductPublication` or `QuerySnapshotPublication` semantics, implement domain smoothing, or activate Paper Response Phase 6A.
 
-## Design-time Investigation Findings
+## Investigation Findings
 
 - `apps/runenwerk_draw/src/app/presentation.rs::push_immediate_stroke` renders active or released preview samples as `UiPrimitive::Stroke`, which creates an app-local stroke geometry path separate from domain tile formation.
 - `apps/runenwerk_draw/src/app/presentation.rs::build_workspace_frame_with_ink_surface_refs_and_stroke` and `build_workspace_frame_with_ink_refs_and_stroke` are the presentation paths that decide how committed products, preview products, and immediate stroke projection are composed.
@@ -44,18 +44,18 @@ This design does not alter `ProductPublication` or `QuerySnapshotPublication` se
 
 ## Problem Statement
 
-At design time Runenwerk Draw had two visible stroke paths:
+Runenwerk Draw currently has two visible stroke paths:
 
 1. App-local immediate preview: `apps/runenwerk_draw/src/app/presentation.rs::push_immediate_stroke` projects raw preview samples as `UiPrimitive::Stroke`.
 2. Domain output: `domain/drawing/src/tile/formation.rs` forms preview and final ink as deterministic CPU tile products.
 
-That split caused visible stroke changes after commit and product/query acceptance. It also made long strokes expensive if the app kept projecting an ever-growing immediate polyline every frame.
+That split causes visible stroke changes after commit and product/query acceptance. It also makes long strokes expensive if the app keeps projecting an ever-growing immediate polyline every frame.
 
-The durable fix is not a watermark/tail hack. Phase 1 moves active and released preview visibility toward domain-formed preview products, while later phases may extract and version further domain stroke-visualization contracts.
+The durable fix is not a watermark/tail hack. Phase 1 should move active and released preview visibility toward domain-formed preview products, while later phases extract and version the shared domain stroke visualization contract.
 
 ## Corrected Architecture
 
-The long-term stroke visualization and ink formation contract is owned by `domain/drawing`:
+The long-term stroke visualization and ink formation contract should be owned by `domain/drawing`:
 
 ```text
 Raw StrokeSample stream
@@ -72,9 +72,9 @@ The exact type names may change during implementation, but ownership must not:
 - `engine/render` must not own stroke smoothing or drawing truth.
 - App presentation must not own final stroke geometry truth.
 
-## Baseline Lifecycle At Design Time
+## Current Lifecycle
 
-The baseline behavior was structurally safe but visually split:
+Current active drawing behavior is structurally safe but visually split:
 
 1. Pointer input becomes `DrawingToolInputEvent` and is routed through `DrawingToolSession`.
 2. `RunenwerkDrawApp` appends preview samples and schedules preview tile work.
@@ -84,17 +84,17 @@ The baseline behavior was structurally safe but visually split:
 6. Preview/released state bridges visibility until committed products and query snapshots are accepted.
 7. Committed products become visible through `ProductPublication` and `QuerySnapshotPublication`.
 
-The problem was representation parity: the app-local polyline and domain tile products were not the same visual contract.
+The problem is representation parity: the app-local polyline and domain tile products are not the same visual contract.
 
-## Implemented Lifecycle Contract
+## Target Lifecycle
 
-The Phase 1 lifecycle contract is:
+Target Phase 1 lifecycle:
 
 1. Ordered samples enter an app-owned active preview session.
 2. The app computes dirty tile ids or dirty regions for new sample ranges.
 3. Preview tile jobs form domain preview products for affected tiles.
 4. Accumulated preview products are projected as the primary active stroke representation.
-5. `UiPrimitive::Stroke`, if retained, is only a short-lived non-authoritative ghost/tail for a first frame or not-yet-formed micro-region.
+5. `UiPrimitive::Stroke`, if retained, is only a short-lived non-authoritative ghost for the first frame or a not-yet-formed micro-region.
 6. Pointer-up freezes current preview products as provisional visible products.
 7. Final committed products replace provisional products only after the existing `ProductPublication` and `QuerySnapshotPublication` acceptance path.
 
@@ -104,7 +104,7 @@ This keeps CPU tile products as drawing truth while preserving first-frame respo
 
 Active drawing preview should be represented primarily by domain-formed preview ink products.
 
-The design models an app-owned active preview-session concept that tracks:
+Phase 1 should introduce or formalize an app-owned `ActiveStrokePreviewSession` concept that tracks:
 
 - active stroke id;
 - ordered sample count and sample ranges;
@@ -118,7 +118,7 @@ Sample-count and range tracking may exist inside this session as scheduling meta
 
 ## Pointer-Up Provisional Preview Flow
 
-Pointer-up must not clear preview products and fall back to a UI polyline. The lifecycle is:
+Pointer-up should not clear preview products and fall back to a UI polyline. The target flow is:
 
 ```text
 pointer-up
@@ -134,7 +134,7 @@ The replacement must be atomic at the product/query lifecycle level: provisional
 
 ## UiPrimitive Stroke Demotion
 
-`UiPrimitive::Stroke` may remain only as an optional ultra-low-latency ghost/tail:
+`UiPrimitive::Stroke` may remain only as an optional ultra-low-latency ghost:
 
 - no longer the main active stroke representation;
 - non-authoritative;
@@ -143,14 +143,14 @@ The replacement must be atomic at the product/query lifecycle level: provisional
 - used only for the first frame or a not-yet-formed micro-region;
 - eventually generated from the same domain stroke reconstruction contract if retained.
 
-The app must not refine `UiPrimitive::Stroke` into a parallel stroke renderer. Any real stroke smoothing, reconstruction, or dab semantics belong in `domain/drawing`.
+The app should not refine `UiPrimitive::Stroke` into a parallel stroke renderer. Any real stroke smoothing, reconstruction, or dab semantics belong in `domain/drawing`.
 
 ## Incremental Formation And Performance
 
 Long strokes must not require projecting the full accumulated sample list every frame. The intended incremental preview formation flow is:
 
 ```text
-ordered samples enter active preview session
+ordered samples enter ActiveStrokePreviewSession
   -> dirty tile ids/regions computed from new sample ranges
   -> preview tile jobs update affected tiles
   -> accumulated preview products stay visible as product surfaces
@@ -161,7 +161,7 @@ This keeps the app's responsibility focused on scheduling, provisional visibilit
 
 ## Product/Query Barrier Preservation
 
-Phase 1 does not change publication authority:
+Phase 1 must not change publication authority:
 
 - `ProductPublication` still controls committed product visibility.
 - `QuerySnapshotPublication` still controls query snapshot acceptance.
@@ -173,7 +173,7 @@ The change is presentation and preview lifecycle, not publication authority.
 
 ## Phase Split
 
-The original implementation sequence was:
+Recommended order:
 
 1. **Phase 1A: Product-Based Preview Lifecycle**
    Introduce active/provisional preview product visibility, freeze preview products after pointer-up, and stop relying on a full accumulated `UiPrimitive::Stroke`.
@@ -184,13 +184,13 @@ The original implementation sequence was:
 4. **Phase 2: Reconstruction/Smoothing**
    Add higher-order smoothing/reconstruction as a deterministic, versioned domain policy.
 5. **Phase 6A: Paper Response**
-   Paper response remains separately deferred; prerequisite completion does not activate it.
+   Resume paper response only after product-based preview/final parity is stable.
 
 ## File-by-File Plan
 
 `apps/runenwerk_draw/src/app/ink/preview.rs`
 
-- Introduce or formalize active preview-session state.
+- Introduce or formalize `ActiveStrokePreviewSession` state.
 - Track ordered sample ranges, dirty regions, preview product generations, provisional products, and final replacement state.
 - Reject incompatible or stopped-session preview jobs while allowing compatible
   lagging active preview output to advance formed sample coverage.
@@ -226,28 +226,30 @@ The original implementation sequence was:
 
 `apps/runenwerk_draw/tests/app_shell.rs`
 
-- Keep lifecycle expectations aligned to product-based active preview.
-- Preserve tests for stale preview jobs, dirty-start tracking, `ProductPublication`, and `QuerySnapshotPublication`.
+- Update lifecycle expectations to product-based active preview.
+- Preserve existing tests for stale preview jobs, dirty-start tracking, `ProductPublication`, and `QuerySnapshotPublication`.
 
 `domain/drawing/src/tile/formation.rs`
 
 - Remains the deterministic CPU tile formation authority.
-- Further named timeline/reconstruction/dab contracts may be extracted around existing logic if future evidence requires them.
-- Higher-order smoothing/reconstruction remains a separate domain policy concern.
+- Phase 1B may extract named timeline/reconstruction/dab contracts around existing logic if needed.
+- Phase 2 owns higher-order smoothing/reconstruction policy.
 
 ## Test Plan
 
-The implemented boundary is expected to preserve focused evidence that:
+Eventual implementation should add or update focused tests for:
 
 - active preview products are visible during drawing;
 - pointer-up preserves preview products until final accepted products replace them;
-- no full accumulated `UiPrimitive::Stroke` is projected once preview products cover the stroke;
-- final accepted products replace provisional products without changing publication authority;
-- long strokes do not require an unbounded UI polyline as their primary representation;
+- no full accumulated `UiPrimitive::Stroke` is projected once preview products exist;
+- final accepted products replace provisional products without a geometry jump beyond preview/final quality or profile differences;
+- long strokes do not rebuild or project an unbounded UI polyline every frame;
 - `ProductPublication` and `QuerySnapshotPublication` behavior remains unchanged;
-- incompatible or stopped-session preview jobs cannot replace current provisional preview products;
-- compatible lagging active preview jobs can advance product coverage but must not regress formed sample coverage;
-- preview and final formation remain domain-owned;
+- incompatible or stopped-session preview jobs cannot replace current
+  provisional preview products;
+- compatible lagging active preview jobs can advance product coverage but must
+  not regress formed sample coverage;
+- domain preview and final formation share stroke reconstruction and brush dab semantics;
 - existing pointer down/move/up stroke behavior remains unchanged.
 
 ## Non-Goals
@@ -271,27 +273,41 @@ The implemented boundary is expected to preserve focused evidence that:
 - Risk: first-frame responsiveness regresses if `UiPrimitive::Stroke` is removed too early.
   Mitigation: keep a tiny optional ghost for first-frame latency only, explicitly non-authoritative and not a full accumulated stroke.
 - Risk: stale preview products appear after pointer-up.
-  Mitigation: keep preview generation/sample-range checks, apply compatible lagging output only while the same preview stroke is active, and ignore jobs after active preview intake stops.
+  Mitigation: keep preview generation/sample-range checks, apply compatible
+  lagging output only while the same preview stroke is active, and ignore jobs
+  after active preview intake stops.
 - Risk: long strokes still rebuild too much presentation state.
   Mitigation: project accumulated preview products as surfaces and upload only changed dynamic texture targets.
 
-## Historical implementation prompt
+## Implementation Prompt For Later
 
-The original Phase 1A implementation handoff was:
-
-```text
 Implement Stroke Fidelity Phase 1A: product-based active preview lifecycle and provisional preview visibility for Runenwerk Draw.
 
 Scope:
-- apps/runenwerk_draw primary scope.
+
+- `apps/runenwerk_draw` primary scope.
 - No engine render changes unless implementation proves a product-surface projection gap.
 - No domain smoothing/reconstruction policy yet.
 - No paper response, watercolor, new tools, radial/offhand/cancel behavior, or product/query lifecycle rewrite.
 
 Requirements:
+
 - Represent active preview primarily with domain-formed preview ink products.
-- Introduce or formalize ActiveStrokePreviewSession with active stroke id, ordered sample ranges, dirty regions, preview generation, provisional products, frozen pointer-up products, and final replacement state.
-- On pointer-up, commit the DrawingTransaction, freeze current preview products, stop active preview intake, ignore stale preview jobs, keep provisional products visible, and replace them only after existing ProductPublication plus QuerySnapshotPublication acceptance.
-- Demote UiPrimitive::Stroke to an optional short-lived non-authoritative ghost, not a full accumulated stroke.
-- Preserve dirty-start sample tracking, incompatible preview-job rejection, compatible lagging preview forward progress, committed publication, query snapshot publication, CPU tile formation truth, and GPU validation behavior.
+- Introduce or formalize `ActiveStrokePreviewSession` with active stroke id, ordered sample ranges, dirty regions, preview generation, provisional products, frozen pointer-up products, and final replacement state.
+- On pointer-up, commit the `DrawingTransaction`, freeze current preview products, stop active preview intake, ignore stale preview jobs, keep provisional products visible, and replace them only after existing `ProductPublication` plus `QuerySnapshotPublication` acceptance.
+- Demote `UiPrimitive::Stroke` to an optional short-lived non-authoritative ghost, not a full accumulated stroke.
+- Preserve dirty-start sample tracking, incompatible preview-job rejection,
+  compatible lagging preview forward progress, committed publication, query
+  snapshot publication, CPU tile formation truth, and GPU validation behavior.
+- Add focused app-shell and domain tests for active preview product visibility, pointer-up provisional preservation, no unbounded UI polyline projection, unchanged product/query barriers, and shared preview/final domain formation semantics.
+
+Validation:
+
+```text
+cargo test -p runenwerk_draw --test app_shell
+cargo test -p runenwerk_draw
+cargo test -p drawing --test ink_tile
+cargo check --workspace
+task docs:validate
+git diff --check
 ```
