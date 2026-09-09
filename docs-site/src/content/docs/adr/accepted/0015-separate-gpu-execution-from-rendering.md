@@ -9,7 +9,7 @@ last_reviewed: 2026-07-26
 related_designs:
   - ../../architecture/repository-family-architecture.md
   - ../../design/active/runengpu-architecture-design.md
-  - ../../design/active/runenrender-decomposition-design.md
+  - ../../design/accepted/runenrender-decomposition-design.md
   - ../../design/active/runenrender-internal-decomposition-execution-plan.md
 related_roadmaps:
   - ../../workspace/planning/roadmap.md
