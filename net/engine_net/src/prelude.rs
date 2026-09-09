@@ -6,8 +6,9 @@ pub use crate::replication::{
     ReplicatedComponentDescriptor, ReplicatedEntityDescriptor, ReplicatedResourceDescriptor,
     ReplicationDriver, ReplicationProfile, ReplicationProfilePreset, ReplicationRegistry,
     ReplicationSemantics, ReplicationSemanticsOverrides, ReplicationStats, SnapshotAckOutcome,
-    SnapshotAckRejection, SnapshotApplyDriver, SnapshotCursor, SnapshotTimeline, allows_replication,
-    apply_delta_payload, delta_debug_dump, normalize_delta_payload, snapshot_debug_dump,
+    SnapshotAckRejection, SnapshotApplyDriver, SnapshotCursor, SnapshotTimeline,
+    allows_replication, apply_delta_payload, delta_debug_dump, normalize_delta_payload,
+    snapshot_debug_dump,
 };
 pub use crate::simulation::*;
 pub use crate::{
