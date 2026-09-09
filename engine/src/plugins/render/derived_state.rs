@@ -1,7 +1,7 @@
 //! R7 renderer-derived scene dependency and invalidation semantics.
 //!
 //! Derived state is non-authoritative. This module records only which accepted renderer-scene facts
-//! one retained derived artifact depends on and whether an accepted `RenderSceneChangeSet` invalidates
+//! one retained derived artifact depends on and whether accepted scene-change evidence invalidates
 //! those facts. It deliberately does not own cached payloads, retention/eviction policy, memory
 //! budgets, reconstruction recipes, GPU realization, histories, sessions, readback, or presentation.
 
@@ -9,7 +9,7 @@ use super::scene::{RenderObjectId, RenderSceneChangeSet};
 
 /// One exact renderer-scene fact on which retained derived state depends.
 ///
-/// These dependencies use only renderer-owned semantic identity and accepted scene change families.
+/// These dependencies use only renderer-owned semantic identity and accepted scene-change families.
 /// Source/ECS/product identities and RunenGPU identities remain separate authorities.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum RenderDerivedSceneDependency {
@@ -72,21 +72,23 @@ impl RenderDerivedSceneDependency {
     }
 }
 
-/// Canonical dependency evidence for one renderer-derived artifact.
+/// Canonical renderer-scene dependency evidence for one derived artifact.
 ///
 /// Caller order and duplicate declarations are non-semantic: construction sorts and deduplicates the
 /// dependency set. No scene revision is stored because `RenderSceneRevision` is not a universal
-/// derived-state generation. Reuse is decided from the accepted change evidence for the dependencies
-/// actually consumed.
+/// derived-state generation.
+///
+/// Reuse across multiple scene commits is sound only when the consumer evaluates every accepted
+/// `RenderSceneChangeSet` since the artifact was derived. If that incremental evidence is incomplete,
+/// lost, or otherwise untrusted, the consumer must conservatively invalidate or consume explicit
+/// full-resynchronization evidence rather than infer validity from a later unrelated delta.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct RenderDerivedSceneDependencies {
     dependencies: Vec<RenderDerivedSceneDependency>,
 }
 
 impl RenderDerivedSceneDependencies {
-    pub fn new(
-        dependencies: impl IntoIterator<Item = RenderDerivedSceneDependency>,
-    ) -> Self {
+    pub fn new(dependencies: impl IntoIterator<Item = RenderDerivedSceneDependency>) -> Self {
         let mut dependencies = dependencies.into_iter().collect::<Vec<_>>();
         dependencies.sort_unstable();
         dependencies.dedup();
@@ -101,7 +103,7 @@ impl RenderDerivedSceneDependencies {
         self.dependencies.is_empty()
     }
 
-    /// Returns whether accepted renderer-scene change evidence invalidates this dependency set.
+    /// Returns whether this one accepted scene-change delta invalidates this dependency set.
     ///
     /// Full resynchronization conservatively invalidates any scene-dependent artifact because precise
     /// incremental evidence is unavailable. An empty dependency set is scene-independent and remains
@@ -209,16 +211,13 @@ mod tests {
             )
         });
         let emitter = irradiance.map(|value| {
-            RenderDirectionalEmitter::new([0.0, 1.0, 0.0], 550e-9, value)
-                .expect("proof emitter")
+            RenderDirectionalEmitter::new([0.0, 1.0, 0.0], 550e-9, value).expect("proof emitter")
         });
         RenderObjectParticipation::new(representations, material_assignment, emitter)
             .expect("proof participation")
     }
 
-    fn dependencies_for_all_facets(
-        object_id: RenderObjectId,
-    ) -> [RenderDerivedSceneDependency; 6] {
+    fn dependencies_for_all_facets(object_id: RenderObjectId) -> [RenderDerivedSceneDependency; 6] {
         [
             RenderDerivedSceneDependency::ObjectPresence(object_id),
             RenderDerivedSceneDependency::ObjectSpatialState(object_id),
@@ -263,9 +262,8 @@ mod tests {
         let mut store = RenderSceneStore::new();
         let target = store.allocate_object_id().expect("target id");
         let other = store.allocate_object_id().expect("other id");
-        let target_dependencies = dependencies_for_all_facets(target).map(|dependency| {
-            RenderDerivedSceneDependencies::new([dependency])
-        });
+        let target_dependencies = dependencies_for_all_facets(target)
+            .map(|dependency| RenderDerivedSceneDependencies::new([dependency]));
         let other_dependencies = RenderDerivedSceneDependencies::new([
             RenderDerivedSceneDependency::ObjectSpatialState(other),
         ]);
@@ -282,10 +280,8 @@ mod tests {
         assert!(!other_dependencies.is_invalidated_by(inserted.change_set()));
 
         let mut insert_other = RenderSceneUpdate::new();
-        insert_other.insert_with_state(
-            other,
-            object_state(2.0, RenderTemporalSupport::unbounded()),
-        );
+        insert_other
+            .insert_with_state(other, object_state(2.0, RenderTemporalSupport::unbounded()));
         let inserted_other = store.commit(insert_other).expect("insert other");
         for dependencies in &target_dependencies {
             assert!(!dependencies.is_invalidated_by(inserted_other.change_set()));
@@ -312,9 +308,10 @@ mod tests {
         );
         store.commit(insert).expect("insert object");
 
-        let presence = RenderDerivedSceneDependencies::new([
-            RenderDerivedSceneDependency::ObjectPresence(object_id),
-        ]);
+        let presence =
+            RenderDerivedSceneDependencies::new([RenderDerivedSceneDependency::ObjectPresence(
+                object_id,
+            )]);
         let spatial = RenderDerivedSceneDependencies::new([
             RenderDerivedSceneDependency::ObjectSpatialState(object_id),
         ]);
@@ -327,9 +324,10 @@ mod tests {
         let material = RenderDerivedSceneDependencies::new([
             RenderDerivedSceneDependency::ObjectMaterialAssignment(object_id),
         ]);
-        let emitter = RenderDerivedSceneDependencies::new([
-            RenderDerivedSceneDependency::ObjectEmitter(object_id),
-        ]);
+        let emitter =
+            RenderDerivedSceneDependencies::new([RenderDerivedSceneDependency::ObjectEmitter(
+                object_id,
+            )]);
 
         let bounded = bounded_validity(1.0, 2.0);
         let mut temporal_update = RenderSceneUpdate::new();
@@ -390,9 +388,10 @@ mod tests {
     fn full_resync_invalidates_scene_dependent_state_but_not_scene_independent_state() {
         let mut store = RenderSceneStore::new();
         let object_id = store.allocate_object_id().expect("object id");
-        let dependent = RenderDerivedSceneDependencies::new([
-            RenderDerivedSceneDependency::ObjectPresence(object_id),
-        ]);
+        let dependent =
+            RenderDerivedSceneDependencies::new([RenderDerivedSceneDependency::ObjectPresence(
+                object_id,
+            )]);
         let independent = RenderDerivedSceneDependencies::default();
         let resync = store.full_resync();
 
