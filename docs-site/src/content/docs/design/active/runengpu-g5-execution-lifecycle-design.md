@@ -287,7 +287,7 @@ GpuRenderOperation
   color attachments
   optional depth/stencil attachment
   draws: [GpuRenderDraw]
-  timestamp writes
+  timestamp_writes
 ```
 
 Each draw owns complete effective execution state:
@@ -698,7 +698,7 @@ GpuReadbackStatus
 
 Submission completion and readback materialization are separate facts. A submission can be
 `Completed` while mapping/result materialization is still `Pending`. Submission failure fails its
-independent readbacks.
+dependent readbacks.
 
 Mapped WGPU ranges never escape. Texture results remove physical row padding and expose requested
 logical data/metadata.
