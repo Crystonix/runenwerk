@@ -1,19 +1,24 @@
 ---
 title: Runenwerk Draw Paper Response Phase 6A
-description: Planning document for the first deterministic domain-owned paper response slice in drawing CPU ink tile formation.
-status: active
+description: Deferred design for the first deterministic domain-owned paper response slice in drawing CPU ink tile formation.
+status: deferred
 owner: drawing
 layer: domain
 canonical: true
-last_reviewed: 2026-05-19
+last_reviewed: 2026-09-10
 related_docs:
-  - ./drawing-authoring-and-comic-layout-platform-design.md
+  - ../active/drawing-authoring-and-comic-layout-platform-design.md
   - ../../domain/drawing/README.md
   - ../../apps/runenwerk-draw/README.md
   - ../../apps/runenwerk-draw/roadmap.md
+  - ../implemented/runenwerk-draw-stroke-fidelity-phase-1-preview-final-parity.md
 ---
 
 # Runenwerk Draw Paper Response Phase 6A
+
+## Deferred status
+
+Phase 6A remains a valid drawing-quality direction but is not active work. Stroke-fidelity prerequisites being materially implemented do not activate this phase automatically. Reactivate only through a new accepted drawing-quality/paper-response implementation issue after a fresh source, ownership, product-identity, and formation-contract census confirms the design is still current.
 
 ## Summary
 
@@ -375,6 +380,8 @@ Mitigation: add baseline tests proving `None` preserves current payloads and
 publication behavior.
 
 ## Implementation Prompt For Later
+
+This implementation prompt is dormant while the design remains deferred. A reactivation issue must revalidate it against current source before execution.
 
 Implement Paper Response Phase 6A for `domain/drawing` and the minimal
 `runenwerk_draw` fixture. Preserve CPU tile formation as the correctness oracle.

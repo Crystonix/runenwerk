@@ -1,19 +1,25 @@
 ---
 title: Runenwerk Draw Tool Session Architecture Slice
-description: Planning document for the first behavior-preserving DrawingToolSession boundary between normalized Draw input and drawing commands or app actions.
-status: active
+description: Implemented DrawingToolSession boundary between normalized Draw input and drawing commands or app actions.
+status: implemented
 owner: drawing
 layer: app
 canonical: true
-last_reviewed: 2026-05-19
+last_reviewed: 2026-09-10
 related_docs:
   - ../../apps/runenwerk-draw/README.md
-  - ./runenwerk-draw-pen-first-radial-tablet-ux-design.md
+  - ../active/runenwerk-draw-pen-first-radial-tablet-ux-design.md
   - ../../domain/drawing/README.md
   - ../../adapters/native-tablet-input/README.md
 ---
 
 # Runenwerk Draw Tool Session Architecture Slice
+
+## Implementation status
+
+This boundary is implemented and has been checked against the current Draw app. `apps/runenwerk_draw/src/app/tool_session.rs` owns `DrawingToolSession`, session identity/phase/anchor state, `DrawingToolIntent`, and the normalized control-input/request path, while `RunenwerkDrawApp` remains the app coordinator and `domain/drawing` remains the owner of document mutation and drawing truth.
+
+The older proposal and implementation-plan sections below are retained as design rationale. Current code and the Draw app documentation own exact API spelling and behavior. Later ToolSession slices added control state and inert control-input plumbing without changing this ownership boundary.
 
 ## Summary
 
@@ -225,11 +231,11 @@ cache behavior, and journals remain as they are.
 The later implementation should add tests only if existing coverage does not
 catch a wrapper regression.
 
-`docs-site/src/content/docs/design/active/runenwerk-draw-tool-session-architecture-slice.md`
-is this planning document.
+`docs-site/src/content/docs/design/implemented/runenwerk-draw-tool-session-architecture-slice.md`
+is this design document.
 
-`docs-site/src/content/docs/design/active/README.md` should link this document
-under Drawing / Apps.
+`docs-site/src/content/docs/design/implemented/README.md` should link this document
+under App / Tooling.
 
 `docs-site/src/content/docs/apps/runenwerk-draw/README.md` should describe the
 current `DrawingInkRuntimeState` split instead of a future split plan.
@@ -302,8 +308,8 @@ git diff --check
 
 ## Docs Plan
 
-This planning slice adds this design document and indexes it from
-`docs-site/src/content/docs/design/active/README.md`.
+This design is indexed from
+`docs-site/src/content/docs/design/implemented/README.md`.
 
 The Runenwerk Draw app README should be corrected only where current code
 evidence shows stale wording:
@@ -370,7 +376,7 @@ future semantics through `DrawingToolIntent`.
 Implement the first behavior-preserving DrawingToolSession wrapper in
 runenwerk_draw.
 
-Use docs-site/src/content/docs/design/active/runenwerk-draw-tool-session-architecture-slice.md
+Use docs-site/src/content/docs/design/implemented/runenwerk-draw-tool-session-architecture-slice.md
 as the architecture contract.
 
 Scope:

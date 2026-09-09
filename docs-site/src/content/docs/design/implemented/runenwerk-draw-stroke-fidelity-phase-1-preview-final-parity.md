@@ -1,13 +1,13 @@
 ---
 title: Runenwerk Draw Stroke Fidelity Phase 1 Preview Final Parity
-description: Planning document for replacing the split immediate polyline and CPU tile product stroke visualization with product-based preview parity.
-status: active
+description: Implemented product-based preview/final stroke-visualization architecture for Runenwerk Draw.
+status: implemented
 owner: drawing
 layer: app
 canonical: true
-last_reviewed: 2026-05-19
+last_reviewed: 2026-09-10
 related_docs:
-  - ./runenwerk-draw-stroke-fidelity-phase-0-1.md
+  - ../../reports/closeouts/runenwerk-draw-stroke-fidelity-phase-0-1.md
   - ../../apps/runenwerk-draw/README.md
   - ../../apps/runenwerk-draw/roadmap.md
   - ../../domain/drawing/README.md
@@ -15,13 +15,19 @@ related_docs:
 
 # Runenwerk Draw Stroke Fidelity Phase 1 Preview Final Parity
 
+## Implementation status
+
+This architecture is implemented and has been checked against current Draw presentation/state code and the #492 Draw disposition audit. Domain-formed preview products are the primary formed stroke representation; `UiPrimitive::Stroke` survives only as a bounded, non-authoritative tail for samples not yet covered by preview products and disappears when formed coverage catches up. Pointer-up/released preview visibility remains bridged until committed replacement passes the existing product/query acceptance barriers.
+
+The proposed `ActiveStrokePreviewSession` name and other type-level decomposition below were directional rather than required API spellings. Current code and tests own exact behavior. Sections describing the “current” lifecycle or investigation findings record the design-time baseline and are retained as rationale. Paper Response Phase 6A remains separately deferred and is not activated by this promotion.
+
 ## Summary
 
 Stroke Fidelity Phase 1 plans the long-term stroke visualization architecture for eliminating the split between app-local immediate stroke polylines and domain-formed CPU ink products.
 
 The previous sample-count watermark plus immediate tail overlay approach is no longer the main solution. Sample-count or range metadata may still exist as scheduling and progress metadata inside the active preview pipeline, but it must not define visual truth. Active preview should be represented primarily by domain-formed preview ink products, and committed output should replace provisional preview products through the existing product/query barriers.
 
-This is a planning document only. It does not implement Rust code, change runtime behavior, alter `ProductPublication` or `QuerySnapshotPublication` semantics, implement domain smoothing, or resume Paper Response Phase 6A.
+The sections below retain the original implementation-planning contract. Current code/tests own behavior; this design does not alter `ProductPublication` or `QuerySnapshotPublication` semantics, implement domain smoothing, or activate Paper Response Phase 6A.
 
 ## Investigation Findings
 

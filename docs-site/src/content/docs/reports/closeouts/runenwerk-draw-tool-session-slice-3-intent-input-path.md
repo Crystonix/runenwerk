@@ -1,21 +1,25 @@
 ---
 title: Runenwerk Draw Tool Session Slice 3 Intent Input Path
-description: Planning document for the third DrawingToolSession slice, focused on an inert normalized control-input path for future cancellation, radial requests, and tool switching.
-status: active
+description: Historical implementation-plan evidence for the completed inert ToolSession control-input slice.
+status: completed
 owner: drawing
-layer: app
-canonical: true
-last_reviewed: 2026-05-19
+layer: reports
+canonical: false
+last_reviewed: 2026-09-10
 related_docs:
-  - ./runenwerk-draw-tool-session-architecture-slice.md
+  - ../../design/implemented/runenwerk-draw-tool-session-architecture-slice.md
   - ./runenwerk-draw-tool-session-slice-2-session-control.md
-  - ./runenwerk-draw-pen-first-radial-tablet-ux-design.md
+  - ../../design/active/runenwerk-draw-pen-first-radial-tablet-ux-design.md
   - ../../apps/runenwerk-draw/README.md
   - ../../adapters/native-tablet-input/README.md
   - ../../domain/drawing/README.md
 ---
 
 # Runenwerk Draw Tool Session Slice 3 Intent Input Path
+
+## Historical status
+
+This completed slice is retained as historical implementation-plan evidence. The durable ToolSession boundary is owned by the implemented ToolSession architecture design and current behavior is owned by code and tests. The planning language below is preserved as point-in-time rationale and does not authorize active work.
 
 ## Summary
 

@@ -5,7 +5,7 @@ status: active
 owner: workspace
 layer: workspace
 canonical: true
-last_reviewed: 2026-07-19
+last_reviewed: 2026-09-10
 ---
 
 # Deferred Designs
@@ -17,6 +17,10 @@ Use this folder for designs that remain valid but are intentionally postponed.
 ### Editor App
 
 - [Apps Editor Power Editor Design](apps-editor-power-editor-design.md)
+
+### Drawing / Apps
+
+- [Runenwerk Draw Paper Response Phase 6A](runenwerk-draw-paper-response-phase-6a.md)
 
 ### UI Domain
 

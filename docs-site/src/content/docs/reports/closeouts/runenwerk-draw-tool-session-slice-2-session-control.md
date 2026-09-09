@@ -1,20 +1,24 @@
 ---
 title: Runenwerk Draw Tool Session Slice 2 Session Control
-description: Planning document for the second behavior-preserving DrawingToolSession slice, focused on session control metadata for cancellation, offhand input, radial menu entry points, and future tool sessions.
-status: active
+description: Historical implementation-plan evidence for the completed DrawingToolSession session-control slice.
+status: completed
 owner: drawing
-layer: app
-canonical: true
-last_reviewed: 2026-05-19
+layer: reports
+canonical: false
+last_reviewed: 2026-09-10
 related_docs:
-  - ./runenwerk-draw-tool-session-architecture-slice.md
-  - ./runenwerk-draw-pen-first-radial-tablet-ux-design.md
+  - ../../design/implemented/runenwerk-draw-tool-session-architecture-slice.md
+  - ../../design/active/runenwerk-draw-pen-first-radial-tablet-ux-design.md
   - ../../apps/runenwerk-draw/README.md
   - ../../adapters/native-tablet-input/README.md
   - ../../domain/drawing/README.md
 ---
 
 # Runenwerk Draw Tool Session Slice 2 Session Control
+
+## Historical status
+
+This completed slice is retained as historical implementation-plan evidence. The durable ToolSession boundary is owned by the implemented ToolSession architecture design and current behavior is owned by code and tests. The planning language below is preserved as point-in-time rationale and does not authorize active work.
 
 ## Summary
 

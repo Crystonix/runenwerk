@@ -1,20 +1,25 @@
 ---
 title: Runenwerk Draw Stroke Fidelity Phase 0/1
-description: Planning document for repairing Draw stroke input ordering and preview/final visual parity before paper response work.
-status: active
+description: Historical repair-plan evidence for the completed Draw input-ordering and preview/final-parity work.
+status: completed
 owner: drawing
-layer: app
-canonical: true
-last_reviewed: 2026-05-19
+layer: reports
+canonical: false
+last_reviewed: 2026-09-10
 related_docs:
   - ../../apps/runenwerk-draw/README.md
   - ../../apps/runenwerk-draw/roadmap.md
-  - ./runenwerk-draw-paper-response-phase-6a.md
+  - ../../design/implemented/runenwerk-draw-stroke-fidelity-phase-1-preview-final-parity.md
+  - ../../design/deferred/runenwerk-draw-paper-response-phase-6a.md
   - ../../domain/drawing/README.md
   - ../../adapters/native-tablet-input/README.md
 ---
 
 # Runenwerk Draw Stroke Fidelity Phase 0/1
+
+## Historical status
+
+This completed repair plan is retained as historical evidence for the input-ordering and preview/final-parity work. Current behavior is owned by code/tests and the durable Phase 1 architecture is retained under implemented designs. Paper Response Phase 6A is deferred separately. The planning language below is point-in-time rationale and does not authorize active work.
 
 ## Summary
 
