@@ -1012,7 +1012,10 @@ mod tests {
                 second_id,
                 RenderRepresentationAvailabilityState::Available,
             ),
-            RenderRepresentationAvailabilityState::Available,
+            RenderRepresentationAvailabilityFact::new(
+                first_id,
+                RenderRepresentationAvailabilityState::Unavailable,
+            ),
         ])
         .expect("availability");
         let first = admit_candidate(
