@@ -12,7 +12,7 @@ related_docs:
   - ./runengpu-g3r-definite-initialization-correction.md
   - ./runengpu-g4-context-program-realization-design.md
   - ./runengpu-g4c2-presentation-surface-binding-boundary.md
-  - ./runenrender-decomposition-design.md
+  - ../accepted/runenrender-decomposition-design.md
   - ../../architecture/repository-family-architecture.md
   - ../../adr/accepted/0015-separate-gpu-execution-from-rendering.md
   - ../../reports/investigations/runengpu-g5-execution-lifecycle-investigation.md
@@ -698,7 +698,7 @@ GpuReadbackStatus
 
 Submission completion and readback materialization are separate facts. A submission can be
 `Completed` while mapping/result materialization is still `Pending`. Submission failure fails its
-dependent readbacks.
+independent readbacks.
 
 Mapped WGPU ranges never escape. Texture results remove physical row padding and expose requested
 logical data/metadata.
