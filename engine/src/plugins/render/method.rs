@@ -4,7 +4,10 @@
 //! It deliberately contains no current device capabilities, GPU handles, residency, surfaces,
 //! pipelines, output bindings, or method-internal pass/work topology.
 
-use super::request::{RenderObservationSpec, RenderOutputValue};
+use super::representation::RenderRepresentationProtocol;
+use super::request::{
+    RenderDistanceConvention, RenderObservationSpec, RenderOutputValue,
+};
 use super::space_time::{CanonicalF64, RenderSemanticValueError};
 use std::error::Error;
 use std::fmt;
@@ -45,43 +48,23 @@ impl RenderObservationKind {
     }
 }
 
+/// Non-negative renderer-semantic distance error bound in scene metres.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct RenderMethodObservationSupport {
-    perspective: bool,
-    probe: bool,
+pub struct RenderDistanceErrorBound {
+    meters: CanonicalF64,
 }
 
-impl RenderMethodObservationSupport {
-    pub const fn perspective_only() -> Self {
-        Self {
-            perspective: true,
-            probe: false,
+impl RenderDistanceErrorBound {
+    pub fn new(meters: f64) -> Result<Self, RenderMethodValidationError> {
+        let meters = CanonicalF64::new(meters, "render_method_distance_error_meters")?;
+        if meters.get() < 0.0 {
+            return Err(RenderMethodValidationError::NegativeDistanceErrorBound);
         }
+        Ok(Self { meters })
     }
 
-    pub const fn probe_only() -> Self {
-        Self {
-            perspective: false,
-            probe: true,
-        }
-    }
-
-    pub const fn perspective_and_probe() -> Self {
-        Self {
-            perspective: true,
-            probe: true,
-        }
-    }
-
-    pub const fn supports(self, kind: RenderObservationKind) -> bool {
-        match kind {
-            RenderObservationKind::Perspective => self.perspective,
-            RenderObservationKind::Probe => self.probe,
-        }
-    }
-
-    const fn is_empty(self) -> bool {
-        !self.perspective && !self.probe
+    pub fn meters(self) -> f64 {
+        self.meters.get()
     }
 }
 
@@ -129,87 +112,220 @@ impl RenderSpectralRadianceSupport {
     }
 }
 
+/// One output family/domain supported by a method for one observation kind.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct RenderMethodOutputSupport {
-    radiance: Option<RenderSpectralRadianceSupport>,
-    distance: bool,
-    object_identity: bool,
+pub enum RenderMethodOutputKind {
+    Radiance {
+        spectral: RenderSpectralRadianceSupport,
+    },
+    Distance {
+        convention: RenderDistanceConvention,
+    },
+    ObjectIdentity,
 }
 
-impl RenderMethodOutputSupport {
-    pub const fn none() -> Self {
-        Self {
-            radiance: None,
-            distance: false,
-            object_identity: false,
-        }
-    }
-
-    pub const fn with_radiance(mut self, support: RenderSpectralRadianceSupport) -> Self {
-        self.radiance = Some(support);
-        self
-    }
-
-    pub const fn with_distance(mut self) -> Self {
-        self.distance = true;
-        self
-    }
-
-    pub const fn with_object_identity(mut self) -> Self {
-        self.object_identity = true;
-        self
-    }
-
-    pub const fn radiance(self) -> Option<RenderSpectralRadianceSupport> {
-        self.radiance
-    }
-
-    pub const fn supports_distance(self) -> bool {
-        self.distance
-    }
-
-    pub const fn supports_object_identity(self) -> bool {
-        self.object_identity
-    }
-
+impl RenderMethodOutputKind {
     pub fn supports_value(self, value: RenderOutputValue) -> bool {
-        match value {
-            RenderOutputValue::Radiance { representation } => {
-                self.radiance.is_some_and(|support| {
-                    support.contains_wavelength_meters(representation.wavelength_meters())
-                })
-            }
-            RenderOutputValue::Distance { .. } => self.distance,
-            RenderOutputValue::ObjectIdentity => self.object_identity,
+        match (self, value) {
+            (
+                Self::Radiance { spectral },
+                RenderOutputValue::Radiance { representation },
+            ) => spectral.contains_wavelength_meters(representation.wavelength_meters()),
+            (
+                Self::Distance { convention: supported },
+                RenderOutputValue::Distance { convention: requested },
+            ) => supported == requested,
+            (Self::ObjectIdentity, RenderOutputValue::ObjectIdentity) => true,
+            _ => false,
         }
     }
 
-    const fn is_empty(self) -> bool {
-        self.radiance.is_none() && !self.distance && !self.object_identity
+    pub const fn same_family(self, value: RenderOutputValue) -> bool {
+        matches!(
+            (self, value),
+            (Self::Radiance { .. }, RenderOutputValue::Radiance { .. })
+                | (Self::Distance { .. }, RenderOutputValue::Distance { .. })
+                | (Self::ObjectIdentity, RenderOutputValue::ObjectIdentity)
+        )
+    }
+
+    const fn key(self) -> (u8, u8) {
+        match self {
+            Self::Radiance { .. } => (0, 0),
+            Self::Distance {
+                convention: RenderDistanceConvention::RayDistance,
+            } => (1, 0),
+            Self::Distance {
+                convention: RenderDistanceConvention::ObservationForwardDepth,
+            } => (1, 1),
+            Self::ObjectIdentity => (2, 0),
+        }
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+/// Final renderer-output accuracy promised by a method when its declared prerequisites hold.
+///
+/// R4 intentionally has only the bounded distance guarantee required by the founding proof. Other
+/// output-specific approximation contracts must be added only when a concrete method requires them.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum RenderMethodOutputGuarantee {
+    Exact,
+    BoundedAbsoluteDistance {
+        max_error_meters: RenderDistanceErrorBound,
+    },
+}
+
+/// Input guarantee a method requires from a field-distance representation.
+///
+/// This is deliberately distinct from `RenderMethodOutputGuarantee`: a bound on a pointwise field
+/// query is not itself a bound on a later rendered depth/distance result.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum RenderFieldDistanceInputRequirement {
+    Exact,
+    Bounded {
+        max_absolute_error_meters: RenderDistanceErrorBound,
+    },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum RenderRepresentationProtocolRequirement {
-    SurfaceQuery { revision: u32 },
-    FieldDistance { revision: u32 },
+    SurfaceQuery {
+        revision: u32,
+    },
+    FieldDistance {
+        revision: u32,
+        input: RenderFieldDistanceInputRequirement,
+    },
 }
 
 impl RenderRepresentationProtocolRequirement {
     pub const fn revision(self) -> u32 {
         match self {
-            Self::SurfaceQuery { revision } | Self::FieldDistance { revision } => revision,
+            Self::SurfaceQuery { revision } | Self::FieldDistance { revision, .. } => revision,
+        }
+    }
+
+    pub const fn protocol(self) -> RenderRepresentationProtocol {
+        match self {
+            Self::SurfaceQuery { .. } => RenderRepresentationProtocol::SurfaceQuery,
+            Self::FieldDistance { .. } => RenderRepresentationProtocol::FieldDistance,
+        }
+    }
+
+    const fn sort_key(self) -> u8 {
+        match self {
+            Self::SurfaceQuery { .. } => 0,
+            Self::FieldDistance { .. } => 1,
         }
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum RenderMotionInputPolicy {
-    None,
-    /// A non-instant observation requires one later-admitted source-owned object-motion binding
-    /// covering that shutter interval. R4 records the requirement; R5 owns binding values and
-    /// admission.
-    RequireForNonInstantShutter,
+/// One representation-side prerequisite under which an output contract is valid.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct RenderMethodRepresentationRequirement {
+    protocol: RenderRepresentationProtocolRequirement,
+    maximum_refinement_error_meters: Option<RenderDistanceErrorBound>,
+}
+
+impl RenderMethodRepresentationRequirement {
+    pub fn new(
+        protocol: RenderRepresentationProtocolRequirement,
+        maximum_refinement_error_meters: Option<RenderDistanceErrorBound>,
+    ) -> Result<Self, RenderMethodValidationError> {
+        if protocol.revision() == 0 {
+            return Err(RenderMethodValidationError::InvalidProtocolRevision);
+        }
+        Ok(Self {
+            protocol,
+            maximum_refinement_error_meters,
+        })
+    }
+
+    pub const fn protocol(self) -> RenderRepresentationProtocolRequirement {
+        self.protocol
+    }
+
+    pub const fn maximum_refinement_error(self) -> Option<RenderDistanceErrorBound> {
+        self.maximum_refinement_error_meters
+    }
+
+    const fn sort_key(self) -> u8 {
+        self.protocol.sort_key()
+    }
+}
+
+/// The semantic relation between one observation kind and one output family for a method.
+///
+/// Representation requirements are alternatives: each listed requirement is one semantic input
+/// form under which this same output guarantee holds. Keeping them on the output contract avoids
+/// incorrectly asserting a global observation x output x protocol Cartesian product.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RenderMethodOutputContract {
+    observation_kind: RenderObservationKind,
+    output_kind: RenderMethodOutputKind,
+    guarantee: RenderMethodOutputGuarantee,
+    representation_requirements: Vec<RenderMethodRepresentationRequirement>,
+    requires_material_assignment: bool,
+}
+
+impl RenderMethodOutputContract {
+    pub fn new(
+        observation_kind: RenderObservationKind,
+        output_kind: RenderMethodOutputKind,
+        guarantee: RenderMethodOutputGuarantee,
+        mut representation_requirements: Vec<RenderMethodRepresentationRequirement>,
+        requires_material_assignment: bool,
+    ) -> Result<Self, RenderMethodValidationError> {
+        if matches!(guarantee, RenderMethodOutputGuarantee::BoundedAbsoluteDistance { .. })
+            && !matches!(output_kind, RenderMethodOutputKind::Distance { .. })
+        {
+            return Err(
+                RenderMethodValidationError::BoundedDistanceGuaranteeRequiresDistanceOutput,
+            );
+        }
+
+        representation_requirements.sort_by_key(|requirement| requirement.sort_key());
+        for pair in representation_requirements.windows(2) {
+            if pair[0].protocol().protocol() == pair[1].protocol().protocol() {
+                return Err(RenderMethodValidationError::DuplicateRepresentationProtocol {
+                    protocol: pair[0].protocol().protocol(),
+                });
+            }
+        }
+
+        Ok(Self {
+            observation_kind,
+            output_kind,
+            guarantee,
+            representation_requirements,
+            requires_material_assignment,
+        })
+    }
+
+    pub const fn observation_kind(&self) -> RenderObservationKind {
+        self.observation_kind
+    }
+
+    pub const fn output_kind(&self) -> RenderMethodOutputKind {
+        self.output_kind
+    }
+
+    pub const fn guarantee(&self) -> RenderMethodOutputGuarantee {
+        self.guarantee
+    }
+
+    pub fn representation_requirements(&self) -> &[RenderMethodRepresentationRequirement] {
+        &self.representation_requirements
+    }
+
+    pub const fn requires_material_assignment(&self) -> bool {
+        self.requires_material_assignment
+    }
+
+    fn key(&self) -> (RenderObservationKind, u8, u8) {
+        let (family, domain) = self.output_kind.key();
+        (self.observation_kind, family, domain)
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -222,52 +338,36 @@ pub enum RenderAbstractExecutionRequirement {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RenderMethodContract {
     id: RenderMethodId,
-    observation_support: RenderMethodObservationSupport,
-    output_support: RenderMethodOutputSupport,
-    representation_requirement: RenderRepresentationProtocolRequirement,
-    maximum_refinement_error_meters: Option<CanonicalF64>,
-    motion_input_policy: RenderMotionInputPolicy,
+    output_contracts: Vec<RenderMethodOutputContract>,
     abstract_execution_requirements: Vec<RenderAbstractExecutionRequirement>,
 }
 
 impl RenderMethodContract {
-    #[allow(clippy::too_many_arguments)]
     pub fn new(
         id: RenderMethodId,
-        observation_support: RenderMethodObservationSupport,
-        output_support: RenderMethodOutputSupport,
-        representation_requirement: RenderRepresentationProtocolRequirement,
-        maximum_refinement_error_meters: Option<f64>,
-        motion_input_policy: RenderMotionInputPolicy,
+        mut output_contracts: Vec<RenderMethodOutputContract>,
         mut abstract_execution_requirements: Vec<RenderAbstractExecutionRequirement>,
     ) -> Result<Self, RenderMethodValidationError> {
-        if observation_support.is_empty() {
-            return Err(RenderMethodValidationError::NoObservations);
-        }
-        if output_support.is_empty() {
+        if output_contracts.is_empty() {
             return Err(RenderMethodValidationError::NoOutputs);
         }
-        if representation_requirement.revision() == 0 {
-            return Err(RenderMethodValidationError::InvalidProtocolRevision);
+
+        output_contracts.sort_by_key(RenderMethodOutputContract::key);
+        for pair in output_contracts.windows(2) {
+            if pair[0].key() == pair[1].key() {
+                return Err(RenderMethodValidationError::DuplicateOutputContract {
+                    observation_kind: pair[0].observation_kind(),
+                    output_kind: pair[0].output_kind(),
+                });
+            }
         }
-        let maximum_refinement_error_meters = maximum_refinement_error_meters
-            .map(|value| {
-                let value = CanonicalF64::new(value, "method_maximum_refinement_error_meters")?;
-                if value.get() < 0.0 {
-                    return Err(RenderMethodValidationError::NegativeRefinementError);
-                }
-                Ok(value)
-            })
-            .transpose()?;
+
         abstract_execution_requirements.sort_unstable();
         abstract_execution_requirements.dedup();
+
         Ok(Self {
             id,
-            observation_support,
-            output_support,
-            representation_requirement,
-            maximum_refinement_error_meters,
-            motion_input_policy,
+            output_contracts,
             abstract_execution_requirements,
         })
     }
@@ -276,24 +376,36 @@ impl RenderMethodContract {
         self.id
     }
 
-    pub const fn observation_support(&self) -> RenderMethodObservationSupport {
-        self.observation_support
+    pub fn output_contracts(&self) -> &[RenderMethodOutputContract] {
+        &self.output_contracts
     }
 
-    pub const fn output_support(&self) -> RenderMethodOutputSupport {
-        self.output_support
+    pub fn supports_observation(&self, observation_kind: RenderObservationKind) -> bool {
+        self.output_contracts
+            .iter()
+            .any(|contract| contract.observation_kind() == observation_kind)
     }
 
-    pub const fn representation_requirement(&self) -> RenderRepresentationProtocolRequirement {
-        self.representation_requirement
+    pub fn output_contract(
+        &self,
+        observation_kind: RenderObservationKind,
+        value: RenderOutputValue,
+    ) -> Option<&RenderMethodOutputContract> {
+        self.output_contracts.iter().find(|contract| {
+            contract.observation_kind() == observation_kind
+                && contract.output_kind().supports_value(value)
+        })
     }
 
-    pub fn maximum_refinement_error_meters(&self) -> Option<f64> {
-        self.maximum_refinement_error_meters.map(CanonicalF64::get)
-    }
-
-    pub const fn motion_input_policy(&self) -> RenderMotionInputPolicy {
-        self.motion_input_policy
+    pub fn has_output_family(
+        &self,
+        observation_kind: RenderObservationKind,
+        value: RenderOutputValue,
+    ) -> bool {
+        self.output_contracts.iter().any(|contract| {
+            contract.observation_kind() == observation_kind
+                && contract.output_kind().same_family(value)
+        })
     }
 
     pub fn abstract_execution_requirements(&self) -> &[RenderAbstractExecutionRequirement] {
@@ -304,11 +416,18 @@ impl RenderMethodContract {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RenderMethodValidationError {
     SemanticValue(RenderSemanticValueError),
-    NoObservations,
     NoOutputs,
     InvalidSpectralRange,
     InvalidProtocolRevision,
-    NegativeRefinementError,
+    NegativeDistanceErrorBound,
+    BoundedDistanceGuaranteeRequiresDistanceOutput,
+    DuplicateRepresentationProtocol {
+        protocol: RenderRepresentationProtocol,
+    },
+    DuplicateOutputContract {
+        observation_kind: RenderObservationKind,
+        output_kind: RenderMethodOutputKind,
+    },
 }
 
 impl From<RenderSemanticValueError> for RenderMethodValidationError {
@@ -321,18 +440,29 @@ impl fmt::Display for RenderMethodValidationError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::SemanticValue(error) => fmt::Display::fmt(error, formatter),
-            Self::NoObservations => {
-                formatter.write_str("render method must support an observation")
-            }
             Self::NoOutputs => formatter.write_str("render method must support an output"),
             Self::InvalidSpectralRange => formatter
                 .write_str("render method spectral range must be finite, positive, and ordered"),
             Self::InvalidProtocolRevision => {
                 formatter.write_str("render method protocol revision must be non-zero")
             }
-            Self::NegativeRefinementError => {
-                formatter.write_str("render method maximum refinement error must be non-negative")
+            Self::NegativeDistanceErrorBound => {
+                formatter.write_str("render method distance error bound must be non-negative")
             }
+            Self::BoundedDistanceGuaranteeRequiresDistanceOutput => formatter.write_str(
+                "bounded distance output guarantee is valid only for distance output semantics",
+            ),
+            Self::DuplicateRepresentationProtocol { protocol } => write!(
+                formatter,
+                "render method output contract contains duplicate {protocol:?} representation requirement"
+            ),
+            Self::DuplicateOutputContract {
+                observation_kind,
+                output_kind,
+            } => write!(
+                formatter,
+                "render method contains duplicate {observation_kind:?}/{output_kind:?} output contract"
+            ),
         }
     }
 }
@@ -342,27 +472,146 @@ impl Error for RenderMethodValidationError {}
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::plugins::render::representation::RENDER_SURFACE_QUERY_PROTOCOL_REVISION;
+    use crate::plugins::render::representation::{
+        RENDER_FIELD_DISTANCE_PROTOCOL_REVISION, RENDER_SURFACE_QUERY_PROTOCOL_REVISION,
+    };
 
-    #[test]
-    fn method_contract_canonicalizes_abstract_requirements_without_execution_state() {
-        let method = RenderMethodContract::new(
-            RenderMethodId::new(7).expect("non-zero method id"),
-            RenderMethodObservationSupport::perspective_and_probe(),
-            RenderMethodOutputSupport::none().with_distance(),
+    fn surface_requirement() -> RenderMethodRepresentationRequirement {
+        RenderMethodRepresentationRequirement::new(
             RenderRepresentationProtocolRequirement::SurfaceQuery {
                 revision: RENDER_SURFACE_QUERY_PROTOCOL_REVISION,
             },
             None,
-            RenderMotionInputPolicy::None,
+        )
+        .expect("surface requirement")
+    }
+
+    fn field_requirement() -> RenderMethodRepresentationRequirement {
+        RenderMethodRepresentationRequirement::new(
+            RenderRepresentationProtocolRequirement::FieldDistance {
+                revision: RENDER_FIELD_DISTANCE_PROTOCOL_REVISION,
+                input: RenderFieldDistanceInputRequirement::Bounded {
+                    max_absolute_error_meters: RenderDistanceErrorBound::new(0.05)
+                        .expect("field input bound"),
+                },
+            },
+            Some(RenderDistanceErrorBound::new(0.05).expect("refinement bound")),
+        )
+        .expect("field requirement")
+    }
+
+    #[test]
+    fn method_contract_canonicalizes_output_and_representation_relations() {
+        let distance = RenderMethodOutputContract::new(
+            RenderObservationKind::Perspective,
+            RenderMethodOutputKind::Distance {
+                convention: RenderDistanceConvention::RayDistance,
+            },
+            RenderMethodOutputGuarantee::Exact,
+            vec![field_requirement(), surface_requirement()],
+            false,
+        )
+        .expect("distance output contract");
+        let radiance = RenderMethodOutputContract::new(
+            RenderObservationKind::Probe,
+            RenderMethodOutputKind::Radiance {
+                spectral: RenderSpectralRadianceSupport::new(400e-9, 700e-9)
+                    .expect("spectral support"),
+            },
+            RenderMethodOutputGuarantee::Exact,
+            vec![surface_requirement()],
+            true,
+        )
+        .expect("radiance output contract");
+
+        let method = RenderMethodContract::new(
+            RenderMethodId::new(7).expect("method id"),
+            vec![radiance, distance],
             vec![
                 RenderAbstractExecutionRequirement::GeneralParallelWork,
                 RenderAbstractExecutionRequirement::GeneralParallelWork,
             ],
         )
-        .expect("valid method");
+        .expect("method");
+
         assert_eq!(method.id().raw(), 7);
+        assert_eq!(method.output_contracts().len(), 2);
         assert_eq!(method.abstract_execution_requirements().len(), 1);
+        let perspective = &method.output_contracts()[0];
+        assert_eq!(perspective.observation_kind(), RenderObservationKind::Perspective);
+        assert_eq!(perspective.representation_requirements().len(), 2);
+        assert_eq!(
+            perspective.representation_requirements()[0]
+                .protocol()
+                .protocol(),
+            RenderRepresentationProtocol::SurfaceQuery
+        );
+        assert_eq!(
+            perspective.representation_requirements()[1]
+                .protocol()
+                .protocol(),
+            RenderRepresentationProtocol::FieldDistance
+        );
+    }
+
+    #[test]
+    fn observation_output_relation_does_not_imply_cartesian_product() {
+        let perspective_distance = RenderMethodOutputContract::new(
+            RenderObservationKind::Perspective,
+            RenderMethodOutputKind::Distance {
+                convention: RenderDistanceConvention::ObservationForwardDepth,
+            },
+            RenderMethodOutputGuarantee::Exact,
+            vec![surface_requirement()],
+            false,
+        )
+        .expect("perspective distance");
+        let probe_radiance = RenderMethodOutputContract::new(
+            RenderObservationKind::Probe,
+            RenderMethodOutputKind::Radiance {
+                spectral: RenderSpectralRadianceSupport::new(400e-9, 700e-9)
+                    .expect("spectral support"),
+            },
+            RenderMethodOutputGuarantee::Exact,
+            vec![surface_requirement()],
+            true,
+        )
+        .expect("probe radiance");
+        let method = RenderMethodContract::new(
+            RenderMethodId::new(1).expect("method id"),
+            vec![probe_radiance, perspective_distance],
+            Vec::new(),
+        )
+        .expect("method");
+
+        let probe_distance = RenderOutputValue::Distance {
+            convention: RenderDistanceConvention::ObservationForwardDepth,
+        };
+        assert!(method.supports_observation(RenderObservationKind::Probe));
+        assert!(method
+            .output_contract(RenderObservationKind::Probe, probe_distance)
+            .is_none());
+        assert!(!method.has_output_family(RenderObservationKind::Probe, probe_distance));
+    }
+
+    #[test]
+    fn bounded_output_guarantee_is_output_specific() {
+        let radiance = RenderMethodOutputKind::Radiance {
+            spectral: RenderSpectralRadianceSupport::new(400e-9, 700e-9)
+                .expect("spectral support"),
+        };
+        assert_eq!(
+            RenderMethodOutputContract::new(
+                RenderObservationKind::Probe,
+                radiance,
+                RenderMethodOutputGuarantee::BoundedAbsoluteDistance {
+                    max_error_meters: RenderDistanceErrorBound::new(0.01).expect("bound"),
+                },
+                vec![surface_requirement()],
+                false,
+            ),
+            Err(RenderMethodValidationError::BoundedDistanceGuaranteeRequiresDistanceOutput)
+        );
     }
 
     #[test]
