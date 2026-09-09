@@ -5,7 +5,7 @@ status: active
 owner: workspace
 layer: reports
 canonical: true
-last_reviewed: 2026-09-09
+last_reviewed: 2026-07-28
 related_docs:
   - ../../workspace/workflow-lifecycle.md
   - ../../workspace/planning/completed-work.md
@@ -17,10 +17,6 @@ related_docs:
 Use this folder for detailed historical completion evidence.
 
 `completed-work.md` remains the short completion index. Closeout reports keep larger evidence records out of planning files.
-
-## Foundation closeouts
-
-- [Foundation Ratification Phase 5 Evaluation](foundation-ratification-phase5-evaluation.md)
 
 ## Current repository-family closeouts
 
