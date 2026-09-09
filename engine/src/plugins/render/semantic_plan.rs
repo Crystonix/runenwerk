@@ -414,10 +414,12 @@ fn plan_output_representations(
         if output_contract.requires_material_assignment()
             && participation.material_assignment().is_none()
         {
-            return Err(RenderMethodRejectionReason::RequiredMaterialAssignmentMissing {
-                output_index,
-                object_id,
-            });
+            return Err(
+                RenderMethodRejectionReason::RequiredMaterialAssignmentMissing {
+                    output_index,
+                    object_id,
+                },
+            );
         }
 
         if output_contract.representation_requirements().is_empty() {
@@ -448,8 +450,7 @@ fn plan_output_representations(
                 }
             }
 
-            if requirement_rejections.len() == output_contract.representation_requirements().len()
-            {
+            if requirement_rejections.len() == output_contract.representation_requirements().len() {
                 representation_rejections.push(RenderRepresentationRejection {
                     representation_id: representation.id(),
                     requirement_rejections,
@@ -501,9 +502,11 @@ fn evaluate_representation_use(
                 .validity()
                 .contains_interval(observation.shutter())
             {
-                return Err(RenderRepresentationRejectionReason::ObjectStateTemporalCoverage {
-                    observation_index,
-                });
+                return Err(
+                    RenderRepresentationRejectionReason::ObjectStateTemporalCoverage {
+                        observation_index,
+                    },
+                );
             }
         }
     }
@@ -512,9 +515,7 @@ fn evaluate_representation_use(
         .temporal_support()
         .contains_interval(observation.shutter())
     {
-        return Err(RenderRepresentationRejectionReason::TemporalCoverage {
-            observation_index,
-        });
+        return Err(RenderRepresentationRejectionReason::TemporalCoverage { observation_index });
     }
 
     validate_refinement(requirement, representation)
@@ -626,9 +627,7 @@ fn validate_output_guarantee(
                     },
                 );
             }
-            Err(RenderMethodRejectionReason::RelativeOutputToleranceNotProvable {
-                output_index,
-            })
+            Err(RenderMethodRejectionReason::RelativeOutputToleranceNotProvable { output_index })
         }
     }
 }
@@ -644,7 +643,7 @@ mod tests {
     use crate::plugins::render::appearance::RenderDiffuseMaterial;
     use crate::plugins::render::method::{
         RenderAbstractExecutionRequirement, RenderFieldDistanceInputRequirement,
-        RenderMethodOutputKind, RenderMethodOutputGuarantee, RenderMethodRepresentationRequirement,
+        RenderMethodOutputGuarantee, RenderMethodOutputKind, RenderMethodRepresentationRequirement,
         RenderRepresentationProtocolRequirement, RenderSpectralRadianceSupport,
     };
     use crate::plugins::render::participation::{
@@ -791,9 +790,7 @@ mod tests {
         .expect("surface requirement")
     }
 
-    fn field_requirement_exact(
-        refinement: Option<f64>,
-    ) -> RenderMethodRepresentationRequirement {
+    fn field_requirement_exact(refinement: Option<f64>) -> RenderMethodRepresentationRequirement {
         RenderMethodRepresentationRequirement::new(
             RenderRepresentationProtocolRequirement::FieldDistance {
                 revision: RENDER_FIELD_DISTANCE_PROTOCOL_REVISION,
@@ -868,8 +865,8 @@ mod tests {
                 RenderDiffuseMaterial::new(0.5).expect("diffuse material"),
             )
         });
-        let participation = RenderObjectParticipation::new(representations, material, None)
-            .expect("participation");
+        let participation =
+            RenderObjectParticipation::new(representations, material, None).expect("participation");
         let mut update = RenderSceneUpdate::new();
         update.replace_participation(object_id, participation);
         store.commit(update).expect("attach representations");
@@ -1060,7 +1057,10 @@ mod tests {
                 RenderMethodOutputGuarantee::BoundedAbsoluteDistance {
                     max_error_meters: RenderDistanceErrorBound::new(0.02).expect("output bound"),
                 },
-                vec![surface_requirement(), field_requirement_bounded(0.02, Some(0.05))],
+                vec![
+                    surface_requirement(),
+                    field_requirement_bounded(0.02, Some(0.05)),
+                ],
             )],
         );
         let plan = plan_render(
@@ -1305,7 +1305,9 @@ mod tests {
                 1,
                 vec![probe_distance_contract(
                     RenderMethodOutputGuarantee::Exact,
-                    vec![surface_requirement_revision(RENDER_SURFACE_QUERY_PROTOCOL_REVISION)],
+                    vec![surface_requirement_revision(
+                        RENDER_SURFACE_QUERY_PROTOCOL_REVISION,
+                    )],
                 )],
             )],
         )
@@ -1455,7 +1457,8 @@ mod tests {
                 1,
                 vec![probe_distance_contract(
                     RenderMethodOutputGuarantee::BoundedAbsoluteDistance {
-                        max_error_meters: RenderDistanceErrorBound::new(0.05).expect("output bound"),
+                        max_error_meters: RenderDistanceErrorBound::new(0.05)
+                            .expect("output bound"),
                     },
                     vec![field_requirement_bounded(0.05, Some(0.05))],
                 )],
@@ -1603,8 +1606,8 @@ mod tests {
             RenderTemporalSupport::unbounded(),
             true,
         );
-        let spectral = RenderSpectralRadianceSupport::new(400e-9, 700e-9)
-            .expect("spectral support");
+        let spectral =
+            RenderSpectralRadianceSupport::new(400e-9, 700e-9).expect("spectral support");
         let outputs = vec![
             RenderMethodOutputContract::new(
                 RenderObservationKind::Perspective,
@@ -1663,9 +1666,10 @@ mod tests {
         let radiance = |topology| {
             RenderOutputSpec::new(
                 RenderOutputValue::Radiance {
-                    representation:
-                        RenderRadiometricRepresentation::spectral_at_wavelength_meters(550e-9)
-                            .expect("wavelength"),
+                    representation: RenderRadiometricRepresentation::spectral_at_wavelength_meters(
+                        550e-9,
+                    )
+                    .expect("wavelength"),
                 },
                 topology,
                 RenderSemanticTolerance::exact(),
