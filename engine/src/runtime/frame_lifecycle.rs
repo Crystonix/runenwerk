@@ -52,7 +52,6 @@ pub(crate) fn run_frame(world: &mut World, scheduler: &mut Runtime) -> Result<()
     scheduler.run_schedule::<RenderPrepare>(world)?;
     scheduler.run_schedule::<RenderSubmit>(world)?;
     scheduler.run_schedule::<FrameEnd>(world)?;
-    world.advance_change_frame();
     Ok(())
 }
 
@@ -78,17 +77,7 @@ mod tests {
     }
 
     #[test]
-    fn successful_frame_end_advances_change_frame_once() {
-        let mut world = test_world();
-        let mut runtime = Runtime::new();
-
-        run_frame(&mut world, &mut runtime).expect("frame should succeed");
-
-        assert_eq!(world.current_frame_index(), 1);
-    }
-
-    #[test]
-    fn change_frame_advance_is_skipped_when_frame_end_schedule_fails() {
+    fn frame_end_failure_is_propagated() {
         fn fail_frame_end() -> anyhow::Result<()> {
             Err(anyhow!("frame end failure"))
         }
@@ -99,6 +88,5 @@ mod tests {
 
         let err = run_frame(&mut world, &mut runtime).expect_err("frame should fail");
         assert!(format!("{err:#}").contains("frame end failure"));
-        assert_eq!(world.current_frame_index(), 0);
     }
 }

@@ -1,6 +1,6 @@
 use super::*;
 use crate::{App, CoreSet, FixedUpdate, FrameEnd, PreUpdate, SystemConfigExt};
-use ecs::{OwnerId, OwnerRole, OwnershipTarget, World};
+use ecs::World;
 use engine_net::replication::{InputDriver, ReplicationDriver, SnapshotApplyDriver};
 use engine_net::*;
 use engine_sim::SimulationTick;
@@ -353,57 +353,6 @@ where
     }
 }
 
-pub fn ensure_owner_for_connection(
-    world: &mut World,
-    connection: ConnectionHandle,
-    role: OwnerRole,
-) -> OwnerId {
-    if let Ok(routing) = world.resource::<NetworkOwnerRouting>()
-        && let Some(owner_id) = routing.by_connection.get(&connection).copied()
-    {
-        world.set_owner_role(owner_id, role);
-        return owner_id;
-    }
-
-    let owner_id = world.create_owner(role);
-    if let Ok(routing) = world.resource_mut::<NetworkOwnerRouting>() {
-        routing.by_connection.insert(connection, owner_id);
-        routing.by_owner.insert(owner_id, connection);
-    }
-    owner_id
-}
-
-pub fn owner_for_connection(world: &World, connection: ConnectionHandle) -> Option<OwnerId> {
-    world
-        .resource::<NetworkOwnerRouting>()
-        .ok()
-        .and_then(|routing| routing.by_connection.get(&connection).copied())
-}
-
-pub fn remove_owner_for_connection(
-    world: &mut World,
-    connection: ConnectionHandle,
-) -> Option<OwnerId> {
-    let mut removed = None;
-    if let Ok(routing) = world.resource_mut::<NetworkOwnerRouting>()
-        && let Some(owner_id) = routing.by_connection.remove(&connection)
-    {
-        routing.by_owner.remove(&owner_id);
-        removed = Some(owner_id);
-    }
-    removed
-}
-
-pub fn route_connection_targets(
-    world: &World,
-    connection: ConnectionHandle,
-) -> Vec<OwnershipTarget> {
-    let Some(owner_id) = owner_for_connection(world, connection) else {
-        return Vec::new();
-    };
-    world.route_owner_targets(owner_id)
-}
-
 pub(crate) fn configure_replication_io<TDriver>(app: &mut App)
 where
     TDriver: ReplicationDriver + SnapshotApplyDriver + InputDriver + Send + Sync + 'static,
@@ -423,7 +372,6 @@ where
 fn configure_session_projection(app: &mut App) {
     app.init_resource::<RunenNetSessionProjection>();
     app.init_resource::<NetworkSessionStatus>();
-    app.init_resource::<NetworkOwnerRouting>();
 }
 
 pub(crate) fn configure_client_role(app: &mut App) {
@@ -576,12 +524,6 @@ pub struct NetworkSessionStatus {
     pub active_connection_count: usize,
     pub last_error: Option<String>,
     pub reconnect_attempt: Option<u32>,
-}
-
-#[derive(Debug, Clone, Default, PartialEq, Eq, ecs::Component, ecs::Resource)]
-pub struct NetworkOwnerRouting {
-    pub by_connection: HashMap<ConnectionHandle, OwnerId>,
-    pub by_owner: BTreeMap<OwnerId, ConnectionHandle>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, ecs::Component, ecs::Resource)]

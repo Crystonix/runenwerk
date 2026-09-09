@@ -1,8 +1,7 @@
-use super::{RunenNetSessionProjection, owner_for_connection, route_connection_targets};
+use super::RunenNetSessionProjection;
 use crate::plugins::world::adapters::resources::RegionInvalidationJournalResource;
 use crate::plugins::world::chunks::lifecycle::WorldChunkRuntimeMapResource;
 use crate::runtime::WorldMut;
-use ecs::OwnerRole;
 use runen_net::identity::ConnectionHandle;
 use runen_spatial::ChunkId;
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
@@ -162,25 +161,6 @@ pub fn sync_connection_streaming_state_system(mut world: WorldMut) {
             (None, 0, Vec::new())
         };
 
-    let connection_roles = active_connections
-        .iter()
-        .copied()
-        .map(|connection| {
-            let role = owner_for_connection(&world, connection)
-                .and_then(|owner_id| world.owner_role(owner_id));
-            (connection, role)
-        })
-        .collect::<HashMap<_, _>>();
-
-    let owned_target_counts = active_connections
-        .iter()
-        .copied()
-        .map(|connection| {
-            let count = route_connection_targets(&world, connection).len();
-            (connection, count)
-        })
-        .collect::<HashMap<_, _>>();
-
     let Ok(streaming_state) = world.resource_mut::<NetStreamingStateResource>() else {
         return;
     };
@@ -190,19 +170,6 @@ pub fn sync_connection_streaming_state_system(mut world: WorldMut) {
 
     for connection in active_connections {
         let state = streaming_state.state_for_connection_mut(connection);
-        let role = connection_roles.get(&connection).copied().flatten();
-        let owned_target_count = owned_target_counts.get(&connection).copied().unwrap_or(0);
-
-        if matches!(role, Some(OwnerRole::Observer))
-            || (matches!(role, Some(OwnerRole::Active)) && owned_target_count == 0)
-        {
-            state.relevant_chunks.clear();
-            state.gameplay_locked_chunks.clear();
-            state.prepared_region_sequence = journal_max_sequence;
-            state.prepared_full_resync_payload = false;
-            continue;
-        }
-
         let journal_gap = journal_min_sequence.is_some_and(|min_sequence| {
             state.acked_region_sequence.saturating_add(1) < min_sequence
         });

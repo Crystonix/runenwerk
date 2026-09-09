@@ -222,6 +222,7 @@ fn client_outbox_backpressure_does_not_record_unsent_prediction_frame() {
     let mut client = App::headless();
     client.add_plugins(default_plugins());
     client.add_plugins((ScenePlugin, NetworkClientPlugin));
+    install_backpressure_test_clock(&mut client);
     for index in 0..4_096usize {
         enqueue_client_outbox(client.world_mut(), client_probe((index % 251) as u8))
             .expect("client outbox should fill through its configured capacity");
@@ -234,9 +235,10 @@ fn client_outbox_backpressure_does_not_record_unsent_prediction_frame() {
         .unwrap()
         .push(command.clone());
 
-    let client = client
-        .run_for_ticks(1)
-        .expect("client prediction tick should survive outbox backpressure");
+    let client = run_backpressure_fixed_tick(
+        client,
+        "client prediction tick should survive outbox backpressure",
+    );
 
     assert_eq!(
         client
