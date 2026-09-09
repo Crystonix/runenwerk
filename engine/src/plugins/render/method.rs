@@ -5,9 +5,7 @@
 //! pipelines, output bindings, or method-internal pass/work topology.
 
 use super::representation::RenderRepresentationProtocol;
-use super::request::{
-    RenderDistanceConvention, RenderObservationSpec, RenderOutputValue,
-};
+use super::request::{RenderDistanceConvention, RenderObservationSpec, RenderOutputValue};
 use super::space_time::{CanonicalF64, RenderSemanticValueError};
 use std::error::Error;
 use std::fmt;
@@ -127,13 +125,16 @@ pub enum RenderMethodOutputKind {
 impl RenderMethodOutputKind {
     pub fn supports_value(self, value: RenderOutputValue) -> bool {
         match (self, value) {
+            (Self::Radiance { spectral }, RenderOutputValue::Radiance { representation }) => {
+                spectral.contains_wavelength_meters(representation.wavelength_meters())
+            }
             (
-                Self::Radiance { spectral },
-                RenderOutputValue::Radiance { representation },
-            ) => spectral.contains_wavelength_meters(representation.wavelength_meters()),
-            (
-                Self::Distance { convention: supported },
-                RenderOutputValue::Distance { convention: requested },
+                Self::Distance {
+                    convention: supported,
+                },
+                RenderOutputValue::Distance {
+                    convention: requested,
+                },
             ) => supported == requested,
             (Self::ObjectIdentity, RenderOutputValue::ObjectIdentity) => true,
             _ => false,
@@ -276,8 +277,10 @@ impl RenderMethodOutputContract {
         mut representation_requirements: Vec<RenderMethodRepresentationRequirement>,
         requires_material_assignment: bool,
     ) -> Result<Self, RenderMethodValidationError> {
-        if matches!(guarantee, RenderMethodOutputGuarantee::BoundedAbsoluteDistance { .. })
-            && !matches!(output_kind, RenderMethodOutputKind::Distance { .. })
+        if matches!(
+            guarantee,
+            RenderMethodOutputGuarantee::BoundedAbsoluteDistance { .. }
+        ) && !matches!(output_kind, RenderMethodOutputKind::Distance { .. })
         {
             return Err(
                 RenderMethodValidationError::BoundedDistanceGuaranteeRequiresDistanceOutput,
@@ -287,9 +290,11 @@ impl RenderMethodOutputContract {
         representation_requirements.sort_by_key(|requirement| requirement.sort_key());
         for pair in representation_requirements.windows(2) {
             if pair[0].protocol().protocol() == pair[1].protocol().protocol() {
-                return Err(RenderMethodValidationError::DuplicateRepresentationProtocol {
-                    protocol: pair[0].protocol().protocol(),
-                });
+                return Err(
+                    RenderMethodValidationError::DuplicateRepresentationProtocol {
+                        protocol: pair[0].protocol().protocol(),
+                    },
+                );
             }
         }
 
@@ -538,7 +543,10 @@ mod tests {
         assert_eq!(method.output_contracts().len(), 2);
         assert_eq!(method.abstract_execution_requirements().len(), 1);
         let perspective = &method.output_contracts()[0];
-        assert_eq!(perspective.observation_kind(), RenderObservationKind::Perspective);
+        assert_eq!(
+            perspective.observation_kind(),
+            RenderObservationKind::Perspective
+        );
         assert_eq!(perspective.representation_requirements().len(), 2);
         assert_eq!(
             perspective.representation_requirements()[0]
@@ -588,17 +596,18 @@ mod tests {
             convention: RenderDistanceConvention::ObservationForwardDepth,
         };
         assert!(method.supports_observation(RenderObservationKind::Probe));
-        assert!(method
-            .output_contract(RenderObservationKind::Probe, probe_distance)
-            .is_none());
+        assert!(
+            method
+                .output_contract(RenderObservationKind::Probe, probe_distance)
+                .is_none()
+        );
         assert!(!method.has_output_family(RenderObservationKind::Probe, probe_distance));
     }
 
     #[test]
     fn bounded_output_guarantee_is_output_specific() {
         let radiance = RenderMethodOutputKind::Radiance {
-            spectral: RenderSpectralRadianceSupport::new(400e-9, 700e-9)
-                .expect("spectral support"),
+            spectral: RenderSpectralRadianceSupport::new(400e-9, 700e-9).expect("spectral support"),
         };
         assert_eq!(
             RenderMethodOutputContract::new(
