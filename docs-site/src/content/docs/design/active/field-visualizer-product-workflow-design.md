@@ -5,9 +5,9 @@ status: active
 owner: apps/runenwerk_editor
 layer: app-runtime / editor-ui
 canonical: true
-last_reviewed: 2026-05-16
+last_reviewed: 2026-09-10
 related_designs:
-  - ./editor-rendered-world-and-multi-entity-viewport-design.md
+  - ../implemented/editor-rendered-world-and-multi-entity-viewport-design.md
   - ../implemented/render-product-surface-foundation-bundle-design.md
   - ../accepted/sdf-first-field-world-platform-design.md
 related_roadmaps:

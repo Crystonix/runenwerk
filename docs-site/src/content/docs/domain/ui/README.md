@@ -5,7 +5,7 @@ status: active
 owner: ui
 layer: domain
 canonical: true
-last_reviewed: 2026-06-20
+last_reviewed: 2026-09-10
 ---
 
 # UI Domain
@@ -96,7 +96,7 @@ boundary; neither legacy area is a parallel target authority.
 
 ## Interaction / Runtime
 
-- [Editor UI Runtime V2 and Interaction Formation Design](../../design/active/editor-ui-runtime-v2-and-interaction-formation-design.md)
+- [Editor UI Runtime V2 and Interaction Formation Design](../../design/implemented/editor-ui-runtime-v2-and-interaction-formation-design.md)
 - [ADR 0009: UI Interaction Formation V2](../../adr/accepted/0009-ui-interaction-formation-v2.md)
 - [Editor UI Popup, Adornment, And Drop Preview Contract](../../design/active/editor-ui-popup-adornment-drop-preview-contract.md)
 
@@ -139,7 +139,7 @@ The current retained UI slice catalog is:
 - `IV2-status-and-viewport-arbitration`
 
 Each slice is defined in
-[Editor UI Runtime V2 and Interaction Formation Design](../../design/active/editor-ui-runtime-v2-and-interaction-formation-design.md)
+[Editor UI Runtime V2 and Interaction Formation Design](../../design/implemented/editor-ui-runtime-v2-and-interaction-formation-design.md)
 and must be consumed as a contract by downstream retained UI work.
 
 As of 2026-05-15, code-bearing retained slices have landed for

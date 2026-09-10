@@ -1,0 +1,73 @@
+@startuml
+title Workbench Host Compositions
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam defaultFontName Monospaced
+
+package "Shared Editor Tool-Host Contracts" as SharedPkg {
+  component "domain/editor/editor_shell\nToolSuiteRegistry\nToolSurfaceRegistry\nWorkbench compiler\nProvider route vocabulary" as ShellContracts
+}
+
+package "apps/runenwerk_editor" as RunenwerkAppPkg {
+  component "Full Editor composition" as FullHost
+  component "Material Lab composition\nrunenwerk_material_lab binary" as MaterialHost
+  component "UI Designer composition\nrunenwerk_ui_designer binary" as UiHost
+  component "Headless / constrained\nvalidation compositions" as ValidationHosts
+  component "App-owned providers\nIO + runtime/render adapters\ncommand execution" as AppIntegration
+}
+
+package "Installed Tool Suites" as SuitesPkg {
+  component "Scene / viewport" as SceneSuite
+  component "Material / texture" as MaterialSuite
+  component "Asset / field / SDF" as AssetSuite
+  component "Diagnostics" as DiagnosticsSuite
+  component "Editor-definition / UI design" as DesignSuite
+}
+
+package "Future apps/* consumer seam" as FutureAppsPkg {
+  component "Independent app composition" as FutureHost
+  component "Own providers / IO / adapters" as FutureIntegration
+}
+
+FullHost --> ShellContracts
+MaterialHost --> ShellContracts
+UiHost --> ShellContracts
+ValidationHosts --> ShellContracts
+
+FullHost --> SceneSuite
+FullHost --> MaterialSuite
+FullHost --> AssetSuite
+FullHost --> DiagnosticsSuite
+FullHost --> DesignSuite
+MaterialHost --> MaterialSuite
+MaterialHost --> DiagnosticsSuite
+UiHost --> DiagnosticsSuite
+UiHost --> DesignSuite
+
+RunenwerkAppPkg --> AppIntegration
+
+FutureHost --> ShellContracts
+FutureHost --> FutureIntegration
+
+note bottom of RunenwerkAppPkg
+  Current standalone-style Material Lab and UI Designer
+  proofs are separate binaries/compositions inside
+  apps/runenwerk_editor. They do not prove a separate
+  reusable app-support crate or external plugin ABI.
+end note
+
+note bottom of SharedPkg
+  editor_shell owns bounded tool-host contracts.
+  App-neutral structural composition is governed
+  separately by ADR 0013 / ui_composition.
+end note
+
+note bottom of FutureAppsPkg
+  A later independent app may reuse the bounded
+  contracts without depending on runenwerk_editor
+  internals, but that extraction is not claimed here.
+end note
+
+@enduml

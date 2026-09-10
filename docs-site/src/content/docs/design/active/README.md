@@ -41,11 +41,8 @@ active design contains older conflicting target language.
 
 - [Editor Asset Pipeline and Content Workflow Design](editor-asset-pipeline-and-content-workflow-design.md)
 - [Editor Procedural Content and Simulation Workflow Plan](editor-procedural-content-and-simulation-workflow-plan.md)
-- [Editor Rendered World And Multi Entity Viewport Design](editor-rendered-world-and-multi-entity-viewport-design.md)
 - [Editor Shell Menu And Tab Chrome Polish Design](editor-shell-menu-and-tab-chrome-polish-design.md)
-- [Editor Tool Suite Registry And Workbench Host Design](editor-tool-suite-registry-and-workbench-host-design.md)
 - [Editor Product UX Lab And Game UI Ready Foundations](editor-product-ux-lab-and-game-ui-ready-foundations-design.md)
-- [Editor UI Runtime V2 And Interaction Formation Design](editor-ui-runtime-v2-and-interaction-formation-design.md)
 - [Editor UI Popup Adornment Drop Preview Contract](editor-ui-popup-adornment-drop-preview-contract.md)
 - [Editor UI Workspace Tool Surface Architecture](editor-ui-workspace-tool-surface-architecture.md)
 - [UI Designer And Interface Lab Platform](ui-designer-interface-lab-platform-design.md)

@@ -11,13 +11,13 @@ related_designs:
   - ../../design/implemented/ui-definition-formation-foundation-design.md
   - ../../design/implemented/editor-workspace-document-mode-panel-architecture.md
   - ../../design/active/editor-ui-workspace-tool-surface-architecture.md
-  - ../../design/active/editor-tool-suite-registry-and-workbench-host-design.md
+  - ../../design/implemented/editor-tool-suite-registry-and-workbench-host-design.md
   - ../../design/accepted/editor-native-multi-window-presentation-design.md
   - ../../design/active/workspace-viewport-expression-upgrade-design.md
   - ../../design/implemented/render-product-surface-foundation-bundle-design.md
   - ../../design/implemented/viewport-dynamic-product-target-allocation-design.md
   - ../../design/implemented/editor-self-authoring-and-final-ui-design.md
-  - ../../design/active/editor-ui-runtime-v2-and-interaction-formation-design.md
+  - ../../design/implemented/editor-ui-runtime-v2-and-interaction-formation-design.md
   - ../../design/active/editor-asset-pipeline-and-content-workflow-design.md
   - ../../design/active/editor-procedural-content-and-simulation-workflow-plan.md
   - ../../design/active/gameplay-graph-atr-ir-and-ecs-lowering-design.md
@@ -534,14 +534,15 @@ Exit criteria:
 
 These items were easy to miss in the compressed roadmap. They are real future
 tracks; some still need design or ADR work before implementation, while
-Interaction V2 now has an accepted ADR and needs retained-UI migration slices.
+Interaction V2 is implemented for the retained UI target under accepted ADR
+0009 and its retained slice catalog is the current reference boundary.
 
 - UI Runtime V2 and interaction formation
-  - active design: `docs-site/src/content/docs/design/active/editor-ui-runtime-v2-and-interaction-formation-design.md`;
+  - implemented design: `docs-site/src/content/docs/design/implemented/editor-ui-runtime-v2-and-interaction-formation-design.md`;
   - accepted ADR: `docs-site/src/content/docs/adr/accepted/0009-ui-interaction-formation-v2.md`;
-  - retain the current retained UI execution target while adding `FormedInteractionModel` for popup stack, scroll ownership, focus, menu sizing, chrome slots, docking zones, and status overflow;
-  - use the migration spine `definition vocabulary -> validation rule -> FormedInteractionModel record -> retained UI formation adapter -> ui_runtime enforcement -> editor/app guard` before retained UI implementation slices;
-  - retain the named WR-025 slice catalog as the handoff to implementation:
+  - retain the current retained UI execution target while using `FormedInteractionModel` for popup stack, scroll ownership, focus, menu sizing, chrome slots, docking zones, and status overflow;
+  - the implemented retained slices follow the migration spine `definition vocabulary -> validation rule -> FormedInteractionModel record -> retained UI formation adapter -> ui_runtime enforcement -> editor/app guard`;
+  - retain the named WR-025 slice catalog as the implementation reference:
     `IV2-menu-stack`, `IV2-scroll-ownership`, `IV2-menu-sizing`,
     `IV2-chrome-slots`, `IV2-dock-drop-zones`, and
     `IV2-status-and-viewport-arbitration`;
@@ -558,7 +559,7 @@ Interaction V2 now has an accepted ADR and needs retained-UI migration slices.
     `apps/runenwerk_editor/tests/viewport_architecture_guards.rs::production_input_bridge_allows_viewport_scroll_only_after_ui_declines_ownership`
     keeps production viewport wheel fallback behind UI ownership decline;
   - renderer/product-surface output remains derived data, not UI authority;
-  - do this before more local shell/menu/chrome patches accumulate;
+  - downstream shell/menu/chrome work consumes these implemented contracts rather than defining local policy;
   - editor shell polish is a retained-UI implementation slice after the relevant Interaction V2 contract, or bounded compatibility evidence; it is not the owner of durable popup, scroll, focus, docking, status-overflow, or viewport-input policy.
 - compiled-reactive UI execution
   - promote only through a new active design or accepted ADR;
@@ -581,10 +582,10 @@ Interaction V2 now has an accepted ADR and needs retained-UI migration slices.
   - wait for package metadata, trust policy, compatibility ranges, migration diagnostics, and rollback semantics.
 - gameplay graph ATR/ECS lowering
   - implement only after narrower gameplay event, action, state, quest, authority, and source-map contracts exist.
-- rendered-world V1
-  - active design: `docs-site/src/content/docs/design/active/editor-rendered-world-and-multi-entity-viewport-design.md`;
-  - first implementation is multi-entity SDF primitive viewport rendering from `apps/runenwerk_editor/src/runtime/systems/frame_submit.rs::extract_viewport_scene_render_packet`;
-  - terrain, materials, prefabs, and streaming remain later product tracks.
+- rendered-world / multi-entity viewport
+  - implemented design: `docs-site/src/content/docs/design/implemented/editor-rendered-world-and-multi-entity-viewport-design.md`;
+  - WR-018 V1 first implemented multi-entity SDF primitive viewport rendering; current production extraction uses `apps/runenwerk_editor/src/runtime/systems/frame_submit.rs::extract_viewport_scene_render_packet_with_material_slots`;
+  - material-slot selection is an additive production extension beyond WR-018 V1; terrain, prefab instancing, streaming, and broader general-mesh/world extraction remain separate product tracks.
 - Field Visualizer
   - active design: `docs-site/src/content/docs/design/active/field-visualizer-product-workflow-design.md`;
   - implement as viewport product selection and controls, not as a separate viewer.
@@ -1053,12 +1054,12 @@ Current M6 focus:
 
 Other gated M6 tracks:
 
-- Editor Tool Suite Registry And Workbench Host: status design/ADR proposed.
-  Before expanding more Material Lab-like graph/product tools, remove
-  shell-level one-off routing and persistence tax through the
-  [active design](../../design/active/editor-tool-suite-registry-and-workbench-host-design.md)
-  and
-  [proposed ADR](../../adr/proposed/editor-tool-suite-registry-and-provider-owned-routing.md).
+- Editor Tool Suite Registry And Workbench Host: implemented for the surviving
+  editor-local provider, capability, registration, and workbench-integration
+  contracts. Future graph/product tools consume the
+  [implemented Tool Suite design](../../design/implemented/editor-tool-suite-registry-and-workbench-host-design.md);
+  generic structural composition identity and semantics remain governed by
+  [accepted ADR 0013](../../adr/accepted/0013-app-neutral-ui-composition-clean-cutover.md).
 - M6.3 gameplay graph, M6.4 particles, M6.5 SDF physics, M6.6 animation, and
   M6.7 world-process work remain blocked until the execution substrate and
   their owning contracts are ready.

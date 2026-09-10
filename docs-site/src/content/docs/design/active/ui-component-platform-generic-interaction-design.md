@@ -12,7 +12,7 @@ related_docs:
   - ./ui-component-platform-executable-interaction-story-design.md
   - ./ui-component-platform-executable-interaction-story-implementation-scope.md
   - ./ui-component-platform-overlay-popup-layering-design.md
-  - ./editor-ui-runtime-v2-and-interaction-formation-design.md
+  - ../implemented/editor-ui-runtime-v2-and-interaction-formation-design.md
   - ./ui-component-platform-base-control-packages-design.md
 ---
 
