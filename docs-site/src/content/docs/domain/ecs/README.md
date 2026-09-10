@@ -45,6 +45,11 @@ execution, ECS access facts, structured ECS runtime errors, and deferred-command
 visibility. Application lifecycle, rendering, networking, replay, product
 publication, and frame policy remain host concerns.
 
+The workspace also carries `domain/ecs_conformance`, a downstream fixture that
+uses the published crate identities through a renamed dependency key. It keeps
+derive resolution, `WorldMut`, runtime execution, and sealed compile-fail
+boundaries checked outside the package implementation.
+
 The `ChangeCursor` returned by `World::current_change_tick` is an ECS-local
 monotonic observation position. It crosses the inner counter boundary through
 an explicit epoch and panics before the absolute two-word position is reused;
