@@ -8,8 +8,6 @@ canonical: false
 last_reviewed: 2026-08-04
 related_docs:
   - ../../reports/investigations/typed-app-program-current-state-investigation.md
-  - ../../workspace/engineering-workflow.md
-  - ../../workspace/authority-model.md
   - ../../guidelines/domain-program-architecture-pattern.md
   - ./runenwerk-domain-workbench-north-star.md
   - ./ui-program-architecture.md
@@ -75,7 +73,7 @@ ECS-owned app/domain semantics
 renderer-owned product truth
 ```
 
-Implementation requires an owning issue and pull request under [Engineering Workflow](../../workspace/engineering-workflow.md), naming exact files/crates, validation commands, evidence expectations, stop conditions, and module decomposition.
+Implementation requires an owning GitHub issue and pull request under the repository executor contract in [`AGENTS.md`](../../../../../../AGENTS.md), naming exact files/crates, validation commands, evidence expectations, stop conditions, and module decomposition.
 
 ## Design Goals
 
