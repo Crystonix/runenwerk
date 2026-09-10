@@ -1,22 +1,27 @@
 ---
 title: Sparse SDF Terrain Runtime Integration
-description: Active design for a shader-bound sparse SDF terrain runtime that consumes renderer-owned SDF GPU resources without making renderer code own SDF product truth.
-status: active
+description: Deferred design for a shader-bound sparse SDF terrain runtime that consumes renderer-owned SDF GPU resources without making renderer code own SDF product truth.
+status: deferred
 owner: engine
 layer: engine-runtime / renderer / sdf-products
 canonical: true
-last_reviewed: 2026-05-24
+last_reviewed: 2026-09-10
 related_designs:
   - ../accepted/sdf-world-rendering-and-raymarch-acceleration-design.md
   - ../accepted/sdf-product-renderer-and-gpu-residency-design.md
   - ../accepted/renderer-scale-residency-and-gpu-driven-visibility-design.md
   - ../accepted/render-production-readiness-and-inspection-design.md
   - ../accepted/renderer-gpu-evidence-and-procedural-visuals-design.md
+  - ../accepted/runenrender-decomposition-design.md
 related_roadmaps:
   - ../../engine/roadmaps/fully-featured-renderer-roadmap.md
 ---
 
 # Sparse SDF Terrain Runtime Integration
+
+## Deferred status
+
+This shader-bound sparse-SDF terrain runtime remains a valid follow-on target but is not active work. Reactivate only through a dedicated accepted RunenRender/SDF integration issue after the current RunenRender sequence establishes the relevant rendering boundary and a fresh source/product census proves the sparse residency, ABI, product-ownership, and runtime-proof assumptions still hold. The existing analytic terrain example does not activate this design.
 
 ## Decision
 
@@ -126,8 +131,7 @@ when work is activated. Naming these phases does not create active milestones.
 - Do not treat historical `WR-103` as implementation authority.
 - Do not make renderer code authoritative for SDF payload truth, collision
   truth, query policy, product fallback legality, or open-world generation.
-- Do not claim `perfectionist_verified` without a separate accepted no-gap
-  certification scope.
+- Do not claim final no-gap conformance outside the accepted RunenRender R8 -> RX authority.
 
 ## Evidence Expectations
 

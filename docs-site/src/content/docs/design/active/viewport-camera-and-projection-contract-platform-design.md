@@ -5,12 +5,12 @@ status: active
 owner: workspace
 layer: workspace
 canonical: true
-last_reviewed: 2026-05-25
+last_reviewed: 2026-09-10
 related_designs:
   - workspace-viewport-expression-upgrade-design.md
-  - renderer-procedural-population-hardening-platform-design.md
+  - ../implemented/renderer-procedural-population-hardening-platform-design.md
   - ../implemented/render-product-surface-foundation-bundle-design.md
-  - game-runtime-ui-projection-and-hud-platform-design.md
+  - ../deferred/game-runtime-ui-projection-and-hud-platform-design.md
 ---
 
 # Viewport Camera And Projection Contract Platform

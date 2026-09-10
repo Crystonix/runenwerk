@@ -5,7 +5,7 @@ status: accepted
 owner: engine
 layer: engine
 canonical: true
-last_reviewed: 2026-05-22
+last_reviewed: 2026-09-10
 related_designs:
   - ./render-product-graph-platform-design.md
   - ./render-production-readiness-and-inspection-design.md
@@ -15,7 +15,8 @@ related_designs:
   - ./renderer-temporal-reconstruction-and-dynamic-resolution-design.md
   - ./renderer-hardware-ray-query-and-hybrid-tracing-design.md
   - ./renderer-product-visual-producers-platform-design.md
-  - ../active/renderer-production-audit-and-perfectionist-verification-design.md
+  - ./runenrender-decomposition-design.md
+  - ../active/runenrender-internal-decomposition-execution-plan.md
 ---
 
 # Renderer GPU Evidence And Procedural Visuals Platform
@@ -64,8 +65,8 @@ renderer program is split into focused tracks:
   mandatory fallback.
 - `PT-RENDER-PRODUCT-VISUALS`: product-owned particles, VFX, vegetation, water,
   atmosphere, weather, trails, decals, and animation render producers.
-- `PT-RENDER-PERFECTION`: final cross-track audit and perfectionist
-  verification after runtime-proven implementation tracks complete.
+- RunenRender `R8 -> RX`: current cross-track operational conformance,
+  residual-gap audit, and extraction-readiness authority under ADR 0021.
 
 Completed `PT-RENDER-PG` remains the product-graph foundation. These tracks
 extend it without reopening its completed milestones.
@@ -79,8 +80,9 @@ extend it without reopening its completed milestones.
 - Do not reopen completed `PT-RENDER-PG` milestones; this track builds on their accepted contracts.
 - Do not use this track to implement SDF brick/page-table residency, clipmaps,
   raymarch acceleration, temporal reconstruction, hardware ray tracing,
-  material truth/lowering, product visual emitters, or perfectionist audit
-  closeout. Those are governed by the focused tracks above.
+  material truth/lowering, product visual emitters, or the current RunenRender
+  R8 -> RX conformance/audit sequence. Those are governed by the focused tracks
+  and accepted RunenRender authority above.
 
 ## Ownership
 
@@ -123,7 +125,7 @@ Rewrite boids to use the hybrid procedural instance path. Compute simulation rem
 
 ### PM-RENDER-GPU-006: Production Evidence
 
-Harden docs, examples, benchmarks, runtime inspection, and closeout evidence. Completion targets `runtime_proven`; `perfectionist_verified` remains unavailable until a completed audit proves no known quality gaps.
+Harden docs, examples, benchmarks, runtime inspection, and closeout evidence. Completion targets `runtime_proven`; final operational conformance remains unavailable until the RunenRender R8 -> RX sequence proves the required no-gap evidence.
 
 ## Contract Targets
 

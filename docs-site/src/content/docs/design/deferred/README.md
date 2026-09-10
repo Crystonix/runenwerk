@@ -40,6 +40,9 @@ Use this folder for designs that remain valid but are intentionally postponed.
 ### Engine Runtime / Cross-Domain
 
 - [Game Runtime, Editor, ECS, Scripting, and Hot Reload Preserved Target Draft](engine-game-runtime-editor-ecs-scripting-hot-reload-preserved-target-draft.md)
+- [ECS Parallel System Execution Design](ecs-parallel-system-execution-design.md)
+- [Game Runtime UI Projection And HUD Platform](game-runtime-ui-projection-and-hud-platform-design.md)
+- [Sparse SDF Terrain Runtime Integration](sparse-sdf-terrain-runtime-integration-design.md)
 
 ### Deferred Domain Authoring Patterns
 

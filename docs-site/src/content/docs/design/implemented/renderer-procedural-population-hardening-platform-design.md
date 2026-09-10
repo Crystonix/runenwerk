@@ -1,27 +1,32 @@
 ---
 title: Renderer Procedural Population Hardening Platform
-description: Active design for fail-closed indirect draw contracts, reusable GPU primitive dispatch, graph-level fixed-step catch-up, and reusable procedural camera projection after the procedural population runtime proof.
-status: active
+description: Implemented design for fail-closed indirect draw contracts, reusable GPU primitive dispatch, graph-level fixed-step catch-up, and reusable procedural camera projection after the procedural population runtime proof.
+status: implemented
 owner: engine
 layer: engine-runtime / renderer / procedural
 canonical: true
-last_reviewed: 2026-05-24
+last_reviewed: 2026-09-10
 related_designs:
   - renderer-procedural-population-platform-design.md
   - ../accepted/renderer-gpu-evidence-and-procedural-visuals-design.md
   - ../accepted/renderer-scale-residency-and-gpu-driven-visibility-design.md
+  - ../accepted/runenrender-decomposition-design.md
 related_reports:
   - ../../reports/closeouts/pt-render-procedural-population-runtime-proven/closeout.md
 ---
 
 # Renderer Procedural Population Hardening Platform
 
+## Implementation status
+
+This hardening architecture is implemented and backed by the completed runtime-proven hardening track. The design-time gap and production-slice language below is retained as rationale; current code, tests, and closeout evidence own exact implementation state. Where broader renderer acceptance terminology conflicts, ADR 0021 and the accepted RunenRender architecture win. Final operational conformance and residual-audit authority now belongs to the RunenRender R8 -> RX sequence rather than the historical `PT-RENDER-PERFECTION` track.
+
 ## Decision
 
 `PT-RENDER-PROCEDURAL-POPULATION-HARDENING` closes the direct technical gaps
 left visible by the `PT-RENDER-PROCEDURAL-POPULATION` runtime-proven closeout.
 This is a focused hardening track, not a cleanup bucket and not a replacement
-for `PT-RENDER-PERFECTION`.
+for current RunenRender R8 -> RX conformance authority.
 
 The renderer must harden four production contracts before later population
 expansion:
@@ -89,8 +94,8 @@ This track does not implement:
 - camera source-truth ownership inside `PreparedViewFrame`;
 - final no-gap renderer verification.
 
-Those remain separate design or audit work. `perfectionist_verified` remains
-owned by `PT-RENDER-PERFECTION`.
+Those remain separate design or audit work. Current final no-gap renderer
+verification belongs to the accepted RunenRender R8 -> RX sequence.
 
 ## Ownership
 

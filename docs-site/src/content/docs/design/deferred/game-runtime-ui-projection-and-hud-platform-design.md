@@ -1,11 +1,11 @@
 ---
 title: Game Runtime UI Projection And HUD Platform
-description: Active architecture design for a runtime-proven game UI projection and HUD platform, starting with an SDF screen-HUD proof.
-status: active
+description: Deferred architecture design for a runtime-proven game UI projection and HUD platform, starting with an SDF screen-HUD proof.
+status: deferred
 owner: workspace
 layer: domain/ui-definition / engine-runtime
 canonical: true
-last_reviewed: 2026-06-19
+last_reviewed: 2026-09-10
 related_adrs:
   - ../../adr/accepted/0001-use-domain-owned-commands.md
   - ../../adr/accepted/0004-separate-description-from-execution.md
@@ -13,17 +13,21 @@ related_adrs:
   - ../../adr/accepted/0009-ui-interaction-formation-v2.md
 related_designs:
   - ../accepted/app-neutral-ui-composition-design.md
-  - ./ui-designer-interface-lab-platform-design.md
+  - ../active/ui-designer-interface-lab-platform-design.md
   - ../accepted/ui-designer-target-projection-profiles-design.md
   - ../accepted/ui-designer-view-model-capability-and-intent-binding-design.md
   - ../accepted/ui-designer-live-preview-fixtures-scenarios-and-target-matrix-design.md
   - ../accepted/ui-designer-production-readiness-and-evidence-design.md
-  - ./engine-game-runtime-editor-ecs-scripting-hot-reload-design.md
+  - ../active/engine-game-runtime-editor-ecs-scripting-hot-reload-design.md
 related_roadmaps:
   - ../../domain/ui/roadmap.md
 ---
 
 # Game Runtime UI Projection And HUD Platform
+
+## Deferred status
+
+This architecture remains valid but is not active implementation work. The bounded-context owner is still unresolved. Reactivate only through an accepted owner-boundary/implementation issue that fixes dependency direction, source-of-truth boundaries, exact proof scope, and roadmap placement where cross-family sequencing matters. Do not create a game-runtime UI owner crate or treat the SDF proof as activation before that decision.
 
 ## Decision
 
@@ -190,7 +194,7 @@ Runtime proof must show that:
 
 ## Current Activation Rule
 
-This document is durable architecture, not a work tracker. Before product code
+This document is durable deferred architecture, not a work tracker. Before product code
 changes, create or select an owning GitHub issue that resolves the still-open
 owner boundary and names exact scope, accepted base, validation, and runtime
 evidence. Put the work on the maintained roadmap when cross-family sequencing

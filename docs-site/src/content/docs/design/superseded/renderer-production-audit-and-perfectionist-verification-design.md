@@ -1,11 +1,16 @@
 ---
 title: Renderer Production Audit And Perfectionist Verification Platform
-description: Active design for final cross-track renderer audit, evidence matrix, gap closure, documentation consistency, and perfectionist verification.
-status: active
+description: Superseded design for final cross-track renderer audit, evidence matrix, gap closure, documentation consistency, and perfectionist verification.
+status: superseded
 owner: workspace
 layer: workspace / engine-runtime
-canonical: true
-last_reviewed: 2026-05-22
+canonical: false
+last_reviewed: 2026-09-10
+related_adrs:
+  - ../../adr/accepted/0021-ratify-runenrender-semantic-rendering-architecture.md
+superseded_by:
+  - ../accepted/runenrender-decomposition-design.md
+  - ../active/runenrender-internal-decomposition-execution-plan.md
 related_designs:
   - ../accepted/renderer-gpu-evidence-and-procedural-visuals-design.md
   - ../accepted/renderer-scale-residency-and-gpu-driven-visibility-design.md
@@ -16,6 +21,10 @@ related_designs:
 ---
 
 # Renderer Production Audit And Perfectionist Verification Platform
+
+## Superseded status
+
+This historical audit model no longer owns renderer acceptance or final no-gap verification. ADR 0021, the accepted RunenRender architecture, and the active R8 -> RX execution/conformance sequence replace that authority. The original rationale below is retained for provenance only.
 
 ## Decision
 

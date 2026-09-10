@@ -1,19 +1,24 @@
 ---
 title: Renderer Procedural Population Platform
-description: Active design for reusable GPU procedural population infrastructure, bounded grid acceleration, first-class draw sources, and production boids evidence.
-status: active
+description: Implemented design for reusable GPU procedural population infrastructure, bounded grid acceleration, first-class draw sources, and production boids evidence.
+status: implemented
 owner: engine
 layer: engine-runtime / renderer / procedural
 canonical: true
-last_reviewed: 2026-05-24
+last_reviewed: 2026-09-10
 related_designs:
   - ../accepted/renderer-gpu-evidence-and-procedural-visuals-design.md
   - ../accepted/renderer-scale-residency-and-gpu-driven-visibility-design.md
   - ../accepted/render-product-graph-platform-design.md
   - ../accepted/render-production-readiness-and-inspection-design.md
+  - ../accepted/runenrender-decomposition-design.md
 ---
 
 # Renderer Procedural Population Platform
+
+## Implementation status
+
+This procedural population architecture is implemented and backed by the completed `WR-083` through `WR-088` runtime-proven track. It remains a durable renderer capability contract, subordinate to ADR 0021 and the accepted RunenRender architecture where broader renderer ownership or lifecycle terminology conflicts. Current final operational conformance and residual-audit authority belongs to the RunenRender R8 -> RX sequence, not the historical `PT-RENDER-PERFECTION` track.
 
 ## Decision
 
@@ -23,9 +28,9 @@ graph, primitive, population, diagnostic, benchmark, and evidence contracts for
 GPU-resident populations whose submitted work remains bounded and inspectable.
 
 This design extends the completed GPU/procedural and scale tracks. It does not
-reopen those tracks and it does not claim final perfectionist verification.
-The production target is `runtime_proven`; final no-gap proof remains owned by
-`PT-RENDER-PERFECTION`.
+reopen those tracks and it does not claim final operational conformance.
+The production target was `runtime_proven`; current no-gap verification is owned
+by the accepted RunenRender R8 -> RX sequence.
 
 ## Scope
 

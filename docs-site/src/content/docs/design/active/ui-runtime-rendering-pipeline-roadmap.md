@@ -5,10 +5,10 @@ status: active
 owner: ui
 layer: domain
 canonical: true
-last_reviewed: 2026-06-15
+last_reviewed: 2026-09-10
 related:
   - ./ui-program-architecture.md
-  - ./game-runtime-ui-projection-and-hud-platform-design.md
+  - ../deferred/game-runtime-ui-projection-and-hud-platform-design.md
   - ../../domain/ui/architecture.md
   - ../../domain/ui/roadmap.md
   - ../../workspace/production-track-planning-model.md

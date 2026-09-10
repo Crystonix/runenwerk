@@ -5,10 +5,10 @@ status: active
 owner: editor
 layer: app
 canonical: true
-last_reviewed: 2026-05-29
+last_reviewed: 2026-09-10
 related_designs:
   - ../../design/accepted/ui-designer-workbench-product-design.md
-  - ../../design/active/game-runtime-ui-projection-and-hud-platform-design.md
+  - ../../design/deferred/game-runtime-ui-projection-and-hud-platform-design.md
 related_reports:
   - ../../reports/closeouts/pm-ui-designer-wb-008-runtime-proven-closeout-and-handoff/closeout.md
   - ../../reports/closeouts/pm-ui-designer-wb-v1-closure-006-runtime-proven-product-closeout-and-handoff/closeout.md

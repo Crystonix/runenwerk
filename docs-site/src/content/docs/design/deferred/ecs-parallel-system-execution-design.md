@@ -1,11 +1,11 @@
 ---
 title: ECS Parallel System Execution Design
-description: Active design for future ECS schedule parallelism, deterministic command merging, world access sharding, and blocked-parallelism diagnostics.
-status: active
+description: Deferred design for future ECS schedule parallelism, deterministic command merging, world access sharding, and blocked-parallelism diagnostics.
+status: deferred
 owner: domain/ecs
 layer: domain
 canonical: true
-last_reviewed: 2026-05-15
+last_reviewed: 2026-09-10
 related_designs:
   - ../accepted/sdf-first-production-capability-map.md
 related_roadmaps:
@@ -15,9 +15,13 @@ related_roadmaps:
 
 # ECS Parallel System Execution Design
 
+## Deferred status
+
+ECS parallel execution is not active work. Current ECS execution remains serial. Reactivate only through a separate accepted parallelism issue after serial ECS scheduler/access semantics and conformance are stable, with explicit serial/parallel equivalence, deterministic command merge, and ownership constraints. Do not infer activation from existing dependency-wave or conflict metadata.
+
 ## Status
 
-Active design only. ECS execution remains serial while rendered-world V1 lands. Product jobs remain the active multithreading path for field/import/render-product work.
+Deferred design only. ECS execution remains serial while current scheduler/access semantics stabilize. Product jobs remain the active multithreading path for field/import/render-product work.
 
 ## Existing Groundwork
 
@@ -42,11 +46,13 @@ Parallel ECS implementation must define:
 
 ## Non Goals
 
-- No parallel ECS implementation in the rendered-world V1 slice.
-- No public ECS parallel APIs before the design is accepted with fitness tests.
+- No parallel ECS implementation in the current serial ECS slice.
+- No public ECS parallel APIs before the design is reactivated and accepted with fitness tests.
 - No hidden global mutable state to bypass scheduler access contracts.
 
 ## Implementation Sequence
+
+The sequence below is dormant while this design is deferred:
 
 1. Keep `domain/ecs/src/system/runtime.rs::Runtime::run_schedule` serial.
 2. Add blocked-parallelism reporting from existing wave/conflict metadata.
@@ -56,7 +62,7 @@ Parallel ECS implementation must define:
 
 ## Tests
 
-Required future coverage:
+Required future coverage after reactivation:
 
 - serial and parallel schedules produce identical world state;
 - command buffers merge deterministically;
