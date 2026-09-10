@@ -45,16 +45,8 @@ export default defineConfig({
 					autogenerate: { directory: 'design' },
 				},
 				{
-					label: 'Multiplayer',
-					autogenerate: { directory: 'multiplayer' },
-				},
-				{
 					label: 'Guidelines',
 					autogenerate: { directory: 'guidelines' },
-				},
-				{
-					label: 'Templates',
-					autogenerate: { directory: 'templates' },
 				},
 			],
 		}),
