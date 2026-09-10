@@ -5,12 +5,12 @@ status: active
 owner: workspace
 layer: workspace
 canonical: true
-last_reviewed: 2026-09-10
+last_reviewed: 2026-09-11
 ---
 
 # Crate Documentation Status
 
-This page tracks whether each workspace crate has current, discoverable documentation. Use `CRATES.md` at the repository root for the quick crate inventory.
+This page tracks whether each workspace crate has current, discoverable documentation. Use [`crate-inventory.md`](./crate-inventory.md) for the canonical human-readable current workspace inventory; root `CRATES.md` is navigation only.
 
 Status labels:
 
@@ -35,8 +35,8 @@ Status labels:
 
 | Crate | Path | Status | Primary docs |
 | --- | --- | --- | --- |
-| `ecs` | `domain/ecs` | current | [`../domain/ecs/README.md`](../domain/ecs/README.md) |
-| `ecs_macros` | `domain/ecs_macros` | thin | [`../domain/ecs-macros/README.md`](../domain/ecs-macros/README.md) |
+| `runen-ecs` | `domain/ecs` | current | [`../domain/ecs/README.md`](../domain/ecs/README.md) |
+| `runen-ecs-macros` | `domain/ecs_macros` | thin | [`../domain/ecs-macros/README.md`](../domain/ecs-macros/README.md) |
 | `runen-ecs-conformance` | `domain/ecs_conformance` | current | [`../domain/ecs/README.md`](../domain/ecs/README.md) |
 | `geometry` | `domain/geometry` | current | [`../domain/geometry/README.md`](../domain/geometry/README.md) |
 | `asset` | `domain/asset` | thin | [`../domain/00-overview.md`](../domain/00-overview.md) |
@@ -79,7 +79,7 @@ The former `domain/scheduler` crate was retired by RunenECS C8. Its retained doc
 When workspace crates are added, removed, split, or renamed:
 
 1. Update `Cargo.toml`.
-2. Update root `CRATES.md`.
-3. Update root `DOMAIN_MAP.md` when ownership changes.
-4. Update this status page.
-5. Run `task docs:validate`.
+2. Update [`crate-inventory.md`](./crate-inventory.md) in the same accepted cut.
+3. Update this page when documentation coverage changes.
+4. Update the owning crate/domain documentation when semantics or public surface change.
+5. Run `cargo validate`; repository CI must validate the unchanged reviewed head before merge.

@@ -54,6 +54,10 @@ STALE_PATTERNS = {
 }
 
 MARKDOWN_LINK = re.compile(r"(?<!!)\[[^\]]+\]\(([^)]+)\)")
+CRATE_INVENTORY_ROW = re.compile(
+    r"^\|\s*`[^`]+`\s*\|\s*`((?:foundation|domain|engine|net|apps|adapters)[^`]*)`\s*\|",
+    re.MULTILINE,
+)
 ACTIVE_DESIGN_COMPLETION_PATTERNS = [
     re.compile(r"^Status:\s*(?:complete|implemented)\b", re.IGNORECASE | re.MULTILINE),
     re.compile(r"\bThis design (?:is|was) implemented\b", re.IGNORECASE),
@@ -61,16 +65,6 @@ ACTIVE_DESIGN_COMPLETION_PATTERNS = [
     re.compile(r"^Status after .* closeout:\s*complete\b", re.IGNORECASE | re.MULTILINE),
 ]
 ALLOWED_ACTIVE_LIFECYCLE_EXCEPTIONS = {"active_phase_evidence"}
-DOMAIN_MAP_REQUIRED_MARKERS = {
-    "foundation/id_macros",
-    "foundation/schema",
-    "foundation/commands",
-    "domain/asset",
-    "domain/product",
-    "domain/procgen",
-    "domain/drawing",
-    "apps/runenwerk_runtime_preview",
-}
 DESIGN_STATUS_BY_DIR = {
     "active": "active",
     "accepted": "accepted",
@@ -240,18 +234,26 @@ def validate_crate_docs_coverage(errors: list[str]) -> None:
         if f"`{member}`" not in status_text:
             errors.append(f"missing crate-doc coverage for workspace member: {member}")
 
-def validate_domain_map_alignment(errors: list[str]) -> None:
-    domain_map = DOCS_ROOT / "guidelines" / "domain-map.md"
+def validate_crate_inventory_alignment(errors: list[str]) -> None:
+    members = load_workspace_members(errors)
+    inventory_path = DOCS_ROOT / "workspace" / "crate-inventory.md"
     try:
-        text = domain_map.read_text(encoding="utf-8")
+        inventory_text = inventory_path.read_text(encoding="utf-8")
     except OSError as error:
-        errors.append(f"could not read canonical domain map: {error}")
+        errors.append(f"could not read canonical crate inventory: {error}")
         return
-    for marker in sorted(DOMAIN_MAP_REQUIRED_MARKERS):
-        if marker not in text:
-            errors.append(f"canonical domain map missing current workspace marker: {marker}")
-    if "domain/id_macros" in text:
-        errors.append("canonical domain map references stale domain/id_macros path; use foundation/id_macros")
+
+    inventory_paths = CRATE_INVENTORY_ROW.findall(inventory_text)
+    duplicates = sorted({path for path in inventory_paths if inventory_paths.count(path) > 1})
+    for path in duplicates:
+        errors.append(f"canonical crate inventory lists workspace member more than once: {path}")
+
+    member_set = set(members)
+    inventory_set = set(inventory_paths)
+    for member in sorted(member_set - inventory_set):
+        errors.append(f"canonical crate inventory missing current workspace member: {member}")
+    for path in sorted(inventory_set - member_set):
+        errors.append(f"canonical crate inventory lists non-workspace path as active member: {path}")
 
 def main() -> int:
     errors: list[str] = []
@@ -262,7 +264,7 @@ def main() -> int:
 
     validate_design_lifecycle_indexes(errors)
     validate_crate_docs_coverage(errors)
-    validate_domain_map_alignment(errors)
+    validate_crate_inventory_alignment(errors)
 
     reports_root = DOCS_ROOT / "reports"
 

@@ -1,16 +1,16 @@
 ---
 title: Architecture
-description: Architecture
+description: Runenwerk workspace boundary and code-placement guidance.
 status: active
 owner: workspace
 layer: workspace
 canonical: true
-last_reviewed: 2026-08-12
+last_reviewed: 2026-09-11
 ---
 
 # Architecture
 
-This document defines the active crate/domain boundaries in `Runenwerk` and where new code belongs.
+This document defines the active Runenwerk workspace boundaries and where new Runenwerk-owned code belongs.
 
 For the canonical Runenwerk-wide architecture spine, see
 [`../architecture/runenwerk-platform-architecture.md`](../architecture/runenwerk-platform-architecture.md).
@@ -18,31 +18,34 @@ For the canonical Runenwerk-wide architecture spine, see
 For the reusable boundary doctrine underneath that specialization, see
 [`authority-centered-boundary-architecture.md`](authority-centered-boundary-architecture.md).
 
-This page remains the workspace boundary and placement guide.
+For the exact current local workspace-member inventory, see
+[`../workspace/crate-inventory.md`](../workspace/crate-inventory.md). Dependency direction, peer-framework ownership, and clean-cutover rules are owned by [`dependency-rules.md`](dependency-rules.md).
 
-## Top-Level Domains
+This page remains the workspace boundary and placement guide; it is not a second crate inventory or repository-family authority.
 
-- `foundation/`: low-level shared primitives reused across domains (for example typed ids)
-- `domain/`: engine-agnostic reusable gameplay/runtime logic (`ecs`, `scheduler`, `scene`, editor domains)
-- `engine/`: runtime loop, plugin system, rendering, input, scene, time integration
-- `net/`: transport/session/replication infrastructure (`engine_net`, `engine_net_quic`)
-- `apps/`: runnable applications and tooling (`runenwerk_editor`, other app binaries)
-- `adapters/`: external engine/runtime bridges (for example Godot adapters)
-- `assets/`: data assets consumed by engine/domain/apps/adapters
-- `docs-site/`: documentation source tree
+## Top-Level Areas
+
+- `foundation/`: low-level Runenwerk-owned shared primitives.
+- `domain/`: engine-agnostic Runenwerk-owned domain contracts and logic, including UI and editor domain crates.
+- `engine/`: Runenwerk runtime composition and plugin integration.
+- `net/`: remaining Runenwerk simulation/history/network-authoring and migration surfaces. Standalone RunenNet owns reusable realtime-networking semantics, and `runen-net-quic` owns concrete QUIC realization where a maintained consumer requires it.
+- `apps/`: runnable Runenwerk applications and product/tool process wiring.
+- `adapters/`: Runenwerk integration glue for external host/runtime boundaries.
+- `assets/`: data assets consumed by Runenwerk domains/runtime/apps.
+- `docs-site/`: canonical long-form Runenwerk documentation.
+
+Standalone peer-framework implementations such as RunenSpatial and RunenGPU are dependencies, not local workspace areas. Their reusable semantics remain owned by their repositories.
 
 ## Dependency Direction
 
-Keep dependency flow unidirectional:
+The canonical dependency contract is [`dependency-rules.md`](dependency-rules.md). In local placement terms:
 
-- `domain` -> no project-internal dependency on higher domains
-- `domain` -> `foundation`
-- `engine` -> `foundation` + `domain`
-- `net` -> `foundation` + `domain` (and self-contained net crates)
-- `apps` -> `foundation` + `domain` + `engine` + `net` contracts as needed
-- `adapters` -> `foundation` + `domain` (+ targeted integration crates as needed)
+- foundation does not depend on higher Runenwerk layers;
+- domain code may depend on foundation and justified lower-level contracts but not on runtime/app wiring or concrete backends it does not own;
+- engine/runtime composes domains and peer frameworks without taking their semantic ownership;
+- apps and adapters compose higher-level integration but do not define reusable framework/domain invariants.
 
-Avoid sideways coupling between app crates via private internals.
+Avoid sideways coupling between application crates through private internals.
 
 Repository-family extraction and peer-framework dependency direction are governed by
 [Repository Family Architecture](../architecture/repository-family-architecture.md) and
@@ -51,39 +54,39 @@ physical location of legacy code in this workspace.
 
 ## Ownership Boundaries
 
-- `domain/*` owns engine-agnostic domain contracts, data structures, and execution primitives.
-- `engine` owns runtime composition and plugin integration points.
-- `net/*` owns protocol/session/transport contracts and replay storage/runtime integration.
-- `apps/*` owns process wiring, config loading, and external system integration.
-- `adapters/*` owns interop glue to external runtimes and host engines.
+- `foundation/*` owns only the low-level reusable vocabulary explicitly assigned to each foundation crate.
+- `domain/*` owns Runenwerk-local engine-agnostic semantic contracts while those contracts remain local authority.
+- `engine` owns Runenwerk application/runtime composition and plugin integration.
+- `net/*` owns only the remaining Runenwerk-specific or migration responsibilities documented by the current networking authority; it must not duplicate reusable RunenNet semantics.
+- `apps/*` owns application/product process wiring and app-local policy.
+- `adapters/*` owns explicit Runenwerk translation/interop glue.
 
-If logic must remain reusable across engine hosts, keep it in the owning reusable domain
-or peer framework. If it is Runenwerk-specific runtime/product glue, keep it in
-Runenwerk's engine/app/integration surfaces according to the current owner architecture.
+If logic is reusable across engine hosts, first identify its semantic owner. Reuse an existing peer framework when that framework owns the invariant; otherwise keep genuinely Runenwerk-owned reusable semantics in the appropriate local domain until a separately accepted extraction exists. Runenwerk-specific runtime/product glue stays in Runenwerk integration surfaces.
 
 ## Placement Rules
 
 When adding code:
 
 1. Choose the semantic owner first; current code location is evidence, not permanent ownership.
-2. Reuse local helpers in that owner before adding new abstractions.
-3. Expose narrow public interfaces instead of reaching into internals across crates.
-4. Keep peer frameworks independent of Runenwerk unless a separate ADR accepts a direct dependency.
-5. Add or update local docs when behavior or scope changes.
+2. Inspect [`../workspace/crate-inventory.md`](../workspace/crate-inventory.md) for current local package locations and the owning framework/domain docs for semantics.
+3. Reuse local helpers in that owner before adding new abstractions.
+4. Expose narrow public interfaces instead of reaching into internals across crates or repositories.
+5. Preserve the dependency rules and one-way framework direction.
+6. Add or update local docs when behavior or scope changes.
 
 ## Architecture Guardrails
 
 - Prefer explicit types, deterministic control flow, and clear ownership.
 - One semantic invariant set has one authority.
 - Do not add silent failure paths or broad catch-all error handling.
-- Do not move code across domains unless the ownership boundary itself is changing.
+- Do not move code across domains or repositories unless the ownership boundary itself is changing under accepted authority.
 - Do not infer one universal ID, graph, registry, database, transaction, or runtime merely from repeated vocabulary.
-- Keep docs and crate boundaries aligned with current accepted ownership and `Cargo.toml` workspace evidence.
+- Keep current documentation aligned with executable workspace/dependency facts without duplicating the same inventory across multiple canonical pages.
 
 See also:
 
-- `AGENTS.md` for agent behavior rules.
-- `domain-map.md` for crate-level ownership and dependency summary.
-- `code-patterns.md` for implementation patterns used across domains.
-- [`domain-program-architecture-pattern.md`](domain-program-architecture-pattern.md)
-  for the optional durable domain-program/compiler/evaluator pattern when a domain actually needs it.
+- root `AGENTS.md` for the Runenwerk executor contract;
+- [`../workspace/crate-inventory.md`](../workspace/crate-inventory.md) for current local workspace members;
+- [`dependency-rules.md`](dependency-rules.md) for dependency and peer-framework rules;
+- `code-patterns.md` for implementation patterns used across domains;
+- [`domain-program-architecture-pattern.md`](domain-program-architecture-pattern.md) for the optional durable domain-program/compiler/evaluator pattern when a domain actually needs it.

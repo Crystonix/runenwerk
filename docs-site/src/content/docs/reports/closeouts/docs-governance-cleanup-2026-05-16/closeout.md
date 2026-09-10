@@ -57,7 +57,7 @@ They remain active because the broader design scope is not fully implemented:
 ## Source-Of-Truth Repairs
 
 - Canonical domain ownership was aligned in
-  [`guidelines/domain-map.md`](../../../guidelines/domain-map.md).
+  [`guidelines/domain-map.md`](https://github.com/dornglut/runenwerk/blob/deb649bff7acb49133784b6365de6cbedfe9c09f/docs-site/src/content/docs/guidelines/domain-map.md).
 - Crate documentation coverage now includes `domain/asset`, `domain/product`,
   grouped `domain/ui/*`, grouped `domain/editor/*`, and
   `apps/runenwerk_runtime_preview` in
