@@ -5,7 +5,7 @@ status: active
 owner: ecs
 layer: domain
 canonical: true
-last_reviewed: 2026-09-09
+last_reviewed: 2026-09-10
 ---
 
 # ECS Events
@@ -28,9 +28,11 @@ Messaging semantics that have a real maintained owner must live with that owner 
 
 ## Scheduling Interaction
 
-Deferred structural mutation is distinct from event transport. `Commands` are collected per system and applied at semantic stage boundaries. Systems in the same semantic stage do not observe one another's deferred structural mutations; explicitly ordered later stages do.
+Deferred structural mutation is distinct from event transport. `Commands` are collected per system and applied at ECS deferred-apply boundaries. Systems that execute before the same boundary do not observe one another's deferred structural mutations; explicitly ordered dependent work after the boundary does.
 
 Access incompatibility remains diagnostic metadata and does not create semantic ordering or additional deferred-command visibility boundaries.
+
+Current planner stages may describe execution-plan grouping for diagnostics, but they are not event, application-lifecycle, or publication identities.
 
 ## Historical Material
 

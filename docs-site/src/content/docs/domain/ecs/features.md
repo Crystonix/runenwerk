@@ -5,7 +5,7 @@ status: active
 owner: ecs
 layer: domain
 canonical: true
-last_reviewed: 2026-09-09
+last_reviewed: 2026-09-10
 ---
 
 - ✅ Core-supported
@@ -30,15 +30,16 @@ last_reviewed: 2026-09-09
 | **System Params** | `Res<T>`, `ResMut<T>`, `ResView<T>` | ✅ | `ResView<T>` is a semantic alias for read-only resource access. |
 |  | `Commands` param | ✅ | Deferred structural mutation param with runtime scope protection. |
 |  | Generic event reader/writer params | ❌ | No current `BroadcastReader` / `BroadcastWriter` compatibility surface is retained. |
-| **Commands / Runtime** | `Commands` queue + `apply` | ✅ | Deferred commands are collected and flushed at semantic stage boundaries. |
+| **Commands / Runtime** | `Commands` queue + `apply` | ✅ | Deferred commands are collected and flushed at ECS deferred-apply boundaries. |
 |  | `DeferredCommand<T>` | ✅ | Typed deferred command trait is available. |
 |  | `BatchCommands` | ✅ | Ordered batched mutations are implemented. |
-|  | Stage-failure command isolation | ✅ | Commands from failed runs are discarded, not replayed on later runs. |
+|  | Schedule-failure command isolation | ✅ | Commands from failed runs are discarded, not replayed on later runs. |
 |  | Conditional command DSL (`ConditionalCommands`) | ❌ | No dedicated conditional command primitive. |
 | **Scheduling** | Schedule labels and system sets | ✅ | Owned by RunenECS; explicit `before` / `after` relations define semantic ordering. |
 |  | Access conflict facts | ✅ | Read/write incompatibilities are reported independently of semantic ordering. |
 |  | Deterministic serial reference execution | ✅ | Systems execute deterministically; access conflicts do not create ordering edges. |
-|  | Deferred-command boundaries | ✅ | Deferred structural mutations become visible after semantic stage flush. |
+|  | Deferred-apply boundaries | ✅ | Deferred structural mutations become visible only after an ECS deferred-apply boundary. |
+|  | Execution stages | ✅ | Current plan/report grouping for execution and diagnostics; stage identity is not host lifecycle or publication identity. |
 | **Events / Reactivity** | Generic world event channels | ❌ | The retired broadcast/channel model is not part of current RunenECS. |
 |  | Generic channel configuration / observers / drain helpers | ❌ | No compatibility surface for the retired C6 messaging APIs is retained. |
 | **Indexes** | Component secondary indexes | ✅ | Named indexes keyed by `(component type, key type, name)`. |
@@ -48,7 +49,7 @@ last_reviewed: 2026-09-09
 
 ## Notes on Scope
 
-Current ECS priorities are core runtime correctness, deterministic scheduling/flush semantics, and maintainable module boundaries (`world`, `commands`, `query`, `system`). Access compatibility is scheduling metadata; it does not imply semantic execution order.
+Current ECS priorities are core runtime correctness, deterministic scheduling/deferred-visibility semantics, and maintainable module boundaries (`world`, `commands`, `query`, `system`). Access compatibility is scheduling metadata; it does not imply semantic execution order. Current execution-stage indices are planning/diagnostic facts and must not be used as application publication identity.
 
 Generic event/channel transport, editor-facing reflection policy, network replication derives, and history/undo primitives are not part of the current RunenECS public contract.
 

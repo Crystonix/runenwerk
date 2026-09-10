@@ -5,7 +5,7 @@ status: active
 owner: ecs
 layer: domain
 canonical: true
-last_reviewed: 2026-09-09
+last_reviewed: 2026-09-10
 ---
 
 # ECS Advanced Guide
@@ -15,7 +15,7 @@ Audience: advanced users, runtime integrators, and users extending ECS behavior.
 For normal day-to-day ECS usage, start with [usage-guide.md](usage-guide.md).
 For internal implementation invariants, see [architecture.md](architecture.md).
 
-## 1. Deferred Commands and Semantic Stage Visibility
+## 1. Deferred Commands and Boundary Visibility
 
 `Commands` are deferred structural mutations.
 
@@ -23,12 +23,12 @@ Runtime rule:
 
 1. each system run gets its own command queue
 2. queues are collected in deterministic system execution order
-3. queues are applied at the end of the current semantic stage
+3. queues are applied at an ECS deferred-apply boundary after the current execution-plan ordering level
 4. an Engine/runtime integration callback may run only after that flush completes
 
-Systems in the same semantic stage do not see one another's queued structural changes. If one system queues `spawn` / `insert` / `remove` and another must observe that change in the same schedule run, express a semantic ordering edge that places the observer in a later stage.
+Systems that execute before the same deferred-apply boundary do not see one another's queued structural changes. If one system queues `spawn` / `insert` / `remove` and another must observe that change in the same schedule run, express semantic ordering that places the observer after the required deferred-apply boundary.
 
-Access incompatibility does **not** create a semantic stage. Two otherwise unordered systems may conflict for mutable access and still belong to the same semantic stage; the reference executor runs them serially in deterministic order and reports the conflict independently.
+Access incompatibility does **not** create semantic precedence or an additional deferred-apply boundary. Otherwise unordered conflicting systems remain semantically unordered; the reference executor runs them serially in deterministic registration order and reports the conflict independently.
 
 ## 2. Runtime Ordering and Configuration
 
@@ -40,7 +40,7 @@ Access incompatibility does **not** create a semantic stage. Two otherwise unord
 
 `ScheduleLabel` and `SystemSet` are RunenECS-owned public contracts and are available through `ecs::prelude::*`.
 
-`Runtime::plan_for::<L>()` returns the compiled execution plan and is useful for validating semantic stage shape during integration tests. `Runtime::plan_report_for::<L>()` provides ECS-neutral reporting for system/order/access diagnostics.
+`Runtime::plan_for::<L>()` returns the compiled execution plan and is useful for inspecting current execution-stage shape in integration tests. `Runtime::plan_report_for::<L>()` provides ECS-neutral reporting for system/order/access diagnostics. Planner stage identity is diagnostic/planning shape; it is not the deferred-boundary, Engine lifecycle, or publication identity.
 
 ```rust
 use ecs::prelude::*;
@@ -79,6 +79,8 @@ assert_eq!(plan.stages.len(), 2);
 ```
 
 Explicit ordering cycles are rejected during schedule validation. Registration order is the deterministic tie-break/reference execution order for systems not separated by semantic ordering.
+
+For host integration that must run after deferred ECS mutation becomes visible, `Runtime::run_schedule_with_deferred_apply_boundary` reports an ECS-neutral `DeferredApplyBoundary`. Its index identifies deferred-apply progress within that schedule run and is deliberately distinct from `ExecutionStage::index`.
 
 ## 3. Event and Message Transport Boundary
 

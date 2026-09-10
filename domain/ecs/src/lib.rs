@@ -30,11 +30,11 @@ pub use reflect::{
     StructInfo, StructValueMut, StructValueRef, TypeInfo, TypeRegistry,
 };
 pub use system::{
-    AccessConflict, AccessDomain, AccessKey, ConfiguredSystem, ConflictKind, ExecutionConflict,
-    ExecutionPlan, ExecutionStage, IntoSystem, IntoSystemConfigs, IntoSystemSetKey,
-    ParamSlotDescriptor, ParamSlotId, ParamSlotMetadata, Res, ResMut, ResView, Runtime,
-    RuntimePlanConflictReport, RuntimePlanReport, RuntimePlanStageReport, RuntimePlanSystemReport,
-    ScheduleBoundary, ScheduleKey, ScheduleLabel, ScheduleValidationError, SystemAccess,
+    AccessConflict, AccessDomain, AccessKey, ConfiguredSystem, ConflictKind, DeferredApplyBoundary,
+    ExecutionConflict, ExecutionPlan, ExecutionStage, IntoSystem, IntoSystemConfigs,
+    IntoSystemSetKey, ParamSlotDescriptor, ParamSlotId, ParamSlotMetadata, Res, ResMut, ResView,
+    Runtime, RuntimePlanConflictReport, RuntimePlanReport, RuntimePlanStageReport,
+    RuntimePlanSystemReport, ScheduleKey, ScheduleLabel, ScheduleValidationError, SystemAccess,
     SystemConfigExt, SystemId, SystemParam, SystemParamContext, SystemParamError, SystemSet,
     SystemSetKey,
 };

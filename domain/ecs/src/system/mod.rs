@@ -19,6 +19,6 @@ pub use plan_report::{
     RuntimePlanConflictReport, RuntimePlanReport, RuntimePlanStageReport, RuntimePlanSystemReport,
 };
 pub use runtime::{
-    ConfiguredSystem, IntoSystem, IntoSystemConfigs, IntoSystemSetKey, Runtime, ScheduleBoundary,
-    SystemConfigExt,
+    ConfiguredSystem, DeferredApplyBoundary, IntoSystem, IntoSystemConfigs, IntoSystemSetKey,
+    Runtime, SystemConfigExt,
 };

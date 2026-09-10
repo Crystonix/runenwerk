@@ -12,7 +12,7 @@ use ecs::World;
 pub struct ProductPublicationJournalEntry {
     pub publication_boundary_index: usize,
     pub schedule_label: &'static str,
-    pub stage_index: usize,
+    pub deferred_apply_index: usize,
     pub stage_sequence: u64,
     pub product_job_id: ProductJobId,
     pub status: ProductPublicationStatus,
@@ -69,7 +69,7 @@ impl ProductPublicationRuntimeResource {
             self.journal.push(ProductPublicationJournalEntry {
                 publication_boundary_index: boundary.index,
                 schedule_label: boundary.schedule_label,
-                stage_index: boundary.stage_index,
+                deferred_apply_index: boundary.deferred_apply_index,
                 stage_sequence: outcome.stage_sequence,
                 product_job_id: outcome.product_job.job_id,
                 status: outcome.status,
@@ -144,7 +144,7 @@ mod tests {
         assert_eq!(resource.journal().len(), 1);
         assert_eq!(resource.journal()[0].publication_boundary_index, 4);
         assert_eq!(resource.journal()[0].schedule_label, "Update");
-        assert_eq!(resource.journal()[0].stage_index, 0);
+        assert_eq!(resource.journal()[0].deferred_apply_index, 0);
     }
 
     #[test]

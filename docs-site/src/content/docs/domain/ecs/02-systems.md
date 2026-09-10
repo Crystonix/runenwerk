@@ -5,7 +5,7 @@ status: active
 owner: ecs
 layer: domain
 canonical: true
-last_reviewed: 2026-09-09
+last_reviewed: 2026-09-10
 ---
 
 # ECS Systems
@@ -25,7 +25,8 @@ Systems are functions or processes that operate over components and resources. T
 - **Query** – Filters and retrieves entities with matching components.
 - **Command Queue** – Deferred structural mutations collected per system run.
 - **System Set** – A semantic grouping used by explicit ordering constraints.
-- **Semantic Stage** – A deterministic execution level derived from explicit ordering, not from access incompatibility.
+- **Deferred Apply Boundary** – The ECS-owned point at which queued structural mutations become visible.
+- **Execution Stage** – Current plan/report grouping used for execution and diagnostics; it is not an application lifecycle or publication identity.
 
 ## Implementation / API
 
@@ -84,15 +85,16 @@ runtime.add_systems::<Update, _, _>(
 );
 ```
 
-The explicit `after(Gameplay)` edge puts `PostGameplay` in a later semantic stage. Without such an ordering edge, systems remain semantically unordered even when their access facts conflict.
+The explicit `after(Gameplay)` edge establishes semantic precedence. Deferred commands produced by earlier ordered work are applied at an ECS deferred-apply boundary before dependent later work executes. Without such an ordering edge, systems remain semantically unordered even when their access facts conflict.
 
 ## Invariants & Rules
 
 - System parameters declare ECS **access facts**. Conflicting access may constrain future parallel admission, but it does not invent an A-before-B semantic order.
 - Explicit `before` / `after` set relations define semantic ordering and are cycle-validated.
-- Systems within one semantic stage execute serially in deterministic registration order in the reference executor.
-- Structural changes are **deferred** and become visible after the semantic stage flush.
-- Systems in the same semantic stage do not observe one another's deferred structural mutations.
+- The serial reference executor uses deterministic registration order for otherwise unordered systems.
+- Structural changes are **deferred** and become visible only after an ECS deferred-apply boundary.
+- Systems that execute before the same deferred-apply boundary do not observe one another's deferred structural mutations.
+- Current execution stages are plan/report facts, not Engine lifecycle phases or publication identities.
 - Avoid hidden side effects outside system parameters when deterministic behavior matters.
 - Use plan reports, history, and telemetry for diagnostics rather than as gameplay authority.
 

@@ -5,7 +5,7 @@ status: active
 owner: ecs
 layer: domain
 canonical: true
-last_reviewed: 2026-09-09
+last_reviewed: 2026-09-10
 ---
 
 # ECS Architecture
@@ -23,9 +23,9 @@ For advanced integration patterns, see [advanced-guide.md](advanced-guide.md).
 - param state is initialized at registration time
 - extraction happens each run through `SystemParamContext`
 - each system run owns an ephemeral deferred command owner
-- systems within a semantic stage execute serially in deterministic registration order
-- deferred commands flush after the semantic stage completes
-- integration callbacks run only after the stage flush succeeds
+- systems within a current execution-plan stage execute serially in deterministic registration order
+- queued commands flush before the corresponding ECS deferred-apply boundary is reported
+- integration callbacks run only after the deferred flush succeeds
 
 Supported function-system and tuple-registration arity is implemented and regression-tested through 16 entries.
 
@@ -62,13 +62,13 @@ Schedule planning has two deliberately separate concerns.
 
 ### Semantic ordering
 
-Semantic stages are derived only from explicit system-set relations:
+Semantic precedence is derived only from explicit system-set relations:
 
 - `in_set`
 - `before`
 - `after`
 
-The ordering graph is cycle-validated. Registration order is the deterministic tie-break/reference execution order for systems that remain otherwise unordered.
+The ordering graph is cycle-validated. Registration order is the deterministic tie-break/reference execution order for systems that remain otherwise unordered. The current planner materializes deterministic `ExecutionStage` levels from this graph, but those stage indices are plan/report facts rather than host lifecycle, publication, or deferred-boundary identities.
 
 ### Access compatibility
 
@@ -80,23 +80,24 @@ This separation is required so that changing access metadata cannot silently cha
 
 Deterministic ordering contract:
 
-1. systems execute in semantic-stage order
-2. systems within a stage execute serially in deterministic registration order
+1. systems execute according to validated semantic precedence
+2. otherwise unordered systems use deterministic registration order in the serial reference executor
 3. command queues are collected in system execution order
-4. queues are applied at semantic stage end in that order
-5. the stage-boundary integration callback runs only after a successful flush
+4. queued commands are applied in deterministic order at ECS deferred-apply boundaries
+5. `DeferredApplyBoundary` is reported only after the corresponding flush succeeds
 
 Visibility contract:
 
-- systems in the same semantic stage do not observe one another's deferred structural mutations
-- a system in an explicitly ordered later stage observes mutations flushed after the earlier stage
+- systems that execute before the same deferred-apply boundary do not observe one another's deferred structural mutations
+- explicitly ordered dependent work after the boundary observes mutations applied before that boundary
 - access conflicts alone never introduce an extra visibility boundary
+- `DeferredApplyBoundary::index()` identifies deferred-apply progress within the schedule run and is deliberately independent of `ExecutionStage::index`
 
 Failure atomicity contract:
 
 - commands are staged only for successful system runs
 - failed schedule runs discard deferred queues instead of replaying them later
-- a failed command flush or boundary callback stops the schedule and clears pending deferred state
+- a failed command flush or deferred-boundary callback stops the schedule and clears pending deferred state
 
 ## 5. Query Engine Internals
 
@@ -167,7 +168,7 @@ Feature-gated telemetry (`--features telemetry`) records ECS-local hot-path cost
 - query matching/iteration/get/single
 - changed/added filter checks
 - runtime plan lookup
-- semantic-stage execution
+- execution-stage timing
 - deferred-command flush cost
 - schedule planning and access-conflict checks
 

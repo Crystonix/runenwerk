@@ -528,7 +528,7 @@ fn structural_command_systems_share_stage_and_merge_deterministically() {
 }
 
 #[test]
-fn deferred_commands_flush_before_ecs_stage_boundary_callback() {
+fn deferred_commands_flush_before_ecs_deferred_apply_boundary_callback() {
     fn enqueue_stage(mut commands: Commands) {
         commands.spawn(Marker(7));
     }
@@ -554,13 +554,9 @@ fn deferred_commands_flush_before_ecs_stage_boundary_callback() {
 
     let mut boundaries = Vec::new();
     runtime
-        .run_schedule_with_boundary::<Update, _>(&mut world, |boundary, world| {
+        .run_schedule_with_deferred_apply_boundary::<Update, _>(&mut world, |boundary, world| {
             let marker_count = world.query_state::<&Marker, ()>().iter(&*world).count();
-            boundaries.push((
-                boundary.schedule().name(),
-                boundary.stage_index(),
-                marker_count,
-            ));
+            boundaries.push((boundary.schedule().name(), boundary.index(), marker_count));
             Ok(())
         })
         .unwrap();

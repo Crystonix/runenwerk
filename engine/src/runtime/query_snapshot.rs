@@ -17,7 +17,7 @@ const QUERY_SNAPSHOT_JOURNAL_LIMIT: usize = 512;
 pub struct QuerySnapshotJournalEntry {
     pub publication_boundary_index: usize,
     pub schedule_label: &'static str,
-    pub stage_index: usize,
+    pub deferred_apply_index: usize,
     pub product_id: ProductIdentity,
     pub source_generation: u64,
     pub response_generation: u64,
@@ -162,7 +162,7 @@ impl QuerySnapshotRuntimeResource {
         let entry = QuerySnapshotJournalEntry {
             publication_boundary_index: boundary.index,
             schedule_label: boundary.schedule_label,
-            stage_index: boundary.stage_index,
+            deferred_apply_index: boundary.deferred_apply_index,
             product_id: snapshot.product_id(),
             source_generation: snapshot.source_generation,
             response_generation: snapshot.response_generation,
@@ -284,7 +284,7 @@ mod tests {
         assert!(resource.current_snapshot(ProductIdentity::new(1)).is_some());
         assert_eq!(resource.journal()[0].publication_boundary_index, 2);
         assert_eq!(resource.journal()[0].schedule_label, "Update");
-        assert_eq!(resource.journal()[0].stage_index, 0);
+        assert_eq!(resource.journal()[0].deferred_apply_index, 0);
         assert_eq!(resource.last_published_entries().len(), 1);
         assert_eq!(resource.last_published_entries()[0].product_id.raw(), 1);
     }

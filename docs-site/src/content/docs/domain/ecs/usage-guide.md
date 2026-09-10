@@ -5,7 +5,7 @@ status: active
 owner: ecs
 layer: domain
 canonical: true
-last_reviewed: 2026-09-09
+last_reviewed: 2026-09-10
 ---
 
 # ECS Usage Guide
@@ -313,7 +313,7 @@ runtime.add_systems::<Update, _, _>(&mut world, observe.in_set(Observe).after(Pr
 runtime.run_schedule::<Update>(&mut world).unwrap();
 ```
 
-The explicit set edge creates a later semantic stage. Deferred commands are applied at the semantic stage boundary before that later stage runs. Read/write access conflicts are reported independently and do not create ordering edges or extra visibility boundaries.
+The explicit set edge establishes semantic precedence. Deferred commands from the earlier ordered work are applied at an ECS deferred-apply boundary before dependent later work runs. Read/write access conflicts are reported independently and do not create ordering edges or extra visibility boundaries. Current execution-plan stage indices are diagnostic/planning facts rather than application lifecycle or publication identity.
 
 Generic broadcast/event channels are not part of the current RunenECS public contract; see [04-events.md](04-events.md).
 

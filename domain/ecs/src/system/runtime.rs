@@ -18,18 +18,18 @@ use crate::{Commands, World};
 type DeferredCommands = Rc<RefCell<Vec<Commands<'static>>>>;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct ScheduleBoundary {
+pub struct DeferredApplyBoundary {
     schedule: ScheduleKey,
-    stage_index: usize,
+    index: usize,
 }
 
-impl ScheduleBoundary {
+impl DeferredApplyBoundary {
     pub const fn schedule(self) -> ScheduleKey {
         self.schedule
     }
 
-    pub const fn stage_index(self) -> usize {
-        self.stage_index
+    pub const fn index(self) -> usize {
+        self.index
     }
 }
 
@@ -770,17 +770,17 @@ impl Runtime {
     }
 
     pub fn run_schedule<L: ScheduleLabel>(&mut self, world: &mut World) -> Result<()> {
-        self.run_schedule_with_boundary::<L, _>(world, |_boundary, _world| Ok(()))
+        self.run_schedule_with_deferred_apply_boundary::<L, _>(world, |_boundary, _world| Ok(()))
     }
 
-    pub fn run_schedule_with_boundary<L, F>(
+    pub fn run_schedule_with_deferred_apply_boundary<L, F>(
         &mut self,
         world: &mut World,
         mut on_boundary: F,
     ) -> Result<()>
     where
         L: ScheduleLabel,
-        F: FnMut(ScheduleBoundary, &mut World) -> Result<()>,
+        F: FnMut(DeferredApplyBoundary, &mut World) -> Result<()>,
     {
         if let Err(err) = self.ensure_build_ready() {
             self.discard_deferred_commands();
@@ -801,7 +801,7 @@ impl Runtime {
         };
         telemetry::record_runtime_plan(plan_start.elapsed().as_nanos() as u64);
 
-        for stage in &plan.stages {
+        for (boundary_index, stage) in plan.stages.iter().enumerate() {
             let stage_start = Instant::now();
             for system_index in &stage.system_indices {
                 let Some(system) = self.scheduler.systems_mut().get_mut(*system_index) else {
@@ -821,9 +821,9 @@ impl Runtime {
             }
 
             if let Err(err) = on_boundary(
-                ScheduleBoundary {
+                DeferredApplyBoundary {
                     schedule: plan.label,
-                    stage_index: stage.index,
+                    index: boundary_index,
                 },
                 world,
             ) {

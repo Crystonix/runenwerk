@@ -5,7 +5,7 @@ status: active
 owner: ecs
 layer: domain
 canonical: true
-last_reviewed: 2026-09-09
+last_reviewed: 2026-09-10
 related_designs:
   - ../../design/accepted/execution-fabric-and-product-jobs-design.md
 related_roadmaps:
@@ -21,7 +21,8 @@ related_roadmaps:
 - `World`: entities/components/resources and component indexes
 - Query runtime: `Query`, `QueryState`, `QueryOrphaned`
 - ECS scheduling: `Runtime`, `ScheduleLabel`, `SystemSet`, `in_set`, `before`, `after`
-- Schedule diagnostics: semantic stages, cycle validation, access conflicts, parameter-slot metadata
+- Schedule diagnostics: execution stages, cycle validation, access conflicts, parameter-slot metadata
+- Deferred visibility integration: `DeferredApplyBoundary`
 - System params: `Res`, `ResMut`, `ResView`, `Commands`
 - Deferred mutation primitives: `Commands`, `DeferredCommand`, `BatchCommands`
 - Stateful tracking: `StatefulComponent`, `component_state`, `mark_stateful_changed`
@@ -60,11 +61,17 @@ deterministic serial reference execution, and deferred-command visibility.
 Access incompatibility is diagnostic information and does not itself create
 semantic `before`/`after` order.
 
-Deferred commands become visible after each ECS semantic stage. `Runtime` can
-expose that point as an ECS-neutral `ScheduleBoundary` after the deferred flush.
-Runenwerk Engine may use that boundary to apply application policy, but product
-publication, query-snapshot publication, rendering, replay/network capture, and
-host lifecycle meaning are not RunenECS concepts.
+Deferred commands become visible at ECS-owned deferred-apply boundaries. `Runtime`
+can expose each such point as an ECS-neutral `DeferredApplyBoundary` after the
+flush succeeds. The boundary carries generic schedule identity plus a boundary
+sequence index, not planner-stage identity. Runenwerk Engine may use that fact to
+apply application policy, but product publication, query-snapshot publication,
+rendering, replay/network capture, and host lifecycle meaning are not RunenECS
+concepts.
+
+Current `ExecutionStage`/plan-report stage data remains ECS planning and diagnostic
+shape. Consumers must not reinterpret a planner stage index as application
+lifecycle or publication identity.
 
 ECS also exposes `query_snapshot_source_generation` plus explicit `QueryAccess`
 builder methods for component/resource access sets. These helpers compute
