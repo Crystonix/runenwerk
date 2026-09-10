@@ -39,6 +39,8 @@ checked against code, tests, closeout evidence, and known drift.
 
 - [Render Product Surface Foundation Bundle Design](render-product-surface-foundation-bundle-design.md)
 - [Viewport Dynamic Product Target Allocation Design](viewport-dynamic-product-target-allocation-design.md)
+- [Renderer Procedural Population Platform](renderer-procedural-population-platform-design.md)
+- [Renderer Procedural Population Hardening Platform](renderer-procedural-population-hardening-platform-design.md)
 
 ### App / Tooling
 
