@@ -1919,7 +1919,7 @@ mod tests {
         let incremental_id = incremental.allocate_object_id().expect("object ID");
         insert_one(&mut incremental, incremental_id);
         let incremental_first = surface_representation(&mut incremental, incremental_id);
-        let incremental_second = surface_representation(&mut incremental, incremental_id);
+        let incremental_second = field_representation(&mut incremental, incremental_id);
         let mut incremental_state = RenderSceneUpdate::new();
         incremental_state.replace_state(incremental_id, object_state(0.0, 1.0));
         incremental
