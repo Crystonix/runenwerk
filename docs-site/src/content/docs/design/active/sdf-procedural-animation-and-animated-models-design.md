@@ -5,7 +5,7 @@ status: active
 owner: workspace
 layer: cross-domain
 canonical: true
-last_reviewed: 2026-07-24
+last_reviewed: 2026-09-11
 related_adrs:
   - ../../adr/accepted/0004-separate-description-from-execution.md
   - ../../adr/accepted/0005-projections-are-derived-state.md
@@ -107,12 +107,12 @@ queryable gameplay regions
 scalable SDF rendering and physics
 ```
 
-This design should eventually be reflected in:
+This design should eventually be reflected in its owning architecture and domain documentation:
 
 ```text
 ARCHITECTURE.md
-DOMAIN_MAP.md
-AI_GUIDE.md
+docs-site/src/content/docs/guidelines/architecture.md
+docs-site/src/content/docs/workspace/crate-inventory.md
 domain/animation/
 standalone dornglut/runen-sdf
 domain/editor/
@@ -1400,12 +1400,12 @@ future domain/runtime/sdf-animation-compilation-pipeline.md
 future domain/runtime/cache-invalidation-doctrine.md
 ```
 
-Update root docs:
+Update current repository authority only when the corresponding facts change:
 
 ```text
 ARCHITECTURE.md
-DOMAIN_MAP.md
-AI_GUIDE.md
+docs-site/src/content/docs/guidelines/architecture.md
+docs-site/src/content/docs/workspace/crate-inventory.md  # only when workspace membership changes
 ```
 
 ### Phase 0.5: Contracts and Test Fixtures

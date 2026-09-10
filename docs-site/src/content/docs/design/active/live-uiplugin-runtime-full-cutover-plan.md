@@ -5,7 +5,7 @@ status: active
 owner: ui
 layer: design
 canonical: true
-last_reviewed: 2026-08-04
+last_reviewed: 2026-09-11
 related_docs:
   - ../../architecture/live-uiplugin-runtime-platform-architecture.md
   - ../../architecture/diagrams/live-uiplugin-runtime-platform.puml
@@ -704,7 +704,7 @@ A simple implementation agent must receive exactly one phase at a time. The prom
 
 ```text
 phase ID and title
-authority docs to read, including AGENTS.md, ARCHITECTURE.md, DOMAIN_MAP.md, TESTING.md, current dornglut/engineering governance, roadmap, the owning GitHub issue/Engineering Portfolio, and the owning design/architecture docs
+authority docs to read, including AGENTS.md, ARCHITECTURE.md, TESTING.md, docs-site/src/content/docs/guidelines/architecture.md, docs-site/src/content/docs/workspace/crate-inventory.md, current dornglut/engineering governance, roadmap, the owning GitHub issue/Engineering Portfolio, and the owning design/architecture docs
 allowed files/crates
 forbidden files/crates
 expected public API shape

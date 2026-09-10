@@ -5,7 +5,7 @@ status: accepted
 owner: workspace
 layer: workspace
 canonical: true
-last_reviewed: 2026-04-27
+last_reviewed: 2026-09-11
 related_adrs:
   - ../../adr/accepted/0001-use-domain-owned-commands.md
   - ../../adr/accepted/0002-keep-ai-out-of-foundation.md
@@ -115,7 +115,7 @@ In scope:
 - inspection DTOs;
 - schema metadata;
 - architecture index files;
-- AI contributor guide;
+- executor and runtime-AI placement guidance;
 - generated-code isolation;
 - golden tests;
 - validation workflows;
@@ -190,72 +190,48 @@ Ratification belongs in multiple domains, not in one global validator.
 
 ## Repository Documentation Requirements
 
-The repository should contain a small set of architectural index documents.
+Repository documentation should expose a small normalized root surface and route detailed ownership directly to canonical long-form owners.
 
-Recommended root-level documents:
+The current root entrypoints are:
 
 ```text
+README.md
+AGENTS.md
 ARCHITECTURE.md
-CRATES.md
-DEPENDENCY_RULES.md
-DOMAIN_MAP.md
 TESTING.md
-CONTRIBUTING.md
-AI_GUIDE.md
 ```
+
+### `README.md`
+
+Describes repository purpose, boundary, maturity, decisive capabilities/limitations, and routes readers to the canonical architecture, testing, contribution, security, and licensing owners.
+
+### `AGENTS.md`
+
+Defines the Runenwerk-specific executor contract: where to start, ownership constraints, prohibited operations, canonical validation, and required delivery evidence. Organization-wide governance remains owned by `dornglut/engineering`.
 
 ### `ARCHITECTURE.md`
 
-Describes the engine’s architectural model, major layers, dependency direction, and ownership doctrine.
-
-### `CRATES.md`
-
-Lists every crate, its purpose, owner layer, public API status, and allowed dependencies.
-
-### `DEPENDENCY_RULES.md`
-
-Defines what each layer may and may not depend on.
-
-This document should be strict enough that AI tools can decide where new concepts belong.
-
-### `DOMAIN_MAP.md`
-
-Maps domain concepts to crates.
-
-Example:
-
-```text
-Scene identity      -> domain/scene
-Editor workspace   -> domain/editor/editor_shell
-Surface mounting   -> domain/ui/ui_surface
-Render graph       -> engine/render or domain/render_contracts
-Asset identity      -> domain/assets
-Diagnostics        -> foundation/diagnostics
-Ratification       -> foundation/ratification + domain-specific ratifiers
-```
+Describes the repository boundary, major layers, dependency direction, repository-family position, and links to canonical long-form architecture.
 
 ### `TESTING.md`
 
-Defines validation commands, required test tiers, golden test policy, smoke tests, and regression test expectations.
+Defines focused checks, the canonical repository validation baseline, hosted-CI relationship, and evidence rules.
 
-### `AI_GUIDE.md`
+### Retained dependency summary
 
-Explains how AI assistants should work inside the repository.
+`DEPENDENCY_RULES.md` remains a concise root dependency summary while current consumers justify it. Canonical dependency, framework-ownership, and clean-cutover rules live in [`../../guidelines/dependency-rules.md`](../../guidelines/dependency-rules.md). New documentation and tooling should prefer the canonical owner directly rather than creating another forwarding layer.
 
-It should include:
+### Canonical long-form owners
 
-- dependency doctrine;
-- crate ownership rules;
-- naming conventions;
-- testing expectations;
-- refactor rules;
-- where to add new concepts;
-- what not to do;
-- common traps;
-- validation commands;
-- required documentation updates.
+Use the docs-site owners directly for detailed repository facts:
 
-This file is not an AI product integration. It is contributor documentation optimized for machine and human consumption.
+- [`../../workspace/crate-inventory.md`](../../workspace/crate-inventory.md) — canonical human-readable active workspace inventory; `Cargo.toml` remains executable membership truth.
+- [`../../guidelines/architecture.md`](../../guidelines/architecture.md) — current Runenwerk placement and boundary guide.
+- [`../../guidelines/dependency-rules.md`](../../guidelines/dependency-rules.md) — canonical dependency/framework ownership and clean-cutover rules.
+- [`../../workspace/glossary.md`](../../workspace/glossary.md) — shared architecture and authoring vocabulary.
+- [`../../workspace/ai-agent-boundaries.md`](../../workspace/ai-agent-boundaries.md) — Runenwerk-specific placement rule for runtime AI integrations.
+
+Do not recreate root crate inventories, domain maps, glossaries, or a second AI/executor guide when these owners already exist.
 
 ---
 
@@ -953,29 +929,31 @@ Tests are not just correctness checks. They are executable documentation for hum
 
 ---
 
-## AI Guide Requirements
+## Executor and Runtime-AI Guidance Requirements
 
-The repository should include an `AI_GUIDE.md`.
+Repository executor guidance lives in root `AGENTS.md`. Runenwerk-specific runtime-AI placement guidance lives in [`../../workspace/ai-agent-boundaries.md`](../../workspace/ai-agent-boundaries.md). Do not create a second `AI_GUIDE.md` authority that duplicates either surface.
 
-This document should tell AI assistants how to work safely in the repository.
-
-It should include:
+The executor contract should route assistants to:
 
 ```text
-Workspace doctrine
-Dependency rules
-Crate ownership
-Naming conventions
-Testing expectations
-Refactor rules
-Where to add new concepts
-What not to do
-Common traps
-Validation commands
-Documentation update policy
+semantic owner first
+accepted architecture/design authority
+owning issue when work is accepted
+repository dependency boundaries
+focused checks and canonical validation
+exact-head delivery evidence
 ```
 
-Example rules:
+Runtime-AI placement guidance should preserve these rules:
+
+```text
+AI integrations belong in apps, tools, or adapters.
+Foundation and pure domain crates do not own LLM clients, prompts, or autonomous agents.
+AI tools use normal command, ratification, diagnostic, schema, and inspection boundaries.
+No AI-only mutation or privileged inspection path is introduced.
+```
+
+Example repository rules remain:
 
 ```text
 Do not add engine dependencies to foundation crates.
@@ -1001,15 +979,18 @@ When adding a new diagnostic, assign a stable diagnostic code.
 
 ### Phase 1: Make the Repository Understandable
 
-Add or improve:
+Establish or improve the normalized entrypoints and their canonical long-form owners:
 
 ```text
+README.md
+AGENTS.md
 ARCHITECTURE.md
-CRATES.md
-DEPENDENCY_RULES.md
-DOMAIN_MAP.md
 TESTING.md
-AI_GUIDE.md
+docs-site/src/content/docs/workspace/crate-inventory.md
+docs-site/src/content/docs/guidelines/architecture.md
+docs-site/src/content/docs/guidelines/dependency-rules.md
+docs-site/src/content/docs/workspace/glossary.md
+docs-site/src/content/docs/workspace/ai-agent-boundaries.md
 ```
 
 Document:
@@ -1021,6 +1002,8 @@ public API rules
 where new concepts belong
 how to validate changes
 ```
+
+Keep root summaries concise and route detailed facts directly to their canonical owner rather than adding forwarding inventories or duplicate AI guidance.
 
 This phase should happen before adding AI-specific features.
 
