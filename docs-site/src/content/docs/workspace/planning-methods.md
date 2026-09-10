@@ -5,9 +5,8 @@ status: active
 owner: workspace
 layer: workspace
 canonical: true
-last_reviewed: 2026-08-04
+last_reviewed: 2026-09-10
 related:
-  - ./engineering-workflow.md
   - ./architecture-governance-review.md
   - ./design-implementation-triage.md
   - ./roadmap-items.yaml
@@ -102,7 +101,7 @@ Use RAID notes when a score is hard to trust. A high-value item with weak confid
 
 ## Architecture Governance Methods
 
-Use [Architecture Governance Review](./architecture-governance-review.md) through [Engineering Workflow](./engineering-workflow.md) when a roadmap item changes ownership, dependency direction, public contracts, or migration policy.
+Use [Architecture Governance Review](./architecture-governance-review.md) when a roadmap item changes ownership, dependency direction, public contracts, or migration policy. Execute accepted work under the repository contract in [`AGENTS.md`](../../../../../AGENTS.md) and the current organization-wide Engineering authority.
 
 The critical adoption choice is selective use:
 
