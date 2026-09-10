@@ -1,57 +1,39 @@
 ---
 title: Events
-description: Engine-agnostic guide for ecs events and reactive systems.
+description: Current RunenECS scope for event and message transport.
 status: active
 owner: ecs
 layer: domain
 canonical: true
-last_reviewed: 2026-04-27
+last_reviewed: 2026-09-10
 ---
 
 # ECS Events
 
-Events are typed signals exchanged between systems through world-managed channels.
+RunenECS currently does **not** expose a generic event/channel transport API.
 
-## Purpose
+The former broadcast-oriented surface (`BroadcastStream`, `BroadcastReader`, `BroadcastWriter`, world broadcast helpers, channel configuration, observers, and drain helpers) was retired before the C8 scheduling cut and is not a compatibility contract.
 
-- Decouple systems with typed message passing.
-- Support frame-transient and retained channel lifetimes.
-- Enable per-system incremental reads with cursor-based channels.
+## Current Boundary
 
-## Key Concepts
+RunenECS owns ECS data and execution semantics:
 
-- World APIs: `publish_broadcast<T>`, `read_broadcast<T>`, `drain_broadcast_admin<T>`, `clear_broadcast_admin<T>`.
-- Param APIs: `BroadcastReader<T>`, `BroadcastWriter<T>`.
-- Channel config: `BroadcastStreamConfig` (`capacity`, `overflow`, `lifetime`, `tracing`).
-- Observers: `observe_events` with `ObserverTrigger::{OnEmit, OnDrain, EndOfFrame}`.
+- components, resources, queries, and change tracking,
+- systems and system parameters,
+- deferred structural commands,
+- schedule labels, system sets, explicit ordering, and validation,
+- access facts and deterministic serial reference execution.
 
-## API Notes
+Messaging semantics that have a real maintained owner must live with that owner rather than being reconstructed as a generic ECS channel layer. Network/replay/application message transport therefore must not be inferred from the retired broadcast API.
 
-- `BroadcastReader<T>::iter_all()` reads all pending events.
-- `BroadcastReader<T>::iter_new()` reads only unseen events for that system param state.
-- `finalize_frame_boundary()` applies frame-lifetime cleanup and end-of-frame observer triggers.
+## Scheduling Interaction
 
-## Invariants
+Deferred structural mutation is distinct from event transport. `Commands` are collected per system and applied at ECS deferred-apply boundaries. Systems that execute before the same boundary do not observe one another's deferred structural mutations; explicitly ordered dependent work after the boundary does.
 
-- `FrameTransient` channels are cleared at end-of-frame processing.
-- Overflow policy is enforced per channel (`DropOldest`, `DropNewest`, `Panic`).
-- Observer notifications are generated only on configured trigger boundaries.
+Access incompatibility remains diagnostic metadata and does not create semantic ordering or additional deferred-command visibility boundaries.
 
-## Current Constraints
+Current planner stages may describe execution-plan grouping for diagnostics, but they are not event, application-lifecycle, or publication identities.
 
-The current event channel model is intentionally lightweight and currently combines
-multiple messaging roles that should be separated for long-term multiplayer/runtime
-stability:
+## Historical Material
 
-- broadcast-style fan-out notifications,
-- queue-like destructive workflows,
-- runtime/network bridge traffic.
-
-Also note that `finalize_frame_boundary()` is currently a world-level API and must be
-called by the runtime lifecycle to enforce frame cleanup boundaries.
-
-For current repository-grounded status and the planned redesign sequence, see:
-
-- [../../net/ecs-runtime-feature-inventory.md](../../net/ecs-runtime-feature-inventory.md)
-- [../../net/ecs-runtime-gap-summary.md](../../net/ecs-runtime-gap-summary.md)
-- [../../net/ecs-runtime-prioritized-roadmap.md](../../net/ecs-runtime-prioritized-roadmap.md)
+Historical reports and audits may still mention the retired event/channel implementation. Those documents are historical evidence only and do not define the current public RunenECS API.

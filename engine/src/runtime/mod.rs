@@ -2,7 +2,7 @@
 //!
 //! Owns schedule labels, runtime system params, platform event normalization,
 //! fixed-step state/resources, canonical fixed-step execution, canonical frame
-//! lifecycle execution, and window runtime helpers.
+//! lifecycle execution, publication policy, and window runtime helpers.
 
 pub(crate) mod fixed_step_executor;
 pub mod fixed_time;
@@ -14,6 +14,7 @@ pub mod param;
 pub mod platform;
 pub mod product_cache;
 pub mod product_publication;
+pub mod publication;
 pub mod query_snapshot;
 pub mod schedules;
 pub mod system;
@@ -27,6 +28,7 @@ pub use native_window_hooks::*;
 pub use param::*;
 pub use product_cache::*;
 pub use product_publication::*;
+pub use publication::*;
 pub use query_snapshot::*;
 pub use schedules::*;
 pub use system::*;

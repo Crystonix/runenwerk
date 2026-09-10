@@ -326,7 +326,7 @@ mod tests {
     use engine::plugins::render::{
         PreparedFlowInvocationRequest, PreparedViewFrame, RenderFlowId, RenderProductSurfaceRequest,
     };
-    use engine::{BarrierKind, ExecutionBarrier};
+    use engine::runtime::PublicationBoundary;
     use product::{
         ProductAuthorityClass, ProductDescriptorCore, ProductFamily, ProductKind, ProductLineage,
         ProductScaleBand, ProductScope, QuerySnapshotProductDescriptor,
@@ -338,13 +338,8 @@ mod tests {
         material_preview_descriptor,
     };
 
-    fn barrier() -> ExecutionBarrier {
-        ExecutionBarrier {
-            index: 1,
-            phase_index: 0,
-            after_wave_index: Some(0),
-            kind: BarrierKind::QuerySnapshotPublication,
-        }
+    fn publication_boundary() -> PublicationBoundary {
+        PublicationBoundary::new(1, "RenderPrepare", 0)
     }
 
     fn snapshot(product_id: ExpressionProductId) -> QuerySnapshotProductDescriptor {
@@ -454,7 +449,7 @@ mod tests {
         let mut snapshots = QuerySnapshotRuntimeResource::default();
         snapshots.stage(snapshot(SCENE_COLOR_PRODUCT_ID));
         snapshots.stage(snapshot(OVERLAY_PRODUCT_ID));
-        snapshots.publish_staged(&barrier());
+        snapshots.publish_staged(&publication_boundary());
 
         let mut app = RunenwerkEditorApp::new();
         let mut prepared = PreparedRenderProductSelectionResource::default();
@@ -533,7 +528,7 @@ mod tests {
 
         let mut snapshots = QuerySnapshotRuntimeResource::default();
         snapshots.stage(snapshot(material_product_id));
-        snapshots.publish_staged(&barrier());
+        snapshots.publish_staged(&publication_boundary());
 
         let mut app = RunenwerkEditorApp::new();
         let mut prepared = PreparedRenderProductSelectionResource::default();

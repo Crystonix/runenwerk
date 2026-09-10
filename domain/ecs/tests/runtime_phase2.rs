@@ -1,6 +1,5 @@
 use ecs::prelude::*;
 use ecs::{QueryAccess, SystemParam, SystemParamError};
-use scheduler::ScheduleLabel;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 #[derive(Copy, Clone)]
@@ -179,7 +178,7 @@ fn runtime_reports_extraction_errors_cleanly() {
 }
 
 #[test]
-fn scheduler_conflict_model_respects_resource_reads_and_writes() {
+fn access_conflict_model_keeps_diagnostics_separate_from_semantic_ordering() {
     fn read_frame_a(_frame: Res<Frame>) {}
     fn read_frame_b(_frame: Res<Frame>) {}
     fn read_frame_view(_frame: ResView<Frame>) {}
@@ -190,32 +189,47 @@ fn scheduler_conflict_model_respects_resource_reads_and_writes() {
 
     let mut read_runtime = Runtime::new();
     read_runtime.add_systems::<Update, _, _>(&mut world, (read_frame_a, read_frame_b));
-    let read_plan = read_runtime.plan_for::<Update>().unwrap().clone();
+    let read_plan = read_runtime
+        .plan_for::<Update>()
+        .unwrap()
+        .expect("registered update schedule should have a plan")
+        .clone();
     assert!(read_plan.conflicts.is_empty());
     assert_eq!(read_plan.stages.len(), 1);
     assert_eq!(read_plan.stages[0].system_indices.len(), 2);
 
     let mut read_alias_runtime = Runtime::new();
     read_alias_runtime.add_systems::<Update, _, _>(&mut world, (read_frame_a, read_frame_view));
-    let read_alias_plan = read_alias_runtime.plan_for::<Update>().unwrap().clone();
+    let read_alias_plan = read_alias_runtime
+        .plan_for::<Update>()
+        .unwrap()
+        .expect("registered update schedule should have a plan")
+        .clone();
     assert!(read_alias_plan.conflicts.is_empty());
     assert_eq!(read_alias_plan.stages.len(), 1);
     assert_eq!(read_alias_plan.stages[0].system_indices.len(), 2);
 
     let mut read_write_runtime = Runtime::new();
     read_write_runtime.add_systems::<Update, _, _>(&mut world, (read_frame_a, write_frame));
-    let read_write_plan = read_write_runtime.plan_for::<Update>().unwrap().clone();
+    let read_write_plan = read_write_runtime
+        .plan_for::<Update>()
+        .unwrap()
+        .expect("registered update schedule should have a plan")
+        .clone();
     assert_eq!(read_write_plan.conflicts.len(), 1);
-    assert!(read_write_plan.stages.len() >= 2);
+    assert_eq!(read_write_plan.stages.len(), 1);
+    assert_eq!(read_write_plan.stages[0].system_indices.len(), 2);
 
     let mut read_view_write_runtime = Runtime::new();
     read_view_write_runtime.add_systems::<Update, _, _>(&mut world, (read_frame_view, write_frame));
     let read_view_write_plan = read_view_write_runtime
         .plan_for::<Update>()
         .unwrap()
+        .expect("registered update schedule should have a plan")
         .clone();
     assert_eq!(read_view_write_plan.conflicts.len(), 1);
-    assert!(read_view_write_plan.stages.len() >= 2);
+    assert_eq!(read_view_write_plan.stages.len(), 1);
+    assert_eq!(read_view_write_plan.stages[0].system_indices.len(), 2);
 }
 
 #[test]
@@ -250,7 +264,11 @@ fn commands_flush_at_stage_end_not_between_systems_in_same_stage() {
 
     let mut runtime = Runtime::new();
     runtime.add_systems::<Update, _, _>(&mut world, (enqueue_spawn, observe_marker_count));
-    let plan = runtime.plan_for::<Update>().unwrap().clone();
+    let plan = runtime
+        .plan_for::<Update>()
+        .unwrap()
+        .expect("registered update schedule should have a plan")
+        .clone();
     assert_eq!(plan.stages.len(), 1);
     assert_eq!(plan.stages[0].system_indices.len(), 2);
 

@@ -7,9 +7,9 @@ use anyhow::Result;
 use ecs::World;
 use editor_viewport::ExpressionProductId;
 use engine::runtime::{
-    ProductPublicationRuntimeResource, QuerySnapshotRuntimeResource, Res, ResMut,
+    ProductPublicationRuntimeResource, PublicationBoundary, QuerySnapshotRuntimeResource, Res,
+    ResMut,
 };
-use engine::{BarrierKind, ExecutionBarrier};
 use graph::{
     CyclePolicy, EdgeDefinition, EdgeId, GraphDefinition, GraphId, NodeDefinition, NodeId,
     PortDefinition, PortDirection, PortId, PortTypeId,
@@ -586,14 +586,10 @@ pub fn procgen_overlay_product_ids() -> &'static [ExpressionProductId; 2] {
     ]
 }
 
-pub fn publish_procgen_products_at_barrier(
-    barrier: &ExecutionBarrier,
+pub fn publish_procgen_products_at_boundary(
+    boundary: &PublicationBoundary,
     world: &mut World,
 ) -> Result<()> {
-    if barrier.kind != BarrierKind::ProductPublication {
-        return Ok(());
-    }
-
     let Some(mut host) = world.remove_resource::<EditorHostResource>() else {
         return Ok(());
     };
@@ -603,21 +599,17 @@ pub fn publish_procgen_products_at_barrier(
         return Ok(());
     };
 
-    publish_procgen_products(&mut host.app, &mut publications, barrier);
+    publish_procgen_products(&mut host.app, &mut publications, boundary);
 
     world.insert_resource(publications);
     world.insert_resource(host);
     Ok(())
 }
 
-pub fn publish_procgen_query_snapshots_at_barrier(
-    barrier: &ExecutionBarrier,
+pub fn publish_procgen_query_snapshots_at_boundary(
+    boundary: &PublicationBoundary,
     world: &mut World,
 ) -> Result<()> {
-    if barrier.kind != BarrierKind::QuerySnapshotPublication {
-        return Ok(());
-    }
-
     let Some(mut host) = world.remove_resource::<EditorHostResource>() else {
         return Ok(());
     };
@@ -626,7 +618,7 @@ pub fn publish_procgen_query_snapshots_at_barrier(
         return Ok(());
     };
 
-    publish_procgen_query_snapshots(&mut host.app, &mut snapshots, barrier);
+    publish_procgen_query_snapshots(&mut host.app, &mut snapshots, boundary);
 
     world.insert_resource(snapshots);
     world.insert_resource(host);
@@ -636,12 +628,8 @@ pub fn publish_procgen_query_snapshots_at_barrier(
 pub fn publish_procgen_products(
     app: &mut RunenwerkEditorApp,
     publications: &mut ProductPublicationRuntimeResource,
-    barrier: &ExecutionBarrier,
+    boundary: &PublicationBoundary,
 ) -> ProductPublicationReport {
-    if barrier.kind != BarrierKind::ProductPublication {
-        return ProductPublicationReport::default();
-    }
-
     let key = determinism_key_for_document(app.procgen_runtime().document())
         .as_str()
         .to_string();
@@ -722,7 +710,7 @@ pub fn publish_procgen_products(
             app.append_console_warning(summary);
         }
         return ProductPublicationReport::default();
-    };
+    }
     let Some(contracts) = build_procgen_formed_preview_product_contracts(
         app.procgen_runtime().document(),
         app.procgen_runtime().catalog(),
@@ -741,7 +729,7 @@ pub fn publish_procgen_products(
 
     let journal_start = publications.journal().len();
     publications.stage(outcome);
-    let report = publications.publish_staged(barrier);
+    let report = publications.publish_staged(boundary);
     let published_entries = &publications.journal()[journal_start..];
 
     if report.published_count > 0 {
@@ -771,8 +759,8 @@ pub fn publish_procgen_products(
     );
 
     if let Some(summary) = app.procgen_runtime_mut().update_console_summary(format!(
-        "[procgen] publication barrier {}: published={} rejected={} outputs={}",
-        barrier.index,
+        "[procgen] publication boundary {}: published={} rejected={} outputs={}",
+        boundary.index,
         report.published_count,
         report.rejected_count,
         published_entries
@@ -797,12 +785,8 @@ pub fn publish_procgen_products(
 pub fn bake_procgen_products(
     app: &mut RunenwerkEditorApp,
     publications: &mut ProductPublicationRuntimeResource,
-    barrier: &ExecutionBarrier,
+    boundary: &PublicationBoundary,
 ) -> EditorProcgenBakeReport {
-    if barrier.kind != BarrierKind::ProductPublication {
-        return EditorProcgenBakeReport::default();
-    }
-
     let outcome = bake_procgen_document(
         app.procgen_runtime().document(),
         app.procgen_runtime().catalog(),
@@ -846,7 +830,7 @@ pub fn bake_procgen_products(
         PROCGEN_BAKE_PUBLICATION_STAGE_SEQUENCE,
     );
     publications.stage(outcome_for_publication);
-    let publication_report = publications.publish_staged(barrier);
+    let publication_report = publications.publish_staged(boundary);
     bake_report.published_count = publication_report.published_count;
     bake_report.rejected_count = publication_report.rejected_count;
     bake_report.accepted =
@@ -857,7 +841,7 @@ pub fn bake_procgen_products(
             .determinism_key
             .as_ref()
             .map(|key| format!("bake:{key}"))
-            .unwrap_or_else(|| format!("bake:barrier:{}", barrier.index));
+            .unwrap_or_else(|| format!("bake:boundary:{}", boundary.index));
         app.procgen_runtime_mut()
             .record_accepted_bake(&outcome, publication_key);
     }
@@ -876,8 +860,8 @@ pub fn bake_procgen_products(
     );
 
     if let Some(summary) = app.procgen_runtime_mut().update_console_summary(format!(
-        "[procgen] bake barrier {}: published={} rejected={} operations={} products={}",
-        barrier.index,
+        "[procgen] bake publication boundary {}: published={} rejected={} operations={} products={}",
+        boundary.index,
         bake_report.published_count,
         bake_report.rejected_count,
         bake_report.operation_count,
@@ -917,12 +901,8 @@ pub fn rollback_procgen_bake(app: &mut RunenwerkEditorApp) -> EditorProcgenRollb
 pub fn publish_procgen_query_snapshots(
     app: &mut RunenwerkEditorApp,
     snapshots: &mut QuerySnapshotRuntimeResource,
-    barrier: &ExecutionBarrier,
+    boundary: &PublicationBoundary,
 ) -> QuerySnapshotPublicationReport {
-    if barrier.kind != BarrierKind::QuerySnapshotPublication {
-        return QuerySnapshotPublicationReport::default();
-    }
-
     let snapshot_key = descriptor_generation_key(app.procgen_runtime().published_descriptors());
     let Some(snapshot_key) = snapshot_key else {
         return QuerySnapshotPublicationReport::default();
@@ -943,7 +923,7 @@ pub fn publish_procgen_query_snapshots(
     }
 
     snapshots.stage_all(staged);
-    let report = snapshots.publish_staged(barrier);
+    let report = snapshots.publish_staged(boundary);
     let published_entries = snapshots.last_published_entries().to_vec();
 
     if report.published_count > 0 {
@@ -962,8 +942,8 @@ pub fn publish_procgen_query_snapshots(
     );
 
     if let Some(summary) = app.procgen_runtime_mut().update_console_summary(format!(
-        "[procgen] query barrier {}: published={} rejected={} preserved={} invalidated={}",
-        barrier.index,
+        "[procgen] query publication boundary {}: published={} rejected={} preserved={} invalidated={}",
+        boundary.index,
         report.published_count,
         report.rejected_count,
         report.preserved_count,
@@ -1256,13 +1236,8 @@ mod tests {
     use engine::runtime::QuerySnapshotRuntimeResource;
     use product::{ProductScaleBand, evaluate_product_consumption};
 
-    fn barrier(kind: BarrierKind) -> ExecutionBarrier {
-        ExecutionBarrier {
-            index: 17,
-            phase_index: 0,
-            after_wave_index: Some(0),
-            kind,
-        }
+    fn boundary() -> PublicationBoundary {
+        PublicationBoundary::new(17, "Update", 0)
     }
 
     #[test]
@@ -1281,23 +1256,11 @@ mod tests {
     }
 
     #[test]
-    fn procgen_products_publish_only_at_product_publication_barrier() {
+    fn procgen_products_publish_at_product_publication_boundary() {
         let mut app = RunenwerkEditorApp::new();
         let mut publications = ProductPublicationRuntimeResource::default();
 
-        let skipped = publish_procgen_products(
-            &mut app,
-            &mut publications,
-            &barrier(BarrierKind::QuerySnapshotPublication),
-        );
-        assert_eq!(skipped.published_count, 0);
-        assert!(app.procgen_runtime().published_descriptors().is_empty());
-
-        let report = publish_procgen_products(
-            &mut app,
-            &mut publications,
-            &barrier(BarrierKind::ProductPublication),
-        );
+        let report = publish_procgen_products(&mut app, &mut publications, &boundary());
 
         assert_eq!(report.published_count, 1);
         assert_eq!(app.procgen_runtime().published_descriptors().len(), 3);
@@ -1306,23 +1269,11 @@ mod tests {
     }
 
     #[test]
-    fn procgen_bake_publishes_offline_products_only_at_product_publication_barrier() {
+    fn procgen_bake_publishes_offline_products_at_product_publication_boundary() {
         let mut app = RunenwerkEditorApp::new();
         let mut publications = ProductPublicationRuntimeResource::default();
 
-        let skipped = bake_procgen_products(
-            &mut app,
-            &mut publications,
-            &barrier(BarrierKind::QuerySnapshotPublication),
-        );
-        assert!(!skipped.accepted);
-        assert!(app.procgen_runtime().last_bake().is_none());
-
-        let report = bake_procgen_products(
-            &mut app,
-            &mut publications,
-            &barrier(BarrierKind::ProductPublication),
-        );
+        let report = bake_procgen_products(&mut app, &mut publications, &boundary());
 
         assert!(report.accepted);
         assert_eq!(report.published_count, 1);
@@ -1344,21 +1295,13 @@ mod tests {
         let mut app = RunenwerkEditorApp::new();
         let mut publications = ProductPublicationRuntimeResource::default();
 
-        let bake_report = bake_procgen_products(
-            &mut app,
-            &mut publications,
-            &barrier(BarrierKind::ProductPublication),
-        );
+        let bake_report = bake_procgen_products(&mut app, &mut publications, &boundary());
         assert!(bake_report.accepted);
         let baked_descriptor_count = app.procgen_runtime().published_descriptors().len();
         let baked_product_count = app.procgen_runtime().formed_preview_products().len();
 
         app.procgen_runtime_mut().document_mut().scope = ProcgenScope::new(WorldId::new(1), [], []);
-        publish_procgen_products(
-            &mut app,
-            &mut publications,
-            &barrier(BarrierKind::ProductPublication),
-        );
+        publish_procgen_products(&mut app, &mut publications, &boundary());
         assert_eq!(
             app.procgen_runtime().published_descriptors().len(),
             baked_descriptor_count
@@ -1397,16 +1340,8 @@ mod tests {
         let mut publications = ProductPublicationRuntimeResource::default();
         let mut snapshots = QuerySnapshotRuntimeResource::default();
 
-        publish_procgen_products(
-            &mut app,
-            &mut publications,
-            &barrier(BarrierKind::ProductPublication),
-        );
-        let report = publish_procgen_query_snapshots(
-            &mut app,
-            &mut snapshots,
-            &barrier(BarrierKind::QuerySnapshotPublication),
-        );
+        publish_procgen_products(&mut app, &mut publications, &boundary());
+        let report = publish_procgen_query_snapshots(&mut app, &mut snapshots, &boundary());
 
         assert_eq!(report.published_count, 3);
         for product_id in app.procgen_runtime().active_overlay_product_ids() {
@@ -1428,21 +1363,13 @@ mod tests {
     fn invalid_procgen_document_does_not_publish_or_select_overlay_products() {
         let mut app = RunenwerkEditorApp::new();
         let mut publications = ProductPublicationRuntimeResource::default();
-        publish_procgen_products(
-            &mut app,
-            &mut publications,
-            &barrier(BarrierKind::ProductPublication),
-        );
+        publish_procgen_products(&mut app, &mut publications, &boundary());
         assert_eq!(app.procgen_runtime().published_descriptors().len(), 3);
         assert_eq!(app.procgen_runtime().formed_preview_products().len(), 2);
 
         app.procgen_runtime_mut().document_mut().scope = ProcgenScope::new(WorldId::new(1), [], []);
 
-        let report = publish_procgen_products(
-            &mut app,
-            &mut publications,
-            &barrier(BarrierKind::ProductPublication),
-        );
+        let report = publish_procgen_products(&mut app, &mut publications, &boundary());
 
         assert_eq!(report.published_count, 0);
         assert!(app.procgen_runtime().published_descriptors().is_empty());
@@ -1464,11 +1391,7 @@ mod tests {
             crate::runtime::viewport::SCENE_COLOR_PRODUCT_ID,
         ));
 
-        publish_procgen_products(
-            &mut app,
-            &mut publications,
-            &barrier(BarrierKind::ProductPublication),
-        );
+        publish_procgen_products(&mut app, &mut publications, &boundary());
         let active_ids = app.procgen_runtime().active_overlay_product_ids();
         sync_procgen_viewport_overlays(&app, &mut presentations);
         let state = presentations
@@ -1477,11 +1400,7 @@ mod tests {
         assert_eq!(state.selected_overlay_product_ids, active_ids);
 
         app.procgen_runtime_mut().document_mut().scope = ProcgenScope::new(WorldId::new(1), [], []);
-        publish_procgen_products(
-            &mut app,
-            &mut publications,
-            &barrier(BarrierKind::ProductPublication),
-        );
+        publish_procgen_products(&mut app, &mut publications, &boundary());
         sync_procgen_viewport_overlays(&app, &mut presentations);
         let state = presentations
             .state_for(editor_viewport::ViewportId(1))
@@ -1494,11 +1413,7 @@ mod tests {
         let mut app = RunenwerkEditorApp::new();
         let mut snapshots = QuerySnapshotRuntimeResource::default();
 
-        let report = publish_procgen_query_snapshots(
-            &mut app,
-            &mut snapshots,
-            &barrier(BarrierKind::QuerySnapshotPublication),
-        );
+        let report = publish_procgen_query_snapshots(&mut app, &mut snapshots, &boundary());
 
         assert_eq!(report.published_count, 0);
         assert!(snapshots.current_snapshots().is_empty());

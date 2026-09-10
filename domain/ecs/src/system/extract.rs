@@ -1,7 +1,7 @@
 use crate::query::QueryAccess;
+use crate::scheduler::system::ParamSlotDescriptor;
 use crate::world::WorldAuthority;
 use crate::{Commands, ResourceError, World};
-use scheduler::system::ParamSlotDescriptor;
 use std::marker::PhantomData;
 use std::ptr::NonNull;
 use thiserror::Error;
@@ -108,7 +108,7 @@ pub unsafe trait SystemParam: Sized {
     /// `context` belongs to the current system invocation. Implementors may
     /// only access World domains described by `Self::access(state)`, may not
     /// extend references beyond the corresponding GAT lifetimes, and must
-    /// preserve the scheduler-validated aliasing contract.
+    /// preserve the runtime-validated aliasing contract.
     unsafe fn extract<'world, 'state>(
         state: &'state mut Self::State,
         context: SystemParamContext<'world>,

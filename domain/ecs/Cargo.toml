@@ -7,12 +7,11 @@ license.workspace = true
 
 [features]
 default = []
-telemetry = ["scheduler/telemetry"]
+telemetry = []
 
 [dependencies]
 anyhow = "1.0.100"
 ecs_macros = { path = "../ecs_macros" }
-scheduler = { path = "../scheduler" }
 thiserror = "2.0.18"
 
 [dev-dependencies]

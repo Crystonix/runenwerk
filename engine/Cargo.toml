@@ -38,7 +38,6 @@ graph.workspace = true
 material_graph.workspace = true
 resource_ref.workspace = true
 product.workspace = true
-scheduler = { path = "../domain/scheduler" }
 runen-net.workspace = true
 runen-spatial.workspace = true
 world_ops = { path = "../domain/world_ops" }

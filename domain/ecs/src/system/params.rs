@@ -5,8 +5,8 @@ use crate::component::{Component, Resource};
 use crate::query::{
     Query, QueryAccess, QueryFilter, QueryOrphaned, QueryOrphanedState, QuerySpec, QueryState,
 };
+use crate::scheduler::system::ParamSlotDescriptor;
 use crate::world::{ResourceCapability, ResourceMutationCapability};
-use scheduler::system::ParamSlotDescriptor;
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 use std::ptr::NonNull;

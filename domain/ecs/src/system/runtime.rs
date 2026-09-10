@@ -1,11 +1,11 @@
 use super::extract::{SystemParam, SystemParamContext, SystemParamError};
 use super::param_metadata::{ParamSlotMetadata, param_slot_metadata_for_descriptors};
 use super::plan_report::RuntimePlanReport;
+use crate::scheduler::access::{AccessKey, SystemAccess};
+use crate::scheduler::label::{ScheduleKey, ScheduleLabel, SystemSet, SystemSetKey};
+use crate::scheduler::plan::{ExecutionPlan, ScheduleRegistry, ScheduleValidationError};
+use crate::scheduler::system::{ParamSlotDescriptor, RegisteredSystem, SystemId};
 use anyhow::{Result, anyhow};
-use scheduler::access::{AccessKey, SystemAccess};
-use scheduler::label::{ScheduleLabel, SystemSet, SystemSetKey};
-use scheduler::plan::{BarrierKind, ExecutionBarrier, ExecutionPlan, ExecutionScheduler};
-use scheduler::system::{ParamSlotDescriptor, RegisteredSystem, SystemId};
 use std::cell::RefCell;
 use std::marker::PhantomData;
 use std::rc::Rc;
@@ -16,11 +16,21 @@ use crate::telemetry;
 use crate::{Commands, World};
 
 type DeferredCommands = Rc<RefCell<Vec<Commands<'static>>>>;
-pub type BarrierHandler = Box<dyn Fn(&ExecutionBarrier, &mut World) -> Result<()>>;
 
-struct RegisteredBarrierHandler {
-    kind: BarrierKind,
-    handler: BarrierHandler,
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct DeferredApplyBoundary {
+    schedule: ScheduleKey,
+    index: usize,
+}
+
+impl DeferredApplyBoundary {
+    pub const fn schedule(self) -> ScheduleKey {
+        self.schedule
+    }
+
+    pub const fn index(self) -> usize {
+        self.index
+    }
 }
 
 pub trait SystemOutput {
@@ -47,7 +57,7 @@ pub trait IntoSystem<Marker>: 'static {
         self,
         world: &mut World,
         deferred_commands: DeferredCommands,
-    ) -> Result<RegisteredSystem<World>>;
+    ) -> Result<RegisteredSystem>;
 }
 
 pub trait IntoSystemSetKey {
@@ -89,7 +99,7 @@ impl SystemConfigMetadata {
         }
     }
 
-    fn apply(&self, system: &mut RegisteredSystem<World>) {
+    fn apply(&self, system: &mut RegisteredSystem) {
         for key in &self.sets {
             system.with_set_key(*key);
         }
@@ -167,32 +177,58 @@ pub trait SystemConfigExt<Marker>: IntoSystem<Marker> + Sized {
 
 impl<S, Marker> SystemConfigExt<Marker> for S where S: IntoSystem<Marker> + Sized {}
 
-pub trait IntoSystemConfigs<Marker> {
-    fn register<L: ScheduleLabel>(
-        self,
-        world: &mut World,
-        scheduler: &mut ExecutionScheduler<World>,
-        deferred_commands: DeferredCommands,
-        build_errors: &mut Vec<anyhow::Error>,
-    );
+mod system_configs_sealed {
+    use super::{DeferredCommands, ScheduleLabel, ScheduleRegistry};
+    use crate::World;
+
+    pub struct RegistrationContext<'a> {
+        pub(super) world: &'a mut World,
+        pub(super) scheduler: &'a mut ScheduleRegistry,
+        pub(super) deferred_commands: DeferredCommands,
+        pub(super) build_errors: &'a mut Vec<anyhow::Error>,
+    }
+
+    impl<'a> RegistrationContext<'a> {
+        pub(super) fn new(
+            world: &'a mut World,
+            scheduler: &'a mut ScheduleRegistry,
+            deferred_commands: DeferredCommands,
+            build_errors: &'a mut Vec<anyhow::Error>,
+        ) -> Self {
+            Self {
+                world,
+                scheduler,
+                deferred_commands,
+                build_errors,
+            }
+        }
+    }
+
+    pub trait RegisterSystemConfigs<Marker> {
+        fn register<L: ScheduleLabel>(self, context: &mut RegistrationContext<'_>);
+    }
 }
 
-impl<S, Marker> IntoSystemConfigs<Marker> for S
+pub trait IntoSystemConfigs<Marker>: system_configs_sealed::RegisterSystemConfigs<Marker> {}
+
+impl<S, Marker> IntoSystemConfigs<Marker> for S where
+    S: system_configs_sealed::RegisterSystemConfigs<Marker>
+{
+}
+
+impl<S, Marker> system_configs_sealed::RegisterSystemConfigs<Marker> for S
 where
     S: IntoSystem<Marker>,
 {
     fn register<L: ScheduleLabel>(
         self,
-        world: &mut World,
-        scheduler: &mut ExecutionScheduler<World>,
-        deferred_commands: DeferredCommands,
-        build_errors: &mut Vec<anyhow::Error>,
+        context: &mut system_configs_sealed::RegistrationContext<'_>,
     ) {
-        match self.into_registered_system::<L>(world, deferred_commands) {
+        match self.into_registered_system::<L>(context.world, context.deferred_commands.clone()) {
             Ok(registered) => {
-                scheduler.add_system(registered);
+                context.scheduler.add_system(registered);
             }
-            Err(err) => build_errors.push(err),
+            Err(err) => context.build_errors.push(err),
         }
     }
 }
@@ -206,7 +242,7 @@ where
         self,
         world: &mut World,
         deferred_commands: DeferredCommands,
-    ) -> Result<RegisteredSystem<World>> {
+    ) -> Result<RegisteredSystem> {
         let mut registered = self
             .system
             .into_registered_system::<L>(world, deferred_commands)?;
@@ -217,24 +253,17 @@ where
 
 macro_rules! impl_into_system_configs_tuple {
     ($(($name:ident, $marker:ident, $index:tt)),+ $(,)?) => {
-        impl<$($name, $marker,)+> IntoSystemConfigs<($($marker,)+)> for ($($name,)+)
+        impl<$($name, $marker,)+> system_configs_sealed::RegisterSystemConfigs<($($marker,)+)>
+            for ($($name,)+)
         where
-            $($name: IntoSystemConfigs<$marker>,)+
+            $($name: system_configs_sealed::RegisterSystemConfigs<$marker>,)+
         {
             fn register<Sched: ScheduleLabel>(
                 self,
-                world: &mut World,
-                scheduler: &mut ExecutionScheduler<World>,
-                deferred_commands: DeferredCommands,
-                build_errors: &mut Vec<anyhow::Error>,
+                context: &mut system_configs_sealed::RegistrationContext<'_>,
             ) {
                 $(
-                    self.$index.register::<Sched>(
-                        world,
-                        scheduler,
-                        deferred_commands.clone(),
-                        build_errors,
-                    );
+                    self.$index.register::<Sched>(context);
                 )+
             }
         }
@@ -466,9 +495,6 @@ fn merge_access(system_name: &str, access_parts: &[SystemAccess]) -> Result<Syst
         for write in access.writes() {
             merged.add_write(*write);
         }
-        for drain in access.drains() {
-            merged.add_drain(*drain);
-        }
         for _ in 0..access.exclusive_world_accesses() {
             merged.add_exclusive_world_access();
         }
@@ -496,7 +522,7 @@ macro_rules! impl_into_system {
                 self,
                 world: &mut World,
                 deferred_commands: DeferredCommands,
-            ) -> Result<RegisteredSystem<World>> {
+            ) -> Result<RegisteredSystem> {
                 let system_name = std::any::type_name::<Func>().to_string();
                 let mut states = (
                     $(
@@ -678,10 +704,9 @@ impl_into_system!(
 );
 
 pub struct Runtime {
-    scheduler: ExecutionScheduler<World>,
+    scheduler: ScheduleRegistry,
     deferred_commands: DeferredCommands,
     build_errors: Vec<anyhow::Error>,
-    barrier_handlers: Vec<RegisteredBarrierHandler>,
 }
 
 impl Default for Runtime {
@@ -693,10 +718,9 @@ impl Default for Runtime {
 impl Runtime {
     pub fn new() -> Self {
         Self {
-            scheduler: ExecutionScheduler::new(),
+            scheduler: ScheduleRegistry::new(),
             deferred_commands: Rc::new(RefCell::new(Vec::new())),
             build_errors: Vec::new(),
-            barrier_handlers: Vec::new(),
         }
     }
 
@@ -705,40 +729,32 @@ impl Runtime {
         L: ScheduleLabel,
         S: IntoSystemConfigs<Marker>,
     {
-        systems.register::<L>(
+        let mut context = system_configs_sealed::RegistrationContext::new(
             world,
             &mut self.scheduler,
             self.deferred_commands.clone(),
             &mut self.build_errors,
         );
+        systems.register::<L>(&mut context);
         self
     }
 
-    pub fn plan_for<L: ScheduleLabel>(&mut self) -> Option<&ExecutionPlan> {
+    pub fn plan_for<L: ScheduleLabel>(
+        &mut self,
+    ) -> std::result::Result<Option<&ExecutionPlan>, ScheduleValidationError> {
         self.scheduler.plan_for::<L>()
     }
 
-    pub fn plan_report_for<L: ScheduleLabel>(&mut self) -> Option<RuntimePlanReport> {
-        let plan = self.scheduler.plan_for::<L>()?.clone();
-        Some(RuntimePlanReport::from_plan(
+    pub fn plan_report_for<L: ScheduleLabel>(
+        &mut self,
+    ) -> std::result::Result<Option<RuntimePlanReport>, ScheduleValidationError> {
+        let Some(plan) = self.scheduler.plan_for::<L>()?.cloned() else {
+            return Ok(None);
+        };
+        Ok(Some(RuntimePlanReport::from_plan(
             &plan,
             self.scheduler.systems(),
-        ))
-    }
-
-    pub fn scheduler(&mut self) -> &mut ExecutionScheduler<World> {
-        &mut self.scheduler
-    }
-
-    pub fn add_barrier_handler<F>(&mut self, kind: BarrierKind, handler: F) -> &mut Self
-    where
-        F: Fn(&ExecutionBarrier, &mut World) -> Result<()> + 'static,
-    {
-        self.barrier_handlers.push(RegisteredBarrierHandler {
-            kind,
-            handler: Box::new(handler),
-        });
-        self
+        )))
     }
 
     pub fn param_slots_for_system(&self, system_id: SystemId) -> Option<Vec<ParamSlotMetadata>> {
@@ -747,7 +763,6 @@ impl Runtime {
             .systems()
             .iter()
             .find(|system| system.id() == system_id)?;
-
         Some(param_slot_metadata_for_descriptors(
             system_id,
             system.param_slots(),
@@ -755,20 +770,40 @@ impl Runtime {
     }
 
     pub fn run_schedule<L: ScheduleLabel>(&mut self, world: &mut World) -> Result<()> {
+        self.run_schedule_with_deferred_apply_boundary::<L, _>(world, |_boundary, _world| Ok(()))
+    }
+
+    pub fn run_schedule_with_deferred_apply_boundary<L, F>(
+        &mut self,
+        world: &mut World,
+        mut on_boundary: F,
+    ) -> Result<()>
+    where
+        L: ScheduleLabel,
+        F: FnMut(DeferredApplyBoundary, &mut World) -> Result<()>,
+    {
         if let Err(err) = self.ensure_build_ready() {
             self.discard_deferred_commands();
             return Err(err);
         }
+
         let plan_start = Instant::now();
-        let Some(plan) = self.scheduler.plan_for::<L>().cloned() else {
-            telemetry::record_runtime_plan(plan_start.elapsed().as_nanos() as u64);
-            return Ok(());
+        let plan = match self.scheduler.plan_for::<L>() {
+            Ok(Some(plan)) => plan.clone(),
+            Ok(None) => {
+                telemetry::record_runtime_plan(plan_start.elapsed().as_nanos() as u64);
+                return Ok(());
+            }
+            Err(err) => {
+                self.discard_deferred_commands();
+                return Err(err.into());
+            }
         };
         telemetry::record_runtime_plan(plan_start.elapsed().as_nanos() as u64);
 
-        for wave in &plan.waves {
+        for (boundary_index, stage) in plan.stages.iter().enumerate() {
             let stage_start = Instant::now();
-            for system_index in &wave.system_indices {
+            for system_index in &stage.system_indices {
                 let Some(system) = self.scheduler.systems_mut().get_mut(*system_index) else {
                     self.discard_deferred_commands();
                     return Err(anyhow!("execution plan referenced missing system"));
@@ -779,29 +814,24 @@ impl Runtime {
                 }
             }
             telemetry::record_runtime_stage(stage_start.elapsed().as_nanos() as u64);
-            for barrier in plan.barriers_after_wave(wave.index) {
-                if let Err(err) = self.execute_barrier(barrier, world) {
-                    self.discard_deferred_commands();
-                    return Err(err);
-                }
+
+            if let Err(err) = self.flush_stage_commands(world) {
+                self.discard_deferred_commands();
+                return Err(err);
+            }
+
+            if let Err(err) = on_boundary(
+                DeferredApplyBoundary {
+                    schedule: plan.label,
+                    index: boundary_index,
+                },
+                world,
+            ) {
+                self.discard_deferred_commands();
+                return Err(err);
             }
         }
-
         Ok(())
-    }
-
-    fn execute_barrier(&self, barrier: &ExecutionBarrier, world: &mut World) -> Result<()> {
-        match &barrier.kind {
-            BarrierKind::ApplyDeferredCommands => self.flush_stage_commands(world),
-            _ => {
-                for registered in &self.barrier_handlers {
-                    if registered.kind == barrier.kind {
-                        (registered.handler)(barrier, world)?;
-                    }
-                }
-                Ok(())
-            }
-        }
     }
 
     fn ensure_build_ready(&self) -> Result<()> {
@@ -861,8 +891,7 @@ fn query_access_to_system_access(access: QueryAccess) -> SystemAccess {
 #[cfg(test)]
 mod tests {
     use super::Runtime;
-    use crate::{Res, ResMut, Resource, World};
-    use scheduler::label::ScheduleLabel;
+    use crate::{Res, ResMut, Resource, ScheduleLabel, World};
 
     macro_rules! define_u32_resource {
         ($name:ident) => {
@@ -887,7 +916,6 @@ mod tests {
     define_u32_resource!(R12);
     define_u32_resource!(R13);
     define_u32_resource!(R14);
-
     define_u32_resource!(Sum);
     define_u32_resource!(Counter);
 
@@ -963,20 +991,14 @@ mod tests {
         runtime.add_systems::<MaxAritySchedule, _, _>(&mut world, max_arity_system);
         runtime
             .run_schedule::<MaxAritySchedule>(&mut world)
-            .expect("max-arity system should register and execute");
-
-        let actual = world
-            .resource::<Sum>()
-            .expect("sum resource should exist after schedule")
-            .0;
-        assert_eq!(actual, 120);
+            .unwrap();
+        assert_eq!(world.resource::<Sum>().unwrap().0, 120);
     }
 
     #[test]
     fn supports_max_tuple_registration_arity_sixteen() {
         let mut world = World::new();
         world.insert_resource(Counter(0));
-
         let mut runtime = Runtime::new();
         runtime.add_systems::<MaxTupleSchedule, _, _>(
             &mut world,
@@ -1001,12 +1023,7 @@ mod tests {
         );
         runtime
             .run_schedule::<MaxTupleSchedule>(&mut world)
-            .expect("max-tuple system registration should execute");
-
-        let actual = world
-            .resource::<Counter>()
-            .expect("counter resource should exist after schedule")
-            .0;
-        assert_eq!(actual, 16);
+            .unwrap();
+        assert_eq!(world.resource::<Counter>().unwrap().0, 16);
     }
 }

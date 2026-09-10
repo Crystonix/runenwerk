@@ -1,5 +1,5 @@
 use crate::runtime::IntoSystemSetKey;
-use scheduler::SystemSetKey;
+use ecs::SystemSetKey;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum NetPreUpdateSet {

@@ -1,59 +1,23 @@
 ---
-title: "Scheduler Design Goals"
-description: "Documentation for Scheduler Design Goals."
-status: active
-owner: scheduler
+title: "Scheduler Design Goals (Retired)"
+description: "Historical navigation for scheduler design goals superseded by RunenECS C8 ownership."
+status: superseded
+owner: ecs
 layer: domain
-canonical: true
-last_reviewed: 2026-05-12
-related_designs:
-  - ../../design/accepted/execution-fabric-and-product-jobs-design.md
-related_roadmaps:
-  - ../../workspace/sdf-first-execution-roadmap.md
+canonical: false
+last_reviewed: 2026-09-10
+replaced_by: ../ecs/architecture.md
 ---
 
-# Scheduler Design Goals
+# Scheduler Design Goals (Retired)
 
-## Purpose
-Define scheduler behavior for deterministic, validated system execution.
+These goals described the former standalone `domain/scheduler` package. That package and its generic scheduling authority were retired by RunenECS C8.
 
-## Core Goals
-- Deterministic execution order.
-- Explicit dependency semantics.
-- Fast and actionable validation failures.
-- Low per-node runtime overhead.
-- Serial fallback that remains equivalent to future parallel execution for
-  authoritative results.
+Current ownership is deliberately split:
 
-## Graph Invariants
-- No self dependencies.
-- Edges must reference existing nodes.
-- Duplicate edges should not create duplicate execution.
-- Cycles are rejected with clear diagnostics.
+- RunenECS owns reusable ECS system identity, schedule labels, system sets, explicit semantic ordering, access facts, validation, deterministic serial reference execution, and deferred structural-command boundaries.
+- Runenwerk Engine owns frame/fixed/render/startup/shutdown lifecycle, host execution policy, product/query-snapshot publication, and other application barriers.
 
-## API Direction
-- Invalid graph configuration returns `Result` errors.
-- Builder and graph mutation should avoid hidden side effects.
-- Keep scheduler context generic (`Scheduler<C>`).
-- Treat `ProductJobDescriptor` inputs as future planning descriptions, not as
-  scheduler-owned product truth.
+The former generic DAG, wave, application-phase, publication-barrier, graph-export, and scheduler-global telemetry goals are historical evidence only. They do not authorize a replacement scheduler framework or compatibility surface.
 
-## Observability
-- Preserve tracing hooks around node execution and scheduler run.
-- Support graph introspection/export through explicit API.
-- Expose plan diagnostics for access conflicts, blocked parallelism, missing
-  barriers, product-job ordering issues, and authority violations.
-
-## Testing Priorities
-- Ordering correctness for dependency chains.
-- Cycle detection and unknown-node failure paths.
-- Duplicate-name and duplicate-edge behavior.
-- Determinism across repeated runs.
-- Barrier ordering for deferred apply and product publication.
-- Serial/parallel-equivalence tests before enabling any parallel executor.
-
-## Integration Goals
-- First-class orchestration for ECS and UI stage pipelines.
-- Simple integration with engine runtime contexts.
-- SDF-first product jobs, query snapshots, renderer prepare/submit, replay, and
-  network capture are sequenced through explicit phases, waves, and barriers.
+Use [RunenECS architecture](../ecs/architecture.md) and the [accepted RunenECS boundary repair plan](../../design/accepted/runenecs-boundary-repair-execution-plan.md) for current authority.

@@ -5,108 +5,131 @@ status: active
 owner: ecs
 layer: domain
 canonical: true
-last_reviewed: 2026-04-27
+last_reviewed: 2026-09-10
 ---
 
 # ECS Systems
 
-Systems are functions or processes that operate over components and resources. They define the behavior of the ECS by reading and writing data in a controlled and deterministic way.
+Systems are functions or processes that operate over components and resources. They define ECS behavior by reading and writing data through explicit system parameters.
 
 ## Purpose
 
 - Encapsulate domain logic applied to entities and resources.
-- Enable deterministic and efficient execution of gameplay or simulation rules.
+- Enable deterministic execution of gameplay or simulation rules.
 - Separate computation from data storage (components/resources).
 
 ## Key Concepts
 
 - **System** – A function that queries components/resources and performs updates.
-- **System Param** – Typed inputs to systems, such as components, resources, or events.
+- **System Param** – A typed input describing required ECS access.
 - **Query** – Filters and retrieves entities with matching components.
-- **Command Queue** – Deferred mutations applied after system execution.
-- **Stage / Set** – Execution group to define ordering constraints.
+- **Command Queue** – Deferred structural mutations collected per system run.
+- **System Set** – A semantic grouping used by explicit ordering constraints.
+- **Deferred Apply Boundary** – The ECS-owned point at which queued structural mutations become visible.
+- **Execution Stage** – Current plan/report grouping used for execution and diagnostics; it is not an application lifecycle or publication identity.
 
 ## Implementation / API
 
-Systems are added to a `Runtime` with scheduling labels and explicit read/write access. They operate on `World` state via `SystemParam`s.
+Systems are added to a `Runtime` under an ECS-owned `ScheduleLabel`. System parameters provide the read/write access facts used for validation and conflict diagnostics.
 
 ### System with Query
 
-Query over components:
 ```rust
-    #[derive(Debug, Copy, Clone, PartialEq, ecs::Component)]
-    struct Position { x: f32, y: f32 }
+#[derive(Debug, Copy, Clone, PartialEq, ecs::Component)]
+struct Position { x: f32, y: f32 }
 
-    #[derive(Debug, Copy, Clone, PartialEq, ecs::Component)]
-    struct Velocity { x: f32, y: f32 }
+#[derive(Debug, Copy, Clone, PartialEq, ecs::Component)]
+struct Velocity { x: f32, y: f32 }
 
-    fn movement_system(query: Query<(&mut Position, &Velocity)>) {
-        for (pos, vel) in query.iter() {
-            pos.x += vel.x;
-            pos.y += vel.y;
-        }
+fn movement_system(mut query: Query<(&mut Position, &Velocity)>) {
+    for (pos, vel) in query.iter() {
+        pos.x += vel.x;
+        pos.y += vel.y;
     }
+}
 ```
+
 ### Deferred Commands
 
 Systems can queue structural changes safely:
+
 ```rust
-    fn spawn_entity(mut commands: Commands) {
-        commands.spawn(Position { x: 0.0, y: 0.0 });
-    }
+fn spawn_entity(mut commands: Commands) {
+    commands.spawn(Position { x: 0.0, y: 0.0 });
+}
 ```
-### Stage & Set Ordering
 
-Runtime execution can be ordered:
+### Set Ordering
+
+Runtime execution can be ordered explicitly. `ScheduleLabel` and `SystemSet` are available from the ECS prelude:
+
 ```rust
-    use scheduler::ScheduleLabel;
+use ecs::prelude::*;
 
-    #[derive(Copy, Clone)]
-    struct Update;
-    impl ScheduleLabel for Update { fn name() -> &'static str { "Update" } }
+#[derive(Copy, Clone)]
+struct Update;
+impl ScheduleLabel for Update {}
 
-    runtime.add_systems::<Update, _, _>(&mut world, tick.in_set(Gameplay));
-    runtime.add_systems::<Update, _, _>(&mut world, spawn_entity.in_set(PostGameplay).after(Gameplay));
+#[derive(Copy, Clone)]
+struct Gameplay;
+impl SystemSet for Gameplay {}
+
+#[derive(Copy, Clone)]
+struct PostGameplay;
+impl SystemSet for PostGameplay {}
+
+runtime.add_systems::<Update, _, _>(&mut world, tick.in_set(Gameplay));
+runtime.add_systems::<Update, _, _>(
+    &mut world,
+    spawn_entity.in_set(PostGameplay).after(Gameplay),
+);
 ```
+
+The explicit `after(Gameplay)` edge establishes semantic precedence. Deferred commands produced by earlier ordered work are applied at an ECS deferred-apply boundary before dependent later work executes. Without such an ordering edge, systems remain semantically unordered even when their access facts conflict.
+
 ## Invariants & Rules
 
-- Systems must declare **read/write access** explicitly to avoid conflicts.
-- Structural changes are **deferred**; queries only observe changes after stage flush.
-- Avoid side effects outside system parameters to maintain deterministic execution.
-- Use history or telemetry APIs **only for diagnostics**, not core gameplay logic.
+- System parameters declare ECS **access facts**. Conflicting access may constrain future parallel admission, but it does not invent an A-before-B semantic order.
+- Explicit `before` / `after` set relations define semantic ordering and are cycle-validated.
+- The serial reference executor uses deterministic registration order for otherwise unordered systems.
+- Structural changes are **deferred** and become visible only after an ECS deferred-apply boundary.
+- Systems that execute before the same deferred-apply boundary do not observe one another's deferred structural mutations.
+- Current execution stages are plan/report facts, not Engine lifecycle phases or publication identities.
+- Avoid hidden side effects outside system parameters when deterministic behavior matters.
+- Use plan reports, history, and telemetry for diagnostics rather than as gameplay authority.
 
-## Usage Examples (Domain-Level)
+## Usage Examples
 
-### Example 1: Movement System
+### Movement System
 
-Iterates over positions and velocities:
 ```rust
-    fn movement_system(query: Query<(&mut Position, &Velocity)>) {
-        for (pos, vel) in query.iter() {
-            pos.x += vel.x;
-            pos.y += vel.y;
-        }
+fn movement_system(mut query: Query<(&mut Position, &Velocity)>) {
+    for (pos, vel) in query.iter() {
+        pos.x += vel.x;
+        pos.y += vel.y;
     }
+}
 ```
-### Example 2: Spawn System
 
-Queues a new entity safely:
+### Spawn System
+
 ```rust
-    fn spawn_entity(mut commands: Commands) {
-        commands.spawn(Position { x: 0.0, y: 0.0 });
-    }
+fn spawn_entity(mut commands: Commands) {
+    commands.spawn(Position { x: 0.0, y: 0.0 });
+}
 ```
+
 ## Design Guidelines
 
-- Keep all system logic independent of engine specifics.
-- Declare explicit access for components/resources.
-- Use queries for gameplay logic; use history or telemetry only for diagnostics.
-- Stages and sets should define ordering to ensure deterministic behavior.
-
+- Keep reusable system logic independent of Engine lifecycle policy.
+- Let system parameters describe component/resource access.
+- Use explicit system-set ordering only when the behavior actually requires semantic order or deferred visibility.
+- Do not use access conflicts as substitute ordering edges.
+- Keep product publication, render phases, replay/network lifecycle, and other host policy outside RunenECS.
 
 ## References & Links
 
 - [usage-guide.md](usage-guide.md) – Normal ECS usage.
-- [advanced-guide.md](advanced-guide.md) – Deferred commands, events, and runtime integration.
+- [advanced-guide.md](advanced-guide.md) – Deferred commands, scheduling, and runtime integration.
 - [architecture.md](architecture.md) – Internal scheduling and runtime invariants.
 - [05-commands.md](05-commands.md) – Deferred command behavior.

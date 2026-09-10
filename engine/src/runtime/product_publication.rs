@@ -1,18 +1,18 @@
+use crate::runtime::publication::PublicationBoundary;
 use anyhow::Result;
 use product::{
     FieldProductDiagnostic, FieldProductDiagnosticCode, ProductIdentity, ProductJobId,
     ProductPublicationOutcome, ProductPublicationReport, ProductPublicationStatus,
     ratify_product_publication,
 };
-use scheduler::plan::{BarrierKind, ExecutionBarrier};
 
 use ecs::World;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProductPublicationJournalEntry {
-    pub barrier_index: usize,
-    pub phase_index: usize,
-    pub after_wave_index: Option<usize>,
+    pub publication_boundary_index: usize,
+    pub schedule_label: &'static str,
+    pub deferred_apply_index: usize,
     pub stage_sequence: u64,
     pub product_job_id: ProductJobId,
     pub status: ProductPublicationStatus,
@@ -47,11 +47,7 @@ impl ProductPublicationRuntimeResource {
         &self.last_report
     }
 
-    pub fn publish_staged(&mut self, barrier: &ExecutionBarrier) -> ProductPublicationReport {
-        if barrier.kind != BarrierKind::ProductPublication {
-            return ProductPublicationReport::default();
-        }
-
+    pub fn publish_staged(&mut self, boundary: &PublicationBoundary) -> ProductPublicationReport {
         let mut staged = std::mem::take(&mut self.staged);
         staged.sort_by_key(|outcome| (outcome.stage_sequence, outcome.product_job.job_id.raw()));
 
@@ -71,9 +67,9 @@ impl ProductPublicationRuntimeResource {
 
             report.record(&outcome);
             self.journal.push(ProductPublicationJournalEntry {
-                barrier_index: barrier.index,
-                phase_index: barrier.phase_index,
-                after_wave_index: barrier.after_wave_index,
+                publication_boundary_index: boundary.index,
+                schedule_label: boundary.schedule_label,
+                deferred_apply_index: boundary.deferred_apply_index,
                 stage_sequence: outcome.stage_sequence,
                 product_job_id: outcome.product_job.job_id,
                 status: outcome.status,
@@ -86,11 +82,11 @@ impl ProductPublicationRuntimeResource {
 }
 
 pub fn publish_staged_product_outcomes(
-    barrier: &ExecutionBarrier,
+    boundary: &PublicationBoundary,
     world: &mut World,
 ) -> Result<()> {
     if let Ok(publications) = world.resource_mut::<ProductPublicationRuntimeResource>() {
-        publications.publish_staged(barrier);
+        publications.publish_staged(boundary);
     }
     Ok(())
 }
@@ -102,24 +98,9 @@ mod tests {
         ProductDescriptorCore, ProductFamily, ProductJobDescriptor, ProductKind, ProductLineage,
         ProductScaleBand, ProductScope,
     };
-    use scheduler::plan::{BarrierKind, ExecutionBarrier};
 
-    fn barrier(index: usize) -> ExecutionBarrier {
-        ExecutionBarrier {
-            index,
-            phase_index: 0,
-            after_wave_index: Some(0),
-            kind: BarrierKind::ProductPublication,
-        }
-    }
-
-    fn apply_deferred_barrier(index: usize) -> ExecutionBarrier {
-        ExecutionBarrier {
-            index,
-            phase_index: 0,
-            after_wave_index: Some(0),
-            kind: BarrierKind::ApplyDeferredCommands,
-        }
+    fn boundary(index: usize) -> PublicationBoundary {
+        PublicationBoundary::new(index, "Update", 0)
     }
 
     fn job(id: u64) -> ProductJobDescriptor {
@@ -145,7 +126,7 @@ mod tests {
     }
 
     #[test]
-    fn staged_outcomes_publish_only_when_barrier_handler_runs() {
+    fn staged_outcomes_publish_at_engine_publication_boundary() {
         let mut resource = ProductPublicationRuntimeResource::default();
         resource.stage(ProductPublicationOutcome::ready(
             job(2),
@@ -156,17 +137,14 @@ mod tests {
         assert_eq!(resource.journal().len(), 0);
         assert_eq!(resource.staged().len(), 1);
 
-        let non_publication_report = resource.publish_staged(&apply_deferred_barrier(3));
-        assert_eq!(non_publication_report.published_count, 0);
-        assert_eq!(resource.journal().len(), 0);
-        assert_eq!(resource.staged().len(), 1);
-
-        let report = resource.publish_staged(&barrier(4));
+        let report = resource.publish_staged(&boundary(4));
 
         assert_eq!(report.published_count, 1);
         assert_eq!(resource.staged().len(), 0);
         assert_eq!(resource.journal().len(), 1);
-        assert_eq!(resource.journal()[0].barrier_index, 4);
+        assert_eq!(resource.journal()[0].publication_boundary_index, 4);
+        assert_eq!(resource.journal()[0].schedule_label, "Update");
+        assert_eq!(resource.journal()[0].deferred_apply_index, 0);
     }
 
     #[test]
@@ -188,7 +166,7 @@ mod tests {
             10,
         ));
 
-        resource.publish_staged(&barrier(1));
+        resource.publish_staged(&boundary(1));
 
         let ids = resource
             .journal()
@@ -207,7 +185,7 @@ mod tests {
             1,
         ));
 
-        let report = resource.publish_staged(&barrier(1));
+        let report = resource.publish_staged(&boundary(1));
 
         assert_eq!(report.rejected_count, 1);
         assert_eq!(resource.journal().len(), 0);

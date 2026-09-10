@@ -37,10 +37,7 @@ pub(crate) fn replay_scene_frame(
     ctx.outbound_notifications.clear();
 
     if manager.world.visible && !manager.world.paused {
-        manager
-            .world_runtime
-            .scheduler
-            .run(&mut manager.world_runtime.ctx)?;
+        manager.world_runtime.run()?;
         let outbound = std::mem::take(&mut manager.world_runtime.ctx.outbound_notifications);
         manager.channels.world_to_overlay.extend(outbound);
     }

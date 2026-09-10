@@ -8,13 +8,12 @@ use crate::plugins::{
     SceneReplayArchive, load_replay, seek_loaded_replay, start_recording, stop_recording,
 };
 use crate::prelude::IntoPlugins;
+use crate::runtime::publication::{PublicationBoundary, PublicationHandlers};
 use crate::runtime::system::IntoSystemConfigs;
 use crate::*;
 use anyhow::Result;
-use ecs::{Resource, Runtime, World};
+use ecs::{Resource, Runtime, ScheduleLabel, World};
 use engine_sim::*;
-use scheduler::ScheduleLabel;
-use scheduler::plan::{BarrierKind, ExecutionBarrier};
 use winit::event_loop::ControlFlow;
 use winit::keyboard::KeyCode;
 
@@ -91,11 +90,31 @@ impl App {
         self
     }
 
-    pub fn add_barrier_handler<F>(&mut self, kind: BarrierKind, handler: F) -> &mut Self
+    pub fn add_product_publication_handler<F>(&mut self, handler: F) -> &mut Self
     where
-        F: Fn(&ExecutionBarrier, &mut World) -> Result<()> + 'static,
+        F: Fn(&PublicationBoundary, &mut World) -> Result<()> + 'static,
     {
-        self.scheduler.add_barrier_handler(kind, handler);
+        if !self.world.has_resource::<PublicationHandlers>() {
+            self.world.insert_resource(PublicationHandlers::default());
+        }
+        self.world
+            .resource_mut::<PublicationHandlers>()
+            .expect("publication handler resource should be installed")
+            .add_product(handler);
+        self
+    }
+
+    pub fn add_query_snapshot_publication_handler<F>(&mut self, handler: F) -> &mut Self
+    where
+        F: Fn(&PublicationBoundary, &mut World) -> Result<()> + 'static,
+    {
+        if !self.world.has_resource::<PublicationHandlers>() {
+            self.world.insert_resource(PublicationHandlers::default());
+        }
+        self.world
+            .resource_mut::<PublicationHandlers>()
+            .expect("publication handler resource should be installed")
+            .add_query_snapshot(handler);
         self
     }
 

@@ -1,6 +1,5 @@
 use ecs::prelude::*;
 use ecs::telemetry::{self, EcsTelemetrySnapshot};
-use scheduler::{ScheduleLabel, SystemSet};
 use std::time::{Duration, Instant};
 
 #[derive(Debug, Copy, Clone, ecs::Component, ecs::Resource)]
@@ -154,13 +153,13 @@ fn print_workload_report(
         delta.runtime_flush_command_queues
     );
 
-    println!("scheduler_summary:");
+    println!("schedule_summary:");
     println!(
         "  plan_build_calls={} plan_build_ms={:.3} conflict_checks={} stage_count={}",
-        delta.scheduler.plan_build_calls,
-        nanos_to_ms(delta.scheduler.plan_build_nanos),
-        delta.scheduler.plan_conflict_checks,
-        delta.scheduler.plan_stage_count
+        delta.schedule_plan_build_calls,
+        nanos_to_ms(delta.schedule_plan_build_nanos),
+        delta.schedule_plan_conflict_checks,
+        delta.schedule_plan_stage_count
     );
 
     if delta.query_get_calls == 0 {
@@ -503,7 +502,10 @@ fn main() {
             &mut world,
             (w2_move, w2_mutate_health, w2_scan_changed, w2_scan_added),
         );
-        let _ = runtime.plan_for::<W2>().expect("w2 plan should exist");
+        runtime
+            .plan_for::<W2>()
+            .expect("w2 plan should validate")
+            .expect("w2 plan should exist");
         let setup_elapsed = setup_start.elapsed();
 
         // Warmup iteration (untimed).
@@ -549,7 +551,10 @@ fn main() {
         }
         let mut runtime = Runtime::new();
         runtime.add_systems::<W3, _, _>(&mut world, (w3_spawn, w3_despawn));
-        let _ = runtime.plan_for::<W3>().expect("w3 plan should exist");
+        runtime
+            .plan_for::<W3>()
+            .expect("w3 plan should validate")
+            .expect("w3 plan should exist");
         let setup_elapsed = setup_start.elapsed();
 
         // Warmup iteration (untimed).
@@ -602,7 +607,10 @@ fn main() {
             );
         }
         // Build the execution plan before timed runs so setup/planning cost is separated.
-        let _ = runtime.plan_for::<W5>().expect("w5 plan should exist");
+        runtime
+            .plan_for::<W5>()
+            .expect("w5 plan should validate")
+            .expect("w5 plan should exist");
         let setup_elapsed = setup_start.elapsed();
 
         // Warmup iteration (untimed).

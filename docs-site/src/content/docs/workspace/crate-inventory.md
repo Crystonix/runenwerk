@@ -5,7 +5,7 @@ status: active
 owner: workspace
 layer: workspace
 canonical: true
-last_reviewed: 2026-08-31
+last_reviewed: 2026-09-10
 related_docs:
   - ../../../CRATES.md
   - ./crate-docs-status.md
@@ -30,7 +30,7 @@ This document records active workspace crates and their intended layer. Update i
 | Crate | Path | Layer | Purpose | Public API |
 | --- | --- | --- | --- | --- |
 | `id` | `foundation/id` | foundation | Typed identity primitives and allocators. | evolving |
-| `ecs` | `domain/ecs` | domain | Entity/component/resource world, query, messaging, ownership, and system runtime contracts. | evolving |
+| `ecs` | `domain/ecs` | domain | Entity/component/resource world, queries, reflection/change tracking, ECS system/schedule/access semantics, deterministic serial execution, and deferred structural commands. | evolving |
 | `ecs_macros` | `domain/ecs_macros` | domain | Derive macros for ECS component/resource/bundle/reflection contracts. | evolving |
 | `id_macros` | `foundation/id_macros` | foundation | Attribute macro support for typed ID wrappers. | evolving |
 | `diagnostics` | `foundation/diagnostics` | foundation | Structured diagnostic reporting vocabulary. | evolving |
@@ -43,7 +43,6 @@ This document records active workspace crates and their intended layer. Update i
 | `product` | `domain/product` | domain | Shared formed-product descriptors, product jobs, query snapshots, diagnostics, policies, and ratification contracts. | evolving |
 | `world_ops` | `domain/world_ops` | domain | Chunk/world operation logs, dirty tracking, build queues, invalidation, and replication deltas. | evolving |
 | `world_sdf` | `domain/world_sdf` | domain | SDF chunk payloads and collision query contracts. | evolving |
-| `scheduler` | `domain/scheduler` | domain | Deterministic schedule planning, graph validation, labels, access, and system execution plans. | evolving |
 | `graph` | `domain/graph` | domain | Domain-neutral graph definitions, typed ports, validation, traversal, and cycle policy. | evolving |
 | `texture` | `domain/texture` | domain | Texture product descriptors, previews, samplers, color-space, compression, ratification, and lineage contracts. | evolving |
 | `material_graph` | `domain/material_graph` | domain | Authored material graph documents, catalog boundaries, ratification, lowering, and formed material descriptors. | evolving |
@@ -80,6 +79,8 @@ This document records active workspace crates and their intended layer. Update i
 | `runenwerk_draw` | `apps/runenwerk_draw` | app | Focused drawing app shell and shared engine/UI/render runtime integration. | internal/evolving |
 | `runenwerk_runtime_preview` | `apps/runenwerk_runtime_preview` | app | External runtime preview child process and preview/play app shell. | internal/evolving |
 | `native_tablet_input` | `adapters/native_tablet_input` | adapter/tool | Native tablet packet normalization proof for platform-neutral `ui_input` stylus events. | internal/evolving |
+
+`domain/scheduler` is no longer an active workspace crate after RunenECS C8. Reusable ECS scheduling semantics are owned by `domain/ecs`; Engine retains application lifecycle and publication policy.
 
 ## Documentation status
 

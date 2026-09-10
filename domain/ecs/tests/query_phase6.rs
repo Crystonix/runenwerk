@@ -1,6 +1,4 @@
 use ecs::prelude::*;
-use scheduler::ScheduleLabel;
-use scheduler::label::SystemSet;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, ecs::Component, ecs::Resource)]
 struct A(i32);

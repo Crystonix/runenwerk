@@ -5,7 +5,7 @@ status: active
 owner: ecs
 layer: domain
 canonical: true
-last_reviewed: 2026-09-06
+last_reviewed: 2026-09-10
 related_designs:
   - ../../design/accepted/execution-fabric-and-product-jobs-design.md
 related_roadmaps:
@@ -18,10 +18,12 @@ related_roadmaps:
 
 ## Quick Overview
 
-- `World`: entities/components/resources, event channels, component indexes
+- `World`: entities/components/resources and component indexes
 - Query runtime: `Query`, `QueryState`, `QueryOrphaned`
-- Runtime and scheduling bridge: `Runtime`, `IntoSystem`, set ordering (`in_set`, `before`, `after`)
-- System params: `Res`, `ResMut`, `ResView`, `Commands`, `BroadcastReader`, `BroadcastWriter`
+- ECS scheduling: `Runtime`, `ScheduleLabel`, `SystemSet`, `in_set`, `before`, `after`
+- Schedule diagnostics: execution stages, cycle validation, access conflicts, parameter-slot metadata
+- Deferred visibility integration: `DeferredApplyBoundary`
+- System params: `Res`, `ResMut`, `ResView`, `Commands`
 - Deferred mutation primitives: `Commands`, `DeferredCommand`, `BatchCommands`
 - Stateful tracking: `StatefulComponent`, `component_state`, `mark_stateful_changed`
 
@@ -37,7 +39,7 @@ struct Position {
 }
 
 let mut world = World::new();
-let entity = world.spawn(Position { x: 1.0, y: 2.0 });
+let entity = world.spawn(Position { x: 1.0, y: 2.0 }).unwrap();
 world.require_mut::<Position>(entity).unwrap().x += 1.0;
 assert_eq!(world.require::<Position>(entity).unwrap().x, 2.0);
 ```
@@ -52,17 +54,24 @@ assert_eq!(world.require::<Position>(entity).unwrap().x, 2.0);
 
 ## SDF-First Execution Ownership
 
-For the SDF-first open-world substrate, ECS owns live runtime state, system
-interfaces, deferred command visibility, and the runtime query contracts that
-feed query snapshot products. The scheduler owns deterministic planning and
-barriers; engine runtime owns execution; product-family domains own product
-truth.
+For the SDF-first open-world substrate, RunenECS owns live ECS state, system
+interfaces, deterministic system identity, generic schedule labels and system
+sets, explicit semantic ordering, ECS access facts, schedule validation,
+deterministic serial reference execution, and deferred-command visibility.
+Access incompatibility is diagnostic information and does not itself create
+semantic `before`/`after` order.
 
-Near-term ECS work should preserve serial equivalence while adding explicit
-product-publication and query-snapshot behavior at scheduler barriers. ECS now
-exposes generic barrier handlers keyed by scheduler `BarrierKind`; handlers are
-runtime hooks, not product-domain knowledge. ECS must not become a global
-product registry or renderer truth source.
+Deferred commands become visible at ECS-owned deferred-apply boundaries. `Runtime`
+can expose each such point as an ECS-neutral `DeferredApplyBoundary` after the
+flush succeeds. The boundary carries generic schedule identity plus a boundary
+sequence index, not planner-stage identity. Runenwerk Engine may use that fact to
+apply application policy, but product publication, query-snapshot publication,
+rendering, replay/network capture, and host lifecycle meaning are not RunenECS
+concepts.
+
+Current `ExecutionStage`/plan-report stage data remains ECS planning and diagnostic
+shape. Consumers must not reinterpret a planner stage index as application
+lifecycle or publication identity.
 
 ECS also exposes `query_snapshot_source_generation` plus explicit `QueryAccess`
 builder methods for component/resource access sets. These helpers compute

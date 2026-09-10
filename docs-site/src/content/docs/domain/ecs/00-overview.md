@@ -5,7 +5,7 @@ status: active
 owner: ecs
 layer: domain
 canonical: true
-last_reviewed: 2026-09-06
+last_reviewed: 2026-09-10
 ---
 
 # ECS (Entity-Component-System) Domain Overview
@@ -13,47 +13,52 @@ last_reviewed: 2026-09-06
 ## Purpose
 
 - Provide a deterministic, engine-agnostic runtime for entity/component/resource state.
-- Keep gameplay/simulation logic data-oriented and composable.
-- Expose a small, typed API surface that is easy to integrate with scheduler-driven runtimes.
+- Keep gameplay and simulation logic data-oriented and composable.
+- Expose typed ECS execution semantics that can be embedded by hosts without owning application lifecycle policy.
 
 ## Current Foundation Status
 
 The ECS foundation currently includes:
 
-- entities, components, resources
-- archetype + dense storage layout
+- opaque world-local entities, components, and resources
+- archetype + dense storage implementation
 - typed queries with `Added<T>` / `Changed<T>`
-- scheduler runtime integration
-- deferred structural commands and `BatchCommands`
-- typed event channels + observer triggers
-- `QueryOrphaned<T>` removed-component stage window
-- `ResView<T>` system param alias
-- `StatefulComponent` generation/version tracking
+- ECS-native system registration, schedule labels, system sets, explicit ordering, access validation, and deterministic serial reference execution
+- deferred structural commands and ECS-owned deferred-apply boundaries
+- current removed-component observation through `QueryOrphaned<T>`
+- resource parameters through `Res<T>` / `ResMut<T>` (`ResView<T>` is currently an alias of `Res<T>`)
+- explicit reflection and ECS-local change tracking
+- optional typed secondary indexes and feature-gated ECS telemetry
+
+RunenECS currently exposes no generic event/channel transport API. Application, network, replay, render, product-publication, frame, fixed-step, startup, and shutdown policy remain outside RunenECS.
 
 ## Core Concepts
 
-- **Entity**: stable identifier for domain objects.
+- **Entity**: opaque world-local runtime handle; not a persistence or network identity.
 - **Component**: per-entity typed state.
 - **Resource**: world-level singleton state.
-- **System**: typed function operating on queries/resources/commands/events.
+- **System**: typed function operating on queries/resources/commands through declared system parameters.
 - **Query**: typed access to matching component sets, with filters.
-- **Command**: deferred structural mutation applied at stage boundaries.
-- **Event Channel**: typed event stream with configurable capacity/overflow/lifetime policies.
-- **Secondary Indexes**: optional typed lookup acceleration structures.
+- **Command**: deferred structural mutation made visible at an ECS deferred-apply boundary.
+- **Schedule / System Set**: generic ECS identity and explicit semantic-ordering structure.
+- **Execution Stage**: current planning/diagnostic grouping derived from semantic ordering; not an Engine lifecycle or publication identity.
+- **Secondary Index**: optional typed ECS lookup acceleration.
 
 ## Module Boundary Summary
 
-- `world`: world state and orchestration APIs.
+- `world`: world state and world-facing APIs.
 - `commands`: deferred command abstractions and queue/apply behavior.
 - `query`: query/filter/access runtime.
-- `system`: param extraction + runtime scheduling bridge.
+- `system`: system parameters, execution integration, and ECS-neutral reports.
+- crate-private `scheduler`: ECS-owned schedule labels, access facts, registered systems, plan construction, and validation; not a standalone scheduler package or host lifecycle owner.
 
 ## Invariants
 
-- Structural mutations are deferred and become visible only after stage flush.
-- Failed schedule runs do not replay deferred commands in later runs.
-- Query filter semantics (`Added`/`Changed`) are independent from reporting change logs.
-- Event channels enforce configured overflow/lifetime behavior.
+- Structural mutations are deferred during runtime-managed system execution and become visible only after an ECS deferred-apply boundary.
+- Explicit `before` / `after` relations define semantic precedence; access incompatibility does not invent semantic order.
+- Failed schedule runs do not replay discarded deferred command queues in later runs.
+- Query filter semantics (`Added` / `Changed`) are independent from reporting change logs.
+- Planner stages are implementation/planning facts and do not define application frame, render, network, replay, or product-publication semantics.
 
 ## References
 

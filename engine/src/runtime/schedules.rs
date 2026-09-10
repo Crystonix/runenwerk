@@ -1,5 +1,5 @@
 use crate::runtime::system::IntoSystemSetKey;
-use scheduler::label::{ScheduleLabel, SystemSetKey};
+use ecs::{ScheduleLabel, SystemSetKey};
 
 /// Core runtime schedules.
 ///

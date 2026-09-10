@@ -19,7 +19,6 @@ use crate::runtime::FramePacingRuntimeStateResource;
 use crate::runtime::{SimulationTick, WorldMut};
 use crate::state::{DebugMetricsState, StartupState};
 use anyhow::anyhow;
-use scheduler::set_slow_node_logging_enabled;
 
 const FRAME_TIMING_LOG_THRESHOLD_MS: f32 = 20.0;
 const MESH_HOT_PATH_LOG_THRESHOLD_MS: f32 = 8.0;
@@ -44,7 +43,6 @@ pub(crate) fn frame_render_submit_system(mut world: WorldMut) -> anyhow::Result<
     let startup_ready_before = world.resource::<StartupState>()?.is_ready();
     let delta_seconds = world.resource::<Time>()?.delta_seconds;
     let timing_log_enabled = render_timing_logging_enabled();
-    set_slow_node_logging_enabled(startup_ready_before);
 
     let (prepared_frame, additional_prepared_frames) = {
         let Some(mut prepared_resource) = world.remove_resource::<PreparedRenderFrameResource>()
