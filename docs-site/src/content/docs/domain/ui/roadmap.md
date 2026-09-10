@@ -16,7 +16,7 @@ related:
   - ../../design/implemented/ui-definition-formation-foundation-design.md
   - ../../reports/audits/editor-ui-priority-code-audit-2026-05-05.md
   - ../../design/implemented/editor-self-authoring-and-final-ui-design.md
-  - ../../design/active/editor-ui-runtime-v2-and-interaction-formation-design.md
+  - ../../design/implemented/editor-ui-runtime-v2-and-interaction-formation-design.md
   - ../../design/active/editor-ui-popup-adornment-drop-preview-contract.md
   - ../../design/active/editor-shell-menu-and-tab-chrome-polish-design.md
   - ../../design/active/editor-ui-workspace-tool-surface-architecture.md
@@ -192,11 +192,11 @@ Milestone placement:
 
 ### Phase 8 - UI Runtime V2 Interaction Formation
 
-Status: accepted architecture as of ADR 0009 on 2026-05-15. Runtime implementation remains retained UI first and migrates by Strangler slices.
+Status: implemented for the retained UI target under accepted ADR 0009 as of 2026-05-15. The named Interaction V2 slices are retained implementation contracts; compiled-reactive and ECS-driven execution targets remain deferred.
 
 Owning design:
 
-- `docs-site/src/content/docs/design/active/editor-ui-runtime-v2-and-interaction-formation-design.md`
+- `docs-site/src/content/docs/design/implemented/editor-ui-runtime-v2-and-interaction-formation-design.md`
 - `docs-site/src/content/docs/adr/accepted/0009-ui-interaction-formation-v2.md`
 
 Decision:
@@ -220,7 +220,7 @@ Required Interaction V2 validation coverage:
 - viewport input receives wheel/pointer input only after UI explicitly declines ownership;
 - screenshot or primitive-order harness coverage for visual/frame-order regressions where normal unit tests are insufficient.
 
-Migration spine for each slice:
+Implemented retained-slice migration spine:
 
 ```text
 definition vocabulary

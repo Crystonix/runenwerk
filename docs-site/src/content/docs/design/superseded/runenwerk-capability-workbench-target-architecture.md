@@ -5,12 +5,12 @@ status: superseded
 owner: workspace
 layer: history
 canonical: false
-last_reviewed: 2026-08-12
+last_reviewed: 2026-09-10
 replacement_docs:
   - ../../architecture/runenwerk-platform-architecture.md
   - ../../adr/accepted/0018-semantic-federation-and-physical-realization.md
   - ../../adr/accepted/0019-batteries-included-application-composition.md
-  - ../active/editor-tool-suite-registry-and-workbench-host-design.md
+  - ../implemented/editor-tool-suite-registry-and-workbench-host-design.md
 ---
 
 # Superseded Runenwerk Capability Workbench Target Architecture
@@ -34,10 +34,10 @@ family-wide capability-cell identities
 a Runenwerk-wide capability registry/policy-plane ontology
 ```
 
-The useful concrete editor/tool-host direction has a narrower current owner in
-[Editor Tool Suite Registry And Workbench Host Design](../active/editor-tool-suite-registry-and-workbench-host-design.md),
-which keeps tool-suite/workbench composition, provider routing, app-owned integration,
-and domain-owned semantics explicit.
+The useful concrete editor/tool-host direction has a narrower implemented owner in
+[Editor Tool Suite Registry And Workbench Host Design](../implemented/editor-tool-suite-registry-and-workbench-host-design.md),
+which keeps editor-local tool-suite/workbench composition, provider routing, app-owned integration,
+and domain-owned semantics explicit while remaining subordinate to current app-neutral structural composition authority.
 
 Application-level batteries-included composition is separately governed by
 [ADR 0019](../../adr/accepted/0019-batteries-included-application-composition.md).

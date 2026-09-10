@@ -5,9 +5,9 @@ status: active
 owner: domain/material_graph
 layer: domain / app-runtime / engine-render
 canonical: true
-last_reviewed: 2026-05-20
+last_reviewed: 2026-09-10
 related_designs:
-  - ./editor-rendered-world-and-multi-entity-viewport-design.md
+  - ../implemented/editor-rendered-world-and-multi-entity-viewport-design.md
   - ../implemented/render-product-surface-foundation-bundle-design.md
 related_roadmaps:
   - ../../apps/runenwerk-editor/roadmap.md

@@ -7,7 +7,7 @@ layer: editor-ui
 canonical: true
 last_reviewed: 2026-05-15
 related_designs:
-  - ./editor-ui-runtime-v2-and-interaction-formation-design.md
+  - ../implemented/editor-ui-runtime-v2-and-interaction-formation-design.md
   - ./editor-ui-popup-adornment-drop-preview-contract.md
   - ../implemented/editor-self-authoring-and-final-ui-design.md
 related_adrs:

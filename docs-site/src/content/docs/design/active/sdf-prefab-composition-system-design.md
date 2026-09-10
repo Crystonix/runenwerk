@@ -5,12 +5,12 @@ status: active
 owner: workspace
 layer: domain / engine-runtime
 canonical: true
-last_reviewed: 2026-05-16
+last_reviewed: 2026-09-10
 related_designs:
   - ../accepted/sdf-first-production-capability-map.md
   - ../accepted/sdf-first-field-world-platform-design.md
   - ./sdf-procedural-animation-and-animated-models-design.md
-  - ./editor-rendered-world-and-multi-entity-viewport-design.md
+  - ../implemented/editor-rendered-world-and-multi-entity-viewport-design.md
 ---
 
 # SDF Prefab Composition System Design
@@ -24,7 +24,7 @@ The accepted long-term capability map is
 
 Implementation remains gated behind:
 
-- rendered-world V1 in `./editor-rendered-world-and-multi-entity-viewport-design.md`;
+- rendered-world V1 in `../implemented/editor-rendered-world-and-multi-entity-viewport-design.md`;
 - source-backed asset identity for prefab descriptors;
 - product ownership for render, field, material, collision, and diagnostic outputs.
 

@@ -1418,7 +1418,7 @@ fn wr029_phase4_requires_real_model_mesh_renderable_contract_before_pixel_claim(
         "docs-site/src/content/docs/reports/implementation-plans/wr-029-model-mesh-material-binding/plan.md",
     );
     let rendered_world_design = read_workspace_source(
-        "docs-site/src/content/docs/design/active/editor-rendered-world-and-multi-entity-viewport-design.md",
+        "docs-site/src/content/docs/design/implemented/editor-rendered-world-and-multi-entity-viewport-design.md",
     );
     let wr030_contract = read_workspace_source(
         "docs-site/src/content/docs/reports/implementation-plans/wr-030-model-mesh-renderable-scene-contract/plan.md",
@@ -1432,8 +1432,9 @@ fn wr029_phase4_requires_real_model_mesh_renderable_contract_before_pixel_claim(
         "WR-029 Phase 4 must stay blocked on a real model/mesh renderable contract instead of claiming SDF or descriptor-only evidence",
     );
     assert!(
-        rendered_world_design.contains("- general mesh scene extraction;"),
-        "the active rendered-world design still excludes general mesh scene extraction and must be updated before WR-029 claims model/mesh pixels",
+        rendered_world_design.contains("WR-018 V1 originally excluded")
+            && rendered_world_design.contains("general mesh scene extraction"),
+        "the implemented rendered-world design must retain WR-018's historical no-general-mesh-scene-extraction boundary before WR-029 claims model/mesh pixels",
     );
     assert!(
         wr030_contract.contains("first implementation surface is a Mesh Preview product surface")

@@ -9,7 +9,7 @@ last_reviewed: 2026-06-26
 related_designs:
   - ./runenwerk-ui-platform-capability-roadmap.md
   - ./runenwerk-ui-story-driven-golden-workflow-design.md
-  - ./editor-ui-runtime-v2-and-interaction-formation-design.md
+  - ../implemented/editor-ui-runtime-v2-and-interaction-formation-design.md
   - ./ui-component-platform-catalog-discovery-inspection-design.md
 related_docs:
   - ../../domain/ui/architecture.md

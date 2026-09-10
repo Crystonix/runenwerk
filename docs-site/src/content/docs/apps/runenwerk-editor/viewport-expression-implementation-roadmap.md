@@ -11,7 +11,7 @@ related_designs:
   - ../../design/implemented/render-product-surface-foundation-bundle-design.md
   - ../../design/implemented/viewport-dynamic-product-target-allocation-design.md
   - ../../design/active/editor-ui-workspace-tool-surface-architecture.md
-  - ../../design/active/editor-rendered-world-and-multi-entity-viewport-design.md
+  - ../../design/implemented/editor-rendered-world-and-multi-entity-viewport-design.md
   - ../../design/active/field-visualizer-product-workflow-design.md
 related_roadmaps:
   - ../../engine/roadmaps/fully-featured-renderer-roadmap.md
@@ -70,7 +70,7 @@ Implemented foundation state:
 - `apps/runenwerk_editor/src/runtime/viewport/product_targets.rs::ViewportProductTargetRegistryResource` maps every viewport/product/slot tuple to a dynamic target record.
 - `apps/runenwerk_editor/src/runtime/viewport/render_jobs.rs::ViewportRenderJobResource` publishes one prepared view and one prepared flow invocation per viewport without cloning the render flow.
 - `domain/ui/ui_render_data/src/primitives/viewport_surface_embed.rs::ViewportSurfaceBindingSource` is dynamic-texture-only; the old flow-resource embed bridge has been removed.
-- `apps/runenwerk_editor/src/runtime/systems/frame_submit.rs::extract_viewport_scene_render_packet` now extracts all editor SDF primitive entities into a stable per-viewport scene packet for rendered-world V1.
+- `apps/runenwerk_editor/src/runtime/systems/frame_submit.rs::extract_viewport_scene_render_packet_with_material_slots` now extracts all editor SDF primitive entities, including material-slot selection, into a stable per-viewport scene packet for the current rendered-world path.
 - `assets/shaders/editor_viewport_scene_product.wgsl` renders a viewport-local multi-entity SDF primitive product and no longer contains multi-rectangle containment.
 - `assets/shaders/editor_viewport_picking_product.wgsl` consumes the same primitive packet layout for picking-id product output.
 
