@@ -7,7 +7,6 @@ layer: workspace
 canonical: true
 last_reviewed: 2026-09-11
 related_docs:
-  - ../../../CRATES.md
   - ./crate-docs-status.md
   - ../guidelines/architecture.md
   - ../guidelines/dependency-rules.md
