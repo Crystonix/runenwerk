@@ -4,6 +4,8 @@ pub mod api;
 pub mod appearance;
 pub mod backend;
 pub mod composition;
+#[cfg_attr(not(test), allow(dead_code))]
+mod derived_transform;
 pub mod derived_state;
 pub mod features;
 pub mod frame;
@@ -30,6 +32,8 @@ pub mod space_time;
 pub mod surface_result;
 mod texture_upload;
 
+#[cfg(test)]
+mod derived_transform_r7_proof;
 #[cfg(test)]
 mod r6_proof;
 #[cfg(test)]

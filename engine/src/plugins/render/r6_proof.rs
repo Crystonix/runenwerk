@@ -5,6 +5,9 @@
 //! correlated by the existing R3 `RenderRepresentationId`, while semantic query/result meaning stays
 //! owned by the permanent R2/R3 contracts.
 
+use super::derived_transform::{
+    RenderCompiledObjectTransform, RenderCompiledObjectTransformError,
+};
 use super::representation::{
     RenderFieldDistanceProtocolEvidence, RenderFieldDistanceQuery, RenderFieldDistanceSample,
     RenderRepresentationId, RenderRepresentationValidationError, RenderSurfaceQuery,
@@ -89,7 +92,7 @@ impl FoundingRepresentationRealization {
         object_state: &RenderObjectState,
         query: RenderSurfaceQuery,
     ) -> Result<RenderOrientedSurfaceQueryResult, ProofRealizationError> {
-        let transform = ProofObjectTransform::new(object_state)?;
+        let transform = RenderCompiledObjectTransform::compile(object_state.spatial())?;
         match &self.kind {
             FoundingRepresentationRealizationKind::AnalyticSphere {
                 center_local_units,
@@ -129,7 +132,7 @@ impl FoundingRepresentationRealization {
             return Err(ProofRealizationError::ProtocolMismatch);
         };
 
-        let transform = ProofObjectTransform::new(object_state)?;
+        let transform = RenderCompiledObjectTransform::compile(object_state.spatial())?;
         let local_position = transform.local_point_from_scene(query.position_scene_meters());
         let center = center_local_units.map(CanonicalF64::get);
         let local_signed_distance = length(sub(local_position, center)) - radius_local_units.get();
@@ -168,6 +171,16 @@ impl From<RenderSemanticValueError> for ProofRealizationError {
 impl From<RenderRepresentationValidationError> for ProofRealizationError {
     fn from(value: RenderRepresentationValidationError) -> Self {
         Self::Representation(value)
+    }
+}
+
+impl From<RenderCompiledObjectTransformError> for ProofRealizationError {
+    fn from(value: RenderCompiledObjectTransformError) -> Self {
+        match value {
+            RenderCompiledObjectTransformError::NonInvertibleObjectTransform => {
+                Self::NonInvertibleObjectTransform
+            }
+        }
     }
 }
 
@@ -225,74 +238,9 @@ impl FoundingRealizationSet {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-struct ProofObjectTransform {
-    local_units_to_scene: [[f64; 3]; 3],
-    scene_to_local_units: [[f64; 3]; 3],
-    normal_local_to_scene: [[f64; 3]; 3],
-    translation_scene: [f64; 3],
-}
-
-impl ProofObjectTransform {
-    fn new(object_state: &RenderObjectState) -> Result<Self, ProofRealizationError> {
-        let spatial = object_state.spatial();
-        let source = spatial.local_to_scene().row_major_3x4();
-        let meters_per_unit = spatial.local_space().meters_per_unit();
-        let local_units_to_scene = [
-            [
-                source[0] * meters_per_unit,
-                source[1] * meters_per_unit,
-                source[2] * meters_per_unit,
-            ],
-            [
-                source[4] * meters_per_unit,
-                source[5] * meters_per_unit,
-                source[6] * meters_per_unit,
-            ],
-            [
-                source[8] * meters_per_unit,
-                source[9] * meters_per_unit,
-                source[10] * meters_per_unit,
-            ],
-        ];
-        let Some(scene_to_local_units) = inverse_3x3(local_units_to_scene) else {
-            return Err(ProofRealizationError::NonInvertibleObjectTransform);
-        };
-        Ok(Self {
-            local_units_to_scene,
-            scene_to_local_units,
-            normal_local_to_scene: transpose(scene_to_local_units),
-            translation_scene: [source[3], source[7], source[11]],
-        })
-    }
-
-    fn scene_point_from_local(self, point: [f64; 3]) -> [f64; 3] {
-        add(
-            mul_matrix_vector(self.local_units_to_scene, point),
-            self.translation_scene,
-        )
-    }
-
-    fn local_point_from_scene(self, point: [f64; 3]) -> [f64; 3] {
-        mul_matrix_vector(
-            self.scene_to_local_units,
-            sub(point, self.translation_scene),
-        )
-    }
-
-    fn local_direction_per_scene_meter(self, direction: [f64; 3]) -> [f64; 3] {
-        mul_matrix_vector(self.scene_to_local_units, direction)
-    }
-
-    fn scene_normal_from_local(self, normal: [f64; 3]) -> [f64; 3] {
-        normalize(mul_matrix_vector(self.normal_local_to_scene, normal))
-            .expect("invertible transform cannot map a non-zero normal to zero")
-    }
-}
-
 fn sphere_surface_query(
     query: RenderSurfaceQuery,
-    transform: &ProofObjectTransform,
+    transform: &RenderCompiledObjectTransform,
     center_local_units: [f64; 3],
     radius_local_units: f64,
 ) -> Result<RenderOrientedSurfaceQueryResult, ProofRealizationError> {
@@ -328,7 +276,7 @@ fn sphere_surface_query(
 
 fn plane_surface_query(
     query: RenderSurfaceQuery,
-    transform: &ProofObjectTransform,
+    transform: &RenderCompiledObjectTransform,
     point_local_units: [f64; 3],
     normal_local: [f64; 3],
 ) -> Result<RenderOrientedSurfaceQueryResult, ProofRealizationError> {
@@ -386,49 +334,6 @@ fn canonical_unit_direction(
         CanonicalF64::new(normalized[1], field)?,
         CanonicalF64::new(normalized[2], field)?,
     ])
-}
-
-fn inverse_3x3(matrix: [[f64; 3]; 3]) -> Option<[[f64; 3]; 3]> {
-    let determinant = matrix[0][0] * (matrix[1][1] * matrix[2][2] - matrix[1][2] * matrix[2][1])
-        - matrix[0][1] * (matrix[1][0] * matrix[2][2] - matrix[1][2] * matrix[2][0])
-        + matrix[0][2] * (matrix[1][0] * matrix[2][1] - matrix[1][1] * matrix[2][0]);
-    if determinant == 0.0 || !determinant.is_finite() {
-        return None;
-    }
-    let inverse_determinant = determinant.recip();
-    Some([
-        [
-            (matrix[1][1] * matrix[2][2] - matrix[1][2] * matrix[2][1]) * inverse_determinant,
-            (matrix[0][2] * matrix[2][1] - matrix[0][1] * matrix[2][2]) * inverse_determinant,
-            (matrix[0][1] * matrix[1][2] - matrix[0][2] * matrix[1][1]) * inverse_determinant,
-        ],
-        [
-            (matrix[1][2] * matrix[2][0] - matrix[1][0] * matrix[2][2]) * inverse_determinant,
-            (matrix[0][0] * matrix[2][2] - matrix[0][2] * matrix[2][0]) * inverse_determinant,
-            (matrix[0][2] * matrix[1][0] - matrix[0][0] * matrix[1][2]) * inverse_determinant,
-        ],
-        [
-            (matrix[1][0] * matrix[2][1] - matrix[1][1] * matrix[2][0]) * inverse_determinant,
-            (matrix[0][1] * matrix[2][0] - matrix[0][0] * matrix[2][1]) * inverse_determinant,
-            (matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0]) * inverse_determinant,
-        ],
-    ])
-}
-
-fn transpose(matrix: [[f64; 3]; 3]) -> [[f64; 3]; 3] {
-    [
-        [matrix[0][0], matrix[1][0], matrix[2][0]],
-        [matrix[0][1], matrix[1][1], matrix[2][1]],
-        [matrix[0][2], matrix[1][2], matrix[2][2]],
-    ]
-}
-
-fn mul_matrix_vector(matrix: [[f64; 3]; 3], vector: [f64; 3]) -> [f64; 3] {
-    [
-        dot(matrix[0], vector),
-        dot(matrix[1], vector),
-        dot(matrix[2], vector),
-    ]
 }
 
 fn dot(left: [f64; 3], right: [f64; 3]) -> f64 {
