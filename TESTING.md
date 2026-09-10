@@ -35,7 +35,7 @@ Rust CI resolves, explicitly checks out, and validates the reviewed feature head
 
 ## Documentation build
 
-Documentation changes also run the Astro/Starlight production build through the path-scoped documentation workflow. It independently selects and proves the same event-derived repository revision; its workflow-definition ref may be a synthetic merge ref, distinct from the checked-out contents.
+Pull requests and pushes that change `docs-site/**` or `.github/workflows/docs-validation.yml` also run the Astro/Starlight production build through the path-scoped documentation workflow. Root-only documentation changes outside that path scope do not automatically trigger Documentation Build. The workflow independently selects and proves the same event-derived repository revision; its workflow-definition ref may be a synthetic merge ref, distinct from the checked-out contents.
 
 ## Supplemental RunenRender GPU execution proof
 
