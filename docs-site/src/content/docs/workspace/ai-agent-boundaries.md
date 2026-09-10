@@ -5,7 +5,7 @@ status: active
 owner: workspace
 layer: workspace
 canonical: true
-last_reviewed: 2026-09-10
+last_reviewed: 2026-09-11
 related_docs:
   - ../../../AGENTS.md
 ---
@@ -32,4 +32,4 @@ Tool-assisted development and repository automation do not make runtime AI a fou
 
 ## Concept ownership
 
-Use [`DOMAIN_MAP.md`](../../../../../DOMAIN_MAP.md) for concept placement. Do not duplicate the concept map here.
+Use [`../guidelines/architecture.md`](../guidelines/architecture.md) for Runenwerk code placement and boundaries, [`./crate-inventory.md`](./crate-inventory.md) for current local package locations, and [`../guidelines/dependency-rules.md`](../guidelines/dependency-rules.md) for dependency direction and peer-framework ownership. Do not duplicate those authorities here.
