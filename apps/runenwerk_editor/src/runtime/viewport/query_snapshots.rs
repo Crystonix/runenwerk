@@ -1,5 +1,4 @@
 use anyhow::Result;
-use ecs::World;
 use editor_viewport::{
     ArtifactObservationFrame, ExpressionFreshness, ExpressionProductDescriptor,
     ExpressionProductId, ExpressionSourceRealityClass, ProductAvailabilityState,
@@ -12,6 +11,7 @@ use product::{
     ProductScope, QuerySnapshotProductDescriptor, QuerySnapshotPublicationReport,
     QuerySnapshotPublicationStatus,
 };
+use runen_ecs::World;
 
 use crate::editor_app::RunenwerkEditorApp;
 use crate::runtime::resources::EditorHostResource;

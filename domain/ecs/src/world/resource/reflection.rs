@@ -1,4 +1,4 @@
-// Owner: ecs World Resource - Reflection Registration APIs
+// Owner: RunenECS World Resource - Reflection Registration APIs
 use crate::component::Resource;
 use crate::reflect::Reflect;
 use crate::world::World;

@@ -24,7 +24,7 @@ use crate::editor_runtime::{
 struct SceneRealityStore {
     authored: SceneDocumentState,
     material_assignments: SceneMaterialAssignmentState,
-    instantiated: ecs::World,
+    instantiated: runen_ecs::World,
     identities: EditorRuntimeIdRegistry,
 }
 
@@ -33,7 +33,7 @@ impl SceneRealityStore {
         Self {
             authored: SceneDocumentState::new(),
             material_assignments: SceneMaterialAssignmentState::default(),
-            instantiated: ecs::World::new(),
+            instantiated: runen_ecs::World::new(),
             identities: EditorRuntimeIdRegistry::new(),
         }
     }
@@ -214,14 +214,14 @@ impl RunenwerkEditorRuntime {
         self.session.history_mut().push_redo(entry);
     }
 
-    pub fn world(&self) -> &ecs::World {
+    pub fn world(&self) -> &runen_ecs::World {
         &self.scene_realities.instantiated
     }
 
     #[cfg(test)]
-    pub(crate) fn spawn_world_entity<T>(&mut self, component: T) -> ecs::Entity
+    pub(crate) fn spawn_world_entity<T>(&mut self, component: T) -> runen_ecs::Entity
     where
-        T: ecs::Component + 'static,
+        T: runen_ecs::Component + 'static,
     {
         self.scene_realities
             .instantiated
@@ -235,7 +235,7 @@ impl RunenwerkEditorRuntime {
         component: T,
     ) -> Result<(), EditorMutationError>
     where
-        T: ecs::Component + 'static,
+        T: runen_ecs::Component + 'static,
     {
         let ecs_entity = self
             .scene_realities
@@ -261,7 +261,7 @@ impl RunenwerkEditorRuntime {
         editor_entity: EntityId,
     ) -> Result<T, EditorMutationError>
     where
-        T: ecs::Component + 'static,
+        T: runen_ecs::Component + 'static,
     {
         let ecs_entity = self
             .scene_realities
@@ -764,7 +764,7 @@ impl RunenwerkEditorRuntime {
     pub fn register_entity(
         &mut self,
         editor_id: EntityId,
-        ecs_entity: ecs::Entity,
+        ecs_entity: runen_ecs::Entity,
         display_name: impl Into<String>,
         parent: Option<EntityId>,
     ) {
@@ -779,7 +779,7 @@ impl RunenwerkEditorRuntime {
 
     pub fn register_component_type<T>(&mut self, editor_id: ComponentTypeId)
     where
-        T: ecs::Component + ecs::Reflect + Default + 'static,
+        T: runen_ecs::Component + runen_ecs::Reflect + Default + 'static,
     {
         self.scene_realities
             .instantiated
@@ -791,7 +791,7 @@ impl RunenwerkEditorRuntime {
 
     pub fn register_resource_type<T>(&mut self, editor_id: ResourceTypeId)
     where
-        T: ecs::Resource + ecs::Reflect + 'static,
+        T: runen_ecs::Resource + runen_ecs::Reflect + 'static,
     {
         self.scene_realities
             .instantiated
@@ -1008,7 +1008,7 @@ fn map_inspector_edit_error(error: InspectorEditError) -> EditorMutationError {
 }
 
 fn collect_reflected_leaf_fields(
-    value: ecs::reflect::ReflectValueRef<'_>,
+    value: runen_ecs::reflect::ReflectValueRef<'_>,
     path: InspectorPath,
     out: &mut Vec<SceneFieldSnapshot>,
 ) {

@@ -112,7 +112,7 @@ pub(crate) fn publish_scene_state(
     *overlay = overlay_value;
 }
 
-pub(crate) fn republish_scene_resources(world: &mut ecs::World) -> Result<()> {
+pub(crate) fn republish_scene_resources(world: &mut runen_ecs::World) -> Result<()> {
     let Some((scene_state_value, gameplay_value, overlay_value)) = world
         .resource::<SceneResource>()
         .ok()

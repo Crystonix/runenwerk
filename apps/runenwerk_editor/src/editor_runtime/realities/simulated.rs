@@ -3,15 +3,15 @@
 
 #[derive(Clone, Copy)]
 pub struct SimulatedSceneReality<'a> {
-    world: &'a ecs::World,
+    world: &'a runen_ecs::World,
 }
 
 impl<'a> SimulatedSceneReality<'a> {
-    pub fn new(world: &'a ecs::World) -> Self {
+    pub fn new(world: &'a runen_ecs::World) -> Self {
         Self { world }
     }
 
-    pub fn world(&self) -> &'a ecs::World {
+    pub fn world(&self) -> &'a runen_ecs::World {
         self.world
     }
 }

@@ -1,5 +1,4 @@
 use super::batch::BatchCommands;
-use super::deferred::{DeferredCommand, DeferredCommandAdapter};
 use super::queue::CommandQueue;
 use crate::bundle::Bundle;
 use crate::entity::Entity;
@@ -112,25 +111,11 @@ impl<'world> Commands<'world> {
         }
     }
 
-    fn queue_typed<T: 'static, C>(&mut self, command: C)
-    where
-        C: DeferredCommand<T>,
-    {
-        self.push_erased(Box::new(DeferredCommandAdapter::new(command)));
-    }
-
-    pub fn defer<T: 'static, C>(&mut self, command: C)
-    where
-        C: DeferredCommand<T>,
-    {
-        self.queue_typed(command);
-    }
-
     pub fn queue<F>(&mut self, command: F)
     where
         F: FnOnce(&mut World) -> Result<(), CommandError> + 'static,
     {
-        self.queue_typed(command);
+        self.push_erased(Box::new(command));
     }
 
     pub fn batch<F>(&mut self, build: F)
@@ -139,7 +124,7 @@ impl<'world> Commands<'world> {
     {
         let mut batch = BatchCommands::new();
         build(&mut batch);
-        self.defer(batch);
+        self.queue(move |world| batch.apply(world));
     }
 
     pub fn spawn<B: Bundle + 'static>(&mut self, bundle: B) {

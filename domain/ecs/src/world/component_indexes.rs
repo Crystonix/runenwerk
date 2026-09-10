@@ -1,4 +1,4 @@
-// Owner: ecs World - Component Secondary Index Types
+// Owner: RunenECS World - Component Secondary Index Types
 use super::World;
 use crate::component::Component;
 use crate::entity::Entity;

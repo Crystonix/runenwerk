@@ -282,7 +282,7 @@ impl std::fmt::Debug for PassParamBinding {
 impl PassParamBinding {
     pub fn uniform_state<S, P, F>(uniform_id: GpuWorkResourceId, build: F) -> Self
     where
-        S: ecs::Resource + Send + Sync + 'static,
+        S: runen_ecs::Resource + Send + Sync + 'static,
         P: GpuParams + Send + Sync + 'static,
         F: Fn(&S) -> P + Send + Sync + 'static,
     {
@@ -297,7 +297,7 @@ impl PassParamBinding {
 
     pub fn uniform_state_with_surface<S, P, F>(uniform_id: GpuWorkResourceId, build: F) -> Self
     where
-        S: ecs::Resource + Send + Sync + 'static,
+        S: runen_ecs::Resource + Send + Sync + 'static,
         P: GpuParams + Send + Sync + 'static,
         F: Fn(&S, (u32, u32)) -> P + Send + Sync + 'static,
     {
@@ -341,7 +341,7 @@ impl PassParamBinding {
 
 struct UniformStateProjection<S, P, F>
 where
-    S: ecs::Resource + 'static,
+    S: runen_ecs::Resource + 'static,
     P: GpuParams + 'static,
     F: Fn(&S) -> P + Send + Sync + 'static,
 {
@@ -351,7 +351,7 @@ where
 
 impl<S, P, F> ParamProjection for UniformStateProjection<S, P, F>
 where
-    S: ecs::Resource + Send + Sync + 'static,
+    S: runen_ecs::Resource + Send + Sync + 'static,
     P: GpuParams + Send + Sync + 'static,
     F: Fn(&S) -> P + Send + Sync + 'static,
 {
@@ -385,7 +385,7 @@ where
 
 struct UniformStateWithSurfaceProjection<S, P, F>
 where
-    S: ecs::Resource + 'static,
+    S: runen_ecs::Resource + 'static,
     P: GpuParams + 'static,
     F: Fn(&S, (u32, u32)) -> P + Send + Sync + 'static,
 {
@@ -395,7 +395,7 @@ where
 
 impl<S, P, F> ParamProjection for UniformStateWithSurfaceProjection<S, P, F>
 where
-    S: ecs::Resource + Send + Sync + 'static,
+    S: runen_ecs::Resource + Send + Sync + 'static,
     P: GpuParams + Send + Sync + 'static,
     F: Fn(&S, (u32, u32)) -> P + Send + Sync + 'static,
 {

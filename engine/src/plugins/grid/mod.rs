@@ -5,7 +5,7 @@ use crate::state::GameplayRuntimeConfig;
 
 pub struct GridPlugin;
 
-#[derive(Debug, Copy, Clone, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct GridRuntimeConfig {
     pub chunk_size: f32,
     pub chunk_load_radius: u32,

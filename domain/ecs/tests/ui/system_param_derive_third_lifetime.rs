@@ -1,11 +1,11 @@
-#[derive(ecs::Resource)]
+#[derive(runen_ecs::Resource)]
 struct Counter;
 
-#[derive(ecs::SystemParam)]
+#[derive(runen_ecs::SystemParam)]
 struct TooMany<'w, 's, 'a> {
-    value: ecs::Res<'w, Counter>,
-    other: ecs::Res<'a, Counter>,
-    reader: ecs::BroadcastReader<'w, 's, u32>,
+    value: runen_ecs::Res<'w, Counter>,
+    cached: runen_ecs::Query<'w, 's, &'static Counter>,
+    other: runen_ecs::Res<'a, Counter>,
 }
 
 fn main() {}

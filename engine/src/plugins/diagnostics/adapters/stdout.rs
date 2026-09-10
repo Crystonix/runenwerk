@@ -3,7 +3,7 @@ use crate::plugins::diagnostics::core::plan::ResolvedDiagnosticsPlan;
 use crate::plugins::diagnostics::core::store::DiagnosticsReportStoreResource;
 use crate::runtime::{Res, ResMut};
 
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct DiagnosticsStdoutAdapterStateResource {
     pub last_report_id: Option<String>,
     pub last_info_frame_index: Option<u64>,

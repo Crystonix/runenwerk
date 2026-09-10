@@ -101,7 +101,7 @@ impl PingPongBuffers {
     }
 }
 
-#[derive(Debug, Clone, ecs::Resource)]
+#[derive(Debug, Clone, runen_ecs::Resource)]
 pub(crate) struct GameOfLifeRenderState {
     tick: u32,
     seed: u32,

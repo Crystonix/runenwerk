@@ -15,19 +15,19 @@ use crate::editor_runtime::{
     SceneDocumentState,
 };
 
-#[derive(ecs::Bundle)]
+#[derive(runen_ecs::Bundle)]
 struct EmptyEntityBundle {}
 
 pub struct RunenwerkEditorSceneRuntime<'a> {
     document: &'a mut SceneDocumentState,
-    world: &'a mut ecs::World,
+    world: &'a mut runen_ecs::World,
     ids: &'a mut EditorRuntimeIdRegistry,
 }
 
 impl<'a> RunenwerkEditorSceneRuntime<'a> {
     pub fn new(
         document: &'a mut SceneDocumentState,
-        world: &'a mut ecs::World,
+        world: &'a mut runen_ecs::World,
         ids: &'a mut EditorRuntimeIdRegistry,
     ) -> Self {
         Self {
@@ -466,7 +466,7 @@ fn local_transform_from_scene(transform: SceneTransform) -> LocalTransform {
 }
 
 fn read_edit_value_at_path(
-    current: ecs::reflect::ReflectValueRef<'_>,
+    current: runen_ecs::reflect::ReflectValueRef<'_>,
     path: &InspectorPath,
 ) -> Result<InspectorEditValue, InspectorEditError> {
     let mut current = current;

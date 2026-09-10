@@ -23,7 +23,7 @@ pub enum UiRuntimeInstallState {
 }
 
 /// Foundation resource for UI runtime plugin installation state.
-#[derive(Debug, Clone, PartialEq, Eq, ecs::Resource)]
+#[derive(Debug, Clone, PartialEq, Eq, runen_ecs::Resource)]
 pub struct UiRuntimeResource {
     install_state: UiRuntimeInstallState,
 }
@@ -50,7 +50,7 @@ impl UiRuntimeResource {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ecs::Resource)]
+#[derive(Debug, Clone, PartialEq, Eq, runen_ecs::Resource)]
 pub struct UiMountRequestsResource {
     records: Vec<UiMountRecord>,
     reports: Vec<UiMountReport>,
@@ -232,7 +232,7 @@ impl UiMountRequestsResource {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Default, ecs::Resource)]
+#[derive(Debug, Clone, PartialEq, Default, runen_ecs::Resource)]
 pub struct UiRuntimeEvaluationResource {
     state: UiStateModel,
     reports: Vec<UiRuntimeEvaluationReport>,

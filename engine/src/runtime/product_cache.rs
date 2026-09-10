@@ -27,7 +27,7 @@ pub struct RuntimeProductCacheSnapshot {
     pub diagnostics: Vec<FieldProductDiagnostic>,
 }
 
-#[derive(Debug, Clone, Default, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Resource)]
 pub struct RuntimeProductCacheResource {
     entries: BTreeMap<ProductCacheKey, RuntimeProductCacheEntry>,
     last_good_by_product: BTreeMap<ProductIdentity, ProductCacheKey>,

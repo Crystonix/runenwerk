@@ -6,7 +6,7 @@ use super::super::chunks::DirtyChunkMapResource;
 use super::super::chunks::render_cache_bridge::WorldRenderCacheInvalidationQueueResource;
 use super::super::debug::metrics::WorldDebugMetricsResource;
 use super::super::{WorldAuthorityState, WorldRuntimeConfig, WorldRuntimeMode};
-use ecs::World;
+use runen_ecs::World;
 use runen_spatial::WorldId;
 use world_ops::{
     Operation, OperationId, OperationRecord, QuantizedAabb, dirty_reason_for_operation,

@@ -1,9 +1,9 @@
-use ecs::prelude::*;
+use runen_ecs::prelude::*;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, ecs::Component)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, runen_ecs::Component)]
 struct Position(i32);
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, runen_ecs::Resource)]
 struct Counter(i32);
 
 #[derive(Copy, Clone)]
@@ -77,12 +77,12 @@ fn conflicting_query_params_are_rejected_before_system_execution() {
     assert!(message.contains("Position"), "{message}");
 }
 
-#[derive(ecs::SystemParam)]
+#[derive(runen_ecs::SystemParam)]
 struct InnerBorrowGroup<'w> {
     _counter: ResMut<'w, Counter>,
 }
 
-#[derive(ecs::SystemParam)]
+#[derive(runen_ecs::SystemParam)]
 struct NestedBorrowGroup<'w> {
     _inner: InnerBorrowGroup<'w>,
     _counter: Res<'w, Counter>,

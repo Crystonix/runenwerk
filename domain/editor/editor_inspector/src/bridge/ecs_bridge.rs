@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use editor_core::{ComponentTypeId, EntityId, ResourceTypeId};
 
 pub trait EcsInspectorBridge {
-    fn resolve_entity(&self, entity_id: EntityId) -> Option<ecs::Entity>;
+    fn resolve_entity(&self, entity_id: EntityId) -> Option<runen_ecs::Entity>;
 
     fn resolve_component_rust_type_id(&self, component_type: ComponentTypeId) -> Option<TypeId>;
 
@@ -16,7 +16,7 @@ pub trait EcsInspectorBridge {
 
 #[derive(Debug, Default, Clone)]
 pub struct StaticEcsInspectorBridge {
-    entity_ids: HashMap<EntityId, ecs::Entity>,
+    entity_ids: HashMap<EntityId, runen_ecs::Entity>,
     component_type_ids: HashMap<ComponentTypeId, TypeId>,
     resource_type_ids: HashMap<ResourceTypeId, TypeId>,
 }
@@ -26,7 +26,7 @@ impl StaticEcsInspectorBridge {
         Self::default()
     }
 
-    pub fn with_entity(mut self, editor_id: EntityId, ecs_entity: ecs::Entity) -> Self {
+    pub fn with_entity(mut self, editor_id: EntityId, ecs_entity: runen_ecs::Entity) -> Self {
         self.entity_ids.insert(editor_id, ecs_entity);
         self
     }
@@ -43,7 +43,7 @@ impl StaticEcsInspectorBridge {
 }
 
 impl EcsInspectorBridge for StaticEcsInspectorBridge {
-    fn resolve_entity(&self, entity_id: EntityId) -> Option<ecs::Entity> {
+    fn resolve_entity(&self, entity_id: EntityId) -> Option<runen_ecs::Entity> {
         self.entity_ids.get(&entity_id).copied()
     }
 

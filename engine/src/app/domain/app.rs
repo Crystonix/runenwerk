@@ -12,8 +12,8 @@ use crate::runtime::publication::{PublicationBoundary, PublicationHandlers};
 use crate::runtime::system::IntoSystemConfigs;
 use crate::*;
 use anyhow::Result;
-use ecs::{Resource, Runtime, ScheduleLabel, World};
 use engine_sim::*;
+use runen_ecs::{Resource, Runtime, ScheduleLabel, World};
 use winit::event_loop::ControlFlow;
 use winit::keyboard::KeyCode;
 

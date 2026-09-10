@@ -1,42 +1,29 @@
-use crate::scheduler::access::AccessConflict;
 use crate::scheduler::label::{ScheduleKey, ScheduleLabel, SystemSetKey};
 use crate::scheduler::system::{RegisteredSystem, SystemId};
-use crate::telemetry;
 use std::collections::BTreeSet;
-use std::time::Instant;
 use thiserror::Error;
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ExecutionConflict {
-    pub first_system_id: SystemId,
-    pub first_system: String,
-    pub second_system_id: SystemId,
-    pub second_system: String,
-    pub conflict: AccessConflict,
-}
 
 /// One semantic ordering layer in an ECS schedule.
 ///
 /// Stages are formed only from explicit before/after set constraints. Access
 /// incompatibilities are recorded separately and never create stage boundaries.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ExecutionStage {
-    pub index: usize,
-    pub system_indices: Vec<usize>,
-    pub system_ids: Vec<SystemId>,
+#[derive(Debug, Clone)]
+pub(crate) struct ExecutionStage {
+    pub(crate) system_indices: Vec<usize>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ExecutionPlan {
-    pub label: ScheduleKey,
-    pub stages: Vec<ExecutionStage>,
-    pub conflicts: Vec<ExecutionConflict>,
+#[derive(Debug, Clone)]
+pub(crate) struct ExecutionPlan {
+    pub(crate) label: ScheduleKey,
+    pub(crate) stages: Vec<ExecutionStage>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
 pub enum ScheduleValidationError {
     #[error("schedule '{schedule}' has cyclic system ordering constraints")]
     OrderingCycle { schedule: &'static str },
+    #[error("schedule system identity space is exhausted")]
+    SystemIdentityExhausted,
 }
 
 /// ECS-owned registry for deterministic schedule planning and serial execution.
@@ -46,7 +33,7 @@ pub(crate) struct ScheduleRegistry {
     systems: Vec<RegisteredSystem>,
     plans: Vec<ExecutionPlan>,
     dirty: bool,
-    next_system_id: u64,
+    next_system_id: Option<std::num::NonZeroU64>,
 }
 
 impl Default for ScheduleRegistry {
@@ -61,29 +48,34 @@ impl ScheduleRegistry {
             systems: Vec::new(),
             plans: Vec::new(),
             dirty: true,
-            next_system_id: 0,
+            next_system_id: std::num::NonZeroU64::new(1),
         }
     }
 
-    pub fn add_system(&mut self, mut system: RegisteredSystem) -> usize {
-        let system_id = SystemId::from_raw(self.next_system_id);
-        self.next_system_id = self.next_system_id.saturating_add(1);
+    pub fn add_system(
+        &mut self,
+        mut system: RegisteredSystem,
+    ) -> Result<usize, ScheduleValidationError> {
+        let system_id = self
+            .next_system_id
+            .ok_or(ScheduleValidationError::SystemIdentityExhausted)?;
+        self.next_system_id = system_id
+            .get()
+            .checked_add(1)
+            .and_then(std::num::NonZeroU64::new);
+        let system_id = SystemId::new(system_id);
         system.assign_id(system_id);
         let index = self.systems.len();
         self.systems.push(system);
         self.dirty = true;
-        index
-    }
-
-    pub fn systems(&self) -> &[RegisteredSystem] {
-        &self.systems
+        Ok(index)
     }
 
     pub fn systems_mut(&mut self) -> &mut [RegisteredSystem] {
         &mut self.systems
     }
 
-    pub fn plan_for<L: ScheduleLabel>(
+    pub(crate) fn plan_for<L: ScheduleLabel>(
         &mut self,
     ) -> Result<Option<&ExecutionPlan>, ScheduleValidationError> {
         self.rebuild_if_dirty()?;
@@ -109,8 +101,6 @@ impl ScheduleRegistry {
     }
 
     fn build_plan(&self, label: ScheduleKey) -> Result<ExecutionPlan, ScheduleValidationError> {
-        let build_start = Instant::now();
-        let mut conflict_check_count = 0_u64;
         let scheduled_indices = self
             .systems
             .iter()
@@ -154,11 +144,9 @@ impl ScheduleRegistry {
             ready.clear();
 
             let mut system_indices = Vec::with_capacity(stage_positions.len());
-            let mut system_ids = Vec::with_capacity(stage_positions.len());
             for position in &stage_positions {
                 let system_index = scheduled_indices[*position];
                 system_indices.push(system_index);
-                system_ids.push(self.systems[system_index].id());
             }
             scheduled_count = scheduled_count.saturating_add(stage_positions.len());
 
@@ -171,11 +159,7 @@ impl ScheduleRegistry {
                 }
             }
 
-            stages.push(ExecutionStage {
-                index: stages.len(),
-                system_indices,
-                system_ids,
-            });
+            stages.push(ExecutionStage { system_indices });
         }
 
         if scheduled_count != scheduled_indices.len() {
@@ -184,34 +168,7 @@ impl ScheduleRegistry {
             });
         }
 
-        let mut conflicts = Vec::new();
-        for (left_pos, left_index) in scheduled_indices.iter().enumerate() {
-            let left = &self.systems[*left_index];
-            for right_index in scheduled_indices.iter().skip(left_pos + 1) {
-                let right = &self.systems[*right_index];
-                conflict_check_count = conflict_check_count.saturating_add(1);
-                for conflict in left.access().conflicts_with(right.access()) {
-                    conflicts.push(ExecutionConflict {
-                        first_system_id: left.id(),
-                        first_system: left.name().to_string(),
-                        second_system_id: right.id(),
-                        second_system: right.name().to_string(),
-                        conflict,
-                    });
-                }
-            }
-        }
-
-        let plan = ExecutionPlan {
-            label,
-            stages,
-            conflicts,
-        };
-        telemetry::record_schedule_plan_build(
-            build_start.elapsed().as_nanos() as u64,
-            conflict_check_count,
-            plan.stages.len() as u64,
-        );
+        let plan = ExecutionPlan { label, stages };
         Ok(plan)
     }
 }

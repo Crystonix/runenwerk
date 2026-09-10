@@ -53,7 +53,7 @@ pub struct RenderSurfaceDiagnostic {
     pub message: String,
 }
 
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct RenderSurfaceRegistryResource {
     primary_surface_id: Option<RenderSurfaceId>,
     next_surface_raw: u64,

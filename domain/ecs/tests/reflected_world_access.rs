@@ -1,19 +1,19 @@
-use ecs::prelude::*;
+use runen_ecs::prelude::*;
 use std::any::TypeId;
 
-#[derive(Debug, Clone, ecs::Reflect)]
+#[derive(Debug, Clone, runen_ecs::Reflect)]
 struct Vec2 {
     x: f32,
     y: f32,
 }
 
-#[derive(Debug, Clone, ecs::Component, ecs::Reflect)]
+#[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Reflect)]
 struct Position {
     value: Vec2,
     speed: f32,
 }
 
-#[derive(Debug, Clone, ecs::Resource, ecs::Reflect)]
+#[derive(Debug, Clone, runen_ecs::Resource, runen_ecs::Reflect)]
 struct CameraSettings {
     zoom: f32,
     exposure: f32,

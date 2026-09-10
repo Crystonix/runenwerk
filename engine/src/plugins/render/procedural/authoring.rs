@@ -48,7 +48,7 @@ impl ProceduralPassBuilder {
         projection: F,
     ) -> Result<Self, RenderFlowAuthoringError>
     where
-        S: ecs::Resource + Send + Sync + 'static,
+        S: runen_ecs::Resource + Send + Sync + 'static,
         U: GpuParams + Send + Sync + 'static,
         F: Fn(&S) -> U + Send + Sync + 'static,
     {
@@ -68,7 +68,7 @@ impl ProceduralPassBuilder {
         projection: F,
     ) -> Result<Self, RenderFlowAuthoringError>
     where
-        S: ecs::Resource + Send + Sync + 'static,
+        S: runen_ecs::Resource + Send + Sync + 'static,
         U: GpuParams + Send + Sync + 'static,
         F: Fn(&S, (u32, u32)) -> U + Send + Sync + 'static,
     {
@@ -92,7 +92,7 @@ impl ProceduralPassBuilder {
         projection: F,
     ) -> Self
     where
-        S: ecs::Resource + Send + Sync + 'static,
+        S: runen_ecs::Resource + Send + Sync + 'static,
         U: GpuParams + Send + Sync + 'static,
         F: Fn(&S) -> U + Send + Sync + 'static,
     {
@@ -110,7 +110,7 @@ impl ProceduralPassBuilder {
         projection: F,
     ) -> Self
     where
-        S: ecs::Resource + Send + Sync + 'static,
+        S: runen_ecs::Resource + Send + Sync + 'static,
         U: GpuParams + Send + Sync + 'static,
         F: Fn(&S, (u32, u32)) -> U + Send + Sync + 'static,
     {

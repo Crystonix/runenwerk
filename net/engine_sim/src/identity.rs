@@ -15,8 +15,8 @@ static NEXT_SESSION_ID: AtomicU64 = AtomicU64::new(1);
     Default,
     Serialize,
     Deserialize,
-    ecs::Component,
-    ecs::Resource,
+    runen_ecs::Component,
+    runen_ecs::Resource,
 )]
 pub struct SimulationTick(pub u64);
 
@@ -31,8 +31,8 @@ pub struct SimulationTick(pub u64);
     Hash,
     Serialize,
     Deserialize,
-    ecs::Component,
-    ecs::Resource,
+    runen_ecs::Component,
+    runen_ecs::Resource,
 )]
 pub struct SimulationSessionId(pub u64);
 
@@ -59,8 +59,8 @@ impl SimulationSessionId {
     Hash,
     Serialize,
     Deserialize,
-    ecs::Component,
-    ecs::Resource,
+    runen_ecs::Component,
+    runen_ecs::Resource,
 )]
 pub struct SimulationSeed(pub u64);
 

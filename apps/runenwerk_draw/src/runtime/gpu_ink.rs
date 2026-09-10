@@ -37,14 +37,14 @@ const DRAWING_GPU_INK_DIFF_PREFIX: &str = "runenwerk.draw.ink.gpu.diff.";
 const DRAWING_GPU_MAX_CHANNEL_DELTA: u8 = 2;
 const DRAWING_GPU_MAX_CHANGED_PIXELS_PER_MILLION: u32 = 10_000;
 
-#[derive(Debug, Clone, Copy, ecs::Resource)]
+#[derive(Debug, Clone, Copy, runen_ecs::Resource)]
 pub struct DrawingInkGpuFlowResource {
     pub flow_id: RenderFlowId,
     pub cpu_reference_pass_id: RenderPassId,
     pub gpu_output_pass_id: RenderPassId,
 }
 
-#[derive(Debug, Default, ecs::Resource)]
+#[derive(Debug, Default, runen_ecs::Resource)]
 pub struct DrawingInkGpuValidationReportCursorResource {
     last_frame_index: Option<u64>,
 }

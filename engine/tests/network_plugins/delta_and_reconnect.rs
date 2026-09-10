@@ -1,5 +1,5 @@
 // Owner: Engine Networking Tests - Delta and Connection-Scoped Replication
-#[derive(Debug, Copy, Clone, Default, ecs::Resource)]
+#[derive(Debug, Copy, Clone, Default, runen_ecs::Resource)]
 struct NetworkTestFrameDelta(f32);
 
 fn apply_network_test_frame_delta(

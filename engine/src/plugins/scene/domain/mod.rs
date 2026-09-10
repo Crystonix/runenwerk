@@ -116,26 +116,38 @@ pub struct SceneTransitionResult {
 }
 
 #[derive(
-    Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize, ecs::Component, ecs::Resource,
+    Debug,
+    Copy,
+    Clone,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+    runen_ecs::Component,
+    runen_ecs::Resource,
 )]
 pub struct WorldFrameCounter {
     pub value: u64,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize, ecs::Component, ecs::Resource)]
+#[derive(
+    Debug, Copy, Clone, PartialEq, Serialize, Deserialize, runen_ecs::Component, runen_ecs::Resource,
+)]
 pub struct WorldDebugPosition {
     pub x: f32,
     pub y: f32,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize, ecs::Component, ecs::Resource)]
+#[derive(
+    Debug, Copy, Clone, PartialEq, Serialize, Deserialize, runen_ecs::Component, runen_ecs::Resource,
+)]
 pub struct WorldDebugVelocity {
     pub x: f32,
     pub y: f32,
 }
 
 pub struct WorldSceneContext {
-    pub world: ecs::World,
+    pub world: runen_ecs::World,
     pub world_scene_label: String,
     pub gameplay_config: GameplayConfig,
     pub delta_seconds: f32,
@@ -150,8 +162,8 @@ pub struct WorldSceneContext {
     pub camera_yaw: f32,
     pub camera_pitch: f32,
     pub camera_distance: f32,
-    pub tick_entity: ecs::Entity,
-    pub debug_entity: ecs::Entity,
+    pub tick_entity: runen_ecs::Entity,
+    pub debug_entity: runen_ecs::Entity,
     pub frame_count: u64,
     pub enemy_kills: u32,
     pub outbound_notifications: Vec<WorldToOverlayMessage>,
@@ -172,7 +184,7 @@ impl WorldSceneRuntime {
 }
 
 pub struct OverlaySceneRuntime {
-    pub world: ecs::World,
+    pub world: runen_ecs::World,
     pub ui: ConsoleUiRuntimeState,
 }
 
@@ -231,7 +243,7 @@ pub fn build_overlay_runtime(
     scale: f32,
     registry: &SceneRegistry,
 ) -> Result<OverlaySceneRuntime> {
-    let mut world = ecs::World::new();
+    let mut world = runen_ecs::World::new();
     let mut ui = initialize_console_ui(&mut world)?;
     ui.screen_size = screen_size;
     ui.scale = scale;
@@ -324,7 +336,7 @@ fn world_scene_debug_motion_system(ctx: &mut WorldSceneContext) -> Result<()> {
 
 pub fn build_world_scene_runtime(scene: SceneId) -> Result<WorldSceneRuntime> {
     let (gameplay_config, gameplay_config_modified) = load_gameplay_config_with_modified();
-    let mut world = ecs::World::new();
+    let mut world = runen_ecs::World::new();
     let tick_entity = world.spawn(WorldFrameCounter { value: 0 })?;
     let debug_entity = world.spawn((
         WorldDebugPosition { x: 0.0, y: 0.0 },

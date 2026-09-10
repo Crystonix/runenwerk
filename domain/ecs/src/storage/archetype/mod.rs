@@ -1,4 +1,4 @@
-// Owner: ecs Storage - Archetype Registry and Location Tracking
+// Owner: RunenECS Storage - Archetype Registry and Location Tracking
 mod location;
 mod registry;
 

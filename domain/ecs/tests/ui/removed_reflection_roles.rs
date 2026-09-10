@@ -1,4 +1,4 @@
-use ecs::ReflectComponent;
+use runen_ecs::ReflectComponent;
 
 #[derive(ReflectComponent)]
 struct RemovedRole {

@@ -114,7 +114,7 @@ struct SceneTemplateInteractionState {
     hold: BTreeMap<SceneTemplateButtonSlot, HoldProgress>,
 }
 
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub(crate) struct SceneTemplateFlowResource {
     scenes: BTreeMap<String, SceneTemplateSceneSpec>,
     active_scene_id: Option<String>,

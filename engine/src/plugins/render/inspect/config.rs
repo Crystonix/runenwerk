@@ -152,7 +152,7 @@ impl RenderTextureDiffRequest {
     }
 }
 
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct RenderDebugConfigResource {
     pub capture_selectors: Vec<RenderCaptureSelector>,
     pub pixel_probes: Vec<RenderPixelProbeRequest>,
@@ -184,7 +184,7 @@ impl RenderFrameDiagnosticsMode {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Copy, PartialEq, runen_ecs::Component, runen_ecs::Resource)]
 pub struct RenderFrameDiagnosticsPolicyResource {
     pub mode: RenderFrameDiagnosticsMode,
     pub slow_frame_threshold_ms: f32,
@@ -218,7 +218,7 @@ impl RenderFrameDiagnosticsPolicyResource {
     }
 }
 
-#[derive(Debug, Clone, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Resource)]
 pub struct RenderDebugControlResource {
     pub provenance_enabled: bool,
     pub capture_enabled: bool,

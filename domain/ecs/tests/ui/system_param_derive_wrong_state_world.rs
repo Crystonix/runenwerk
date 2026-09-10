@@ -1,9 +1,9 @@
-#[derive(ecs::SystemParam)]
+#[derive(runen_ecs::SystemParam)]
 struct WrongOrder<'w, 's> {
-    query: ecs::Query<'s, 'w, &'static Marker>,
+    query: runen_ecs::Query<'s, 'w, &'static Marker>,
 }
 
-#[derive(ecs::Component)]
+#[derive(runen_ecs::Component)]
 struct Marker;
 
 fn main() {}

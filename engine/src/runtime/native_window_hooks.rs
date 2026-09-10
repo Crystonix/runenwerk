@@ -1,7 +1,7 @@
 //! Native window hook extension points for platform adapters.
 
 use anyhow::Result;
-use ecs::World;
+use runen_ecs::World;
 use winit::event::{DeviceEvent, WindowEvent};
 use winit::event_loop::EventLoopBuilder;
 use winit::window::Window;
@@ -59,7 +59,7 @@ pub struct NativeWindowHookRegistryResource {
     diagnostics: Vec<NativeWindowHookDiagnostic>,
 }
 
-impl ecs::Resource for NativeWindowHookRegistryResource {}
+impl runen_ecs::Resource for NativeWindowHookRegistryResource {}
 
 impl NativeWindowHookRegistryResource {
     pub fn register_hook(&mut self, hook: impl NativeWindowHook) {

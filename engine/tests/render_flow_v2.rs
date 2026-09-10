@@ -37,7 +37,7 @@ struct ComposeParams {
     surface: [f32; 2],
 }
 
-#[derive(Debug, Clone, ecs::Resource)]
+#[derive(Debug, Clone, runen_ecs::Resource)]
 struct FlowState {
     tick: u32,
     grid: [u32; 2],

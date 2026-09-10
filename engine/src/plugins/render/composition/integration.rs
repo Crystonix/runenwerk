@@ -5,7 +5,7 @@ use crate::plugins::render::graph::{CompiledRenderFlowPlan, compile_flow_plan_ch
 use crate::runtime::ResMut;
 use std::collections::BTreeMap;
 
-#[derive(Debug, Default, ecs::Resource)]
+#[derive(Debug, Default, runen_ecs::Resource)]
 pub struct RenderFlowRegistryResource {
     flows: BTreeMap<RenderFlowId, RenderFlow>,
     compiled_flows: Vec<CompiledRenderFlowPlan>,

@@ -728,7 +728,7 @@ impl NativeTabletSampleTelemetry {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, PartialEq, runen_ecs::Component, runen_ecs::Resource)]
 pub struct NativeTabletDeviceControlResource {
     pub backend_preference: NativeTabletBackendPreference,
     pub calibration: PointerCalibration,
@@ -760,7 +760,7 @@ impl NativeTabletDeviceControlResource {
     }
 }
 
-#[derive(Debug, Clone, Default, PartialEq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, PartialEq, runen_ecs::Component, runen_ecs::Resource)]
 pub struct NativeTabletFrameResource {
     pub events: Vec<UiInputEvent>,
     pub devices: Vec<NativeTabletDeviceDescriptor>,
@@ -777,7 +777,7 @@ impl NativeTabletFrameResource {
     }
 }
 
-#[derive(Debug, Clone, Default, PartialEq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, PartialEq, runen_ecs::Component, runen_ecs::Resource)]
 pub struct NativeTabletRuntimeResource {
     pending_packets: VecDeque<NativeTabletPacket>,
     pub devices: Vec<NativeTabletDeviceDescriptor>,

@@ -381,7 +381,7 @@ impl Default for RuntimeJobExecutorResource {
     }
 }
 
-impl ecs::Resource for RuntimeJobExecutorResource {}
+impl runen_ecs::Resource for RuntimeJobExecutorResource {}
 
 impl RuntimeJobExecutorResource {
     pub fn with_config(config: RuntimeJobExecutorConfig) -> Self {

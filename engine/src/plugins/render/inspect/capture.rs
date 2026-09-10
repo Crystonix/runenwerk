@@ -196,7 +196,7 @@ impl RenderCapturedTexture {
     }
 }
 
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct RenderCapturedTextureState {
     pub frame_index: u64,
     pub captures: Vec<RenderCapturedTexture>,

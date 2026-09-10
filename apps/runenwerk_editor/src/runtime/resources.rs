@@ -58,14 +58,14 @@ pub const EDITOR_VIEWPORT_MAX_MODEL_MESH_MATERIAL_REGIONS: usize = 16;
 
 pub use editor_viewport::ViewportDebugStage as EditorViewportDebugStage;
 
-#[derive(ecs::Component, ecs::Resource)]
+#[derive(runen_ecs::Component, runen_ecs::Resource)]
 pub struct EditorHostResource {
     pub app: RunenwerkEditorApp,
     pub shell_state: RunenwerkEditorShellState,
     pub theme: ThemeTokens,
 }
 
-#[derive(Default, ecs::Resource)]
+#[derive(Default, runen_ecs::Resource)]
 pub struct RuntimePreviewProcessResource {
     pub manager: PreviewProcessManager,
 }
@@ -727,7 +727,7 @@ pub fn scaled_shell_theme(theme: &ThemeTokens, scale_factor: f64) -> ThemeTokens
     theme.scaled_by(effective_shell_scale(scale_factor))
 }
 
-#[derive(Debug, Default, Clone, ecs::Component, ecs::Resource)]
+#[derive(Debug, Default, Clone, runen_ecs::Component, runen_ecs::Resource)]
 pub struct EditorInputBridgeState {
     pub last_mouse_position: (f32, f32),
     pub last_logged_picking_revision: u64,
@@ -1169,7 +1169,7 @@ impl EditorViewportBranchTraceSnapshot {
     }
 }
 
-#[derive(Debug, Clone, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Resource)]
 pub struct EditorViewportRenderState {
     pub viewport_bounds_px: (f32, f32, f32, f32),
     pub effective_shell_scale: f32,

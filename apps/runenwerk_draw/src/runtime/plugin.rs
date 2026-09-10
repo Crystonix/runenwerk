@@ -1,12 +1,12 @@
 //! Drawing app runtime plugin.
 
-use ecs::SystemSetKey;
 use engine::plugins::render::SurfaceFrameSubmissionRegistryResource;
 use engine::prelude::*;
 use engine::runtime::{
     CoreSet, IntoSystemSetKey, RuntimeJobExecutorConfig, RuntimeJobExecutorResource,
     SystemConfigExt,
 };
+use runen_ecs::SystemSetKey;
 
 use crate::runtime::gpu_ink::{
     DrawingInkGpuValidationReportCursorResource, process_drawing_ink_gpu_validation_report_system,

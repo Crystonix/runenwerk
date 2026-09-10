@@ -1,4 +1,4 @@
-// Owner: ecs Storage - Phase 6 Archetype Foundations
+// Owner: RunenECS Storage - Phase 6 Archetype Foundations
 pub(crate) mod archetype;
 pub(crate) mod dense;
 

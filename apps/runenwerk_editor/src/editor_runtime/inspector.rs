@@ -16,7 +16,7 @@ impl<'a> RunenwerkEditorInspectorBridge<'a> {
 }
 
 impl<'a> EcsInspectorBridge for RunenwerkEditorInspectorBridge<'a> {
-    fn resolve_entity(&self, entity_id: EntityId) -> Option<ecs::Entity> {
+    fn resolve_entity(&self, entity_id: EntityId) -> Option<runen_ecs::Entity> {
         self.ids.resolve_entity(entity_id)
     }
 

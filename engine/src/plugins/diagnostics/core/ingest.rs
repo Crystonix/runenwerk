@@ -14,13 +14,13 @@ pub struct DiagnosticsEntrySubmission {
     pub attachments: Vec<DiagnosticsAttachment>,
 }
 
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct DiagnosticsPendingReportsResource {
     pub by_frame_index: BTreeMap<u64, DiagnosticsFrameReport>,
 }
 
 pub fn submit_diagnostics_entry(
-    world: &mut ecs::World,
+    world: &mut runen_ecs::World,
     submission: DiagnosticsEntrySubmission,
 ) -> anyhow::Result<()> {
     let plan = resolved_plan_snapshot(world);
@@ -86,7 +86,7 @@ pub fn finalize_diagnostics_reports_system(mut world: WorldMut) {
     world.insert_resource(store);
 }
 
-fn resolved_plan_snapshot(world: &ecs::World) -> ResolvedDiagnosticsPlan {
+fn resolved_plan_snapshot(world: &runen_ecs::World) -> ResolvedDiagnosticsPlan {
     if let Ok(plan) = world.resource::<ResolvedDiagnosticsPlan>() {
         return plan.clone();
     }
@@ -104,7 +104,7 @@ mod tests {
 
     #[test]
     fn ingest_merges_entries_into_same_frame_report() {
-        let mut world = ecs::World::new();
+        let mut world = runen_ecs::World::new();
         world.insert_resource(DiagnosticsConfigResource::default());
         world.insert_resource(ResolvedDiagnosticsPlan::default());
         world.insert_resource(DiagnosticsPendingReportsResource::default());

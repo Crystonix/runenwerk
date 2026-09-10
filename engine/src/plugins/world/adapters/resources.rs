@@ -10,7 +10,7 @@ use world_sdf::{
 
 macro_rules! resource_wrapper {
     ($name:ident, $inner:ty) => {
-        #[derive(Debug, Clone, Default, ecs::Resource)]
+        #[derive(Debug, Clone, Default, runen_ecs::Resource)]
         pub struct $name(pub $inner);
 
         impl Deref for $name {
@@ -42,7 +42,7 @@ resource_wrapper!(CaveSectorResource, CaveSectorStore);
 resource_wrapper!(CavePortalGraphResource, CavePortalGraph);
 resource_wrapper!(CaveLightingScopeResource, CaveLightingScope);
 
-#[derive(Debug, Copy, Clone, Default, ecs::Resource)]
+#[derive(Debug, Copy, Clone, Default, runen_ecs::Resource)]
 pub struct CollisionQueryServiceResource(pub CollisionQueryService);
 
 impl Deref for CollisionQueryServiceResource {

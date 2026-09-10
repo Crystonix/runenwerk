@@ -21,13 +21,12 @@ Commands are deferred structural mutations collected during system execution and
 ## Key Concepts
 
 - `Commands`: per-system deferred command queue.
-- `DeferredCommand<T>`: typed deferred command extension trait.
 - `BatchCommands`: grouped command list applied in deterministic order.
 - **Deferred Apply Boundary**: ECS-owned visibility point reported only after the corresponding queued commands have been applied successfully.
 
 ## API Notes
 
-- Helpers: `spawn`, `despawn`, `insert`, `remove`, `queue`, `defer`, `batch`.
+- Helpers: `spawn`, `despawn`, `insert`, `remove`, `queue`, and `batch`.
 - `commands.apply(world)` applies queued commands immediately when using manual world commands outside runtime-managed system execution.
 - Runtime-managed `Commands` params are scope-bound to the system execution and collected by the runtime.
 - Current planner stages may determine where the serial reference executor performs a flush, but planner-stage identity is not the public deferred-visibility contract.

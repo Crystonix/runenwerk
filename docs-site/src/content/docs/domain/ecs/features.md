@@ -1,62 +1,34 @@
 ---
 title: Feature Map
-description: Current capability map for the ecs crate.
+description: Current capability map for the standalone RunenECS package.
 status: active
-owner: ecs
+owner: runen-ecs
 layer: domain
 canonical: true
 last_reviewed: 2026-09-10
 ---
 
-- ✅ Core-supported
-- ⚠ Partial / constrained support
-- ❌ Missing / outside the current public contract
-
 | Area | Capability | Status | Notes |
 | --- | --- | --- | --- |
-| **Derives** | `Component` | ✅ | Stable derive and runtime registration flow. |
-|  | `Resource` | ✅ | Stable derive and resource lifecycle APIs. |
-|  | `Bundle` | ✅ | Supported for spawn/insert/remove composition. |
-|  | `StatefulComponent` | ✅ | Generation/version state is available and explicit-change APIs are implemented. |
-|  | `Event` derive (`#[derive(Event)]`) | ❌ | Generic event-channel transport is not part of the current RunenECS public contract. |
-| **World Core** | Entities (`spawn`, `despawn`, `entity`, `entity_mut`) | ✅ | Core lifecycle is stable with archetype-backed storage. |
-|  | Resources (`insert_resource`, `resource`, `resource_mut`, `remove_resource`) | ✅ | Includes change-log reporting APIs. |
-|  | Change logs (`component_changes_since`, `resource_changes_since`) | ✅ | Reporting layer is separate from query filter semantics. |
-| **Queries** | `Query<&T>`, `Query<&mut T>`, tuples, optional forms | ✅ | Core query surface is in place. |
-|  | Filters `With`, `Without`, `Added`, `Changed` | ✅ | Filter semantics backed by archetype metadata ticks. |
-|  | Reusable `QueryState<Q, F>` | ✅ | Detached query state and cache reuse supported. |
-|  | `QueryOrphaned<T>` / `QueryOrphanedState<T>` | ✅ | Current removed-component observation window is supported; planner-stage identity is not part of its public meaning. |
-|  | Query history / undo-oriented query APIs | ❌ | Not part of current ECS scope. |
-| **System Params** | `Res<T>`, `ResMut<T>`, `ResView<T>` | ✅ | `ResView<T>` is currently a type alias for read-only resource access. |
-|  | `Commands` param | ✅ | Deferred structural mutation param with runtime scope protection. |
-|  | Generic event reader/writer params | ❌ | No current `BroadcastReader` / `BroadcastWriter` compatibility surface is retained. |
-| **Commands / Runtime** | `Commands` queue + `apply` | ✅ | Deferred commands are collected and flushed at ECS deferred-apply boundaries. |
-|  | `DeferredCommand<T>` | ✅ | Typed deferred command trait is available. |
-|  | `BatchCommands` | ✅ | Ordered batched mutations are implemented. |
-|  | Schedule-failure command isolation | ✅ | Commands from failed runs are discarded, not replayed on later runs. |
-|  | Conditional command DSL (`ConditionalCommands`) | ❌ | No dedicated conditional command primitive. |
-| **Scheduling** | Schedule labels and system sets | ✅ | Owned by RunenECS; explicit `before` / `after` relations define semantic ordering. |
-|  | Access conflict facts | ✅ | Read/write incompatibilities are reported independently of semantic ordering. |
-|  | Deterministic serial reference execution | ✅ | Systems execute deterministically; access conflicts do not create ordering edges. |
-|  | Deferred-apply boundaries | ✅ | Deferred structural mutations become visible only after an ECS deferred-apply boundary. |
-|  | Execution stages | ✅ | Current plan/report grouping for execution and diagnostics; stage identity is not host lifecycle or publication identity. |
-| **Events / Reactivity** | Generic world event channels | ❌ | The retired broadcast/channel model is not part of current RunenECS. |
-|  | Generic channel configuration / observers / drain helpers | ❌ | No compatibility surface for the retired C6 messaging APIs is retained. |
-| **Indexes** | Component secondary indexes | ✅ | Named indexes keyed by `(component type, key type, name)`. |
-|  | Multiple named indexes per component | ✅ | Supported via `ensure_component_index_named` / `find_*_by_index_named`. |
-| **Telemetry** | Feature-gated telemetry (`reset`, `snapshot`) | ✅ | Runtime/query/schedule/command instrumentation is available behind `telemetry`. |
-|  | Dedicated query profiler APIs | ❌ | No separate high-level profiler subsystem yet. |
+| Derives | `Component`, `Resource`, `Bundle` | ✅ | Supported for normal world lifecycle operations. |
+| Derives | `Reflect` | ✅ | Standalone type metadata and reflected value access. |
+| World | Entities and resources | ✅ | Opaque world-local entities and typed world resources. |
+| World | `ChangeCursor` | ✅ | Lightweight ordered ECS observation position; absolute exhaustion fails before reuse. |
+| Queries | `Query`, `QueryState`, tuples, optional forms | ✅ | Storage-independent typed component access. |
+| Queries | `With`, `Without`, `Added`, `Changed` | ✅ | ECS-local filter semantics. |
+| Queries | `RemovedQuery`, `RemovedState` | ✅ | Current removed-component observation window after deferred structural changes. |
+| System params | `Res`, `ResMut`, `WorldMut`, `Commands` | ✅ | `WorldMut` is the built-in exclusive whole-world parameter. |
+| Commands | `queue`, `spawn`, `despawn`, `insert`, `remove`, `batch`, `apply` | ✅ | Deferred structural mutations with deterministic serial application. |
+| Runtime | Schedule labels and system sets | ✅ | Explicit `before` / `after` ordering with cycle validation. |
+| Runtime | Deferred-apply boundaries | ✅ | ECS-neutral visibility points reported after successful flushes. |
+| Runtime | Structured errors | ✅ | ECS-owned setup, schedule, parameter, command, system, boundary, and invariant categories. |
+| Runtime | Deterministic serial execution | ✅ | Registration order is the tie-break for otherwise unordered systems. |
+| Extension boundary | Manual `SystemParam` implementation | ⚠ | Low-level unsafe contract is doc-hidden and unsupported for downstream code; use derives or built-ins. |
+| Events / telemetry / history | Generic channels, process-global telemetry, unbounded change journals | ❌ | Outside the retained RunenECS public contract. |
 
-## Notes on Scope
+RunenECS has no application lifecycle, rendering, networking, replay, product,
+or host-frame policy. Access compatibility is separate from semantic ordering;
+it does not create ordering edges or visibility boundaries.
 
-Current ECS priorities are core runtime correctness, deterministic scheduling/deferred-visibility semantics, and maintainable module boundaries (`world`, `commands`, `query`, `system`). Access compatibility is scheduling metadata; it does not imply semantic execution order. Current execution-stage indices are planning/diagnostic facts and must not be used as application publication identity.
-
-Generic event/channel transport, editor-facing reflection policy, network replication derives, and history/undo primitives are not part of the current RunenECS public contract.
-
-## Related Current Authority
-
-- [Accepted RunenECS extraction boundary](../../design/accepted/runenecs-extraction-boundary-design.md)
-- [Accepted RunenECS boundary repair plan](../../design/accepted/runenecs-boundary-repair-execution-plan.md)
-- [Current multiplayer replication implementation roadmap](../../net/multiplayer-replication-implementation-roadmap.md)
-
-The older ECS/runtime feature inventory, gap summary, and convergence roadmap are superseded historical snapshots and are not current RunenECS authority.
+The public package identity is `runen-ecs` and the Rust crate identity is
+`runen_ecs`. The companion derive package is `runen-ecs-macros`.

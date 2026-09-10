@@ -10,10 +10,7 @@ pub mod component;
 pub mod entity;
 pub mod resource;
 
-pub use change_tracking::{
-    ComponentChangeKind, ComponentChangeRecord, ComponentTypeKey, ResourceChangeKind,
-    ResourceChangeRecord, ResourceTypeKey,
-};
+pub use change_tracking::ChangeCursor;
 pub use entity_handles::{EntityMut, EntityRef, Mut};
 pub use state::World;
 

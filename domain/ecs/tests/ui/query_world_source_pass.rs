@@ -1,11 +1,11 @@
-#[derive(ecs::Component)]
+#[derive(runen_ecs::Component)]
 struct A;
 
-#[derive(ecs::Component)]
+#[derive(runen_ecs::Component)]
 struct B;
 
 fn main() {
-    let mut world = ecs::World::new();
+    let mut world = runen_ecs::World::new();
     let entity = world.spawn((A, B)).unwrap();
 
     let shared = world.query_state::<&A, ()>();
@@ -14,7 +14,7 @@ fn main() {
     let _ = shared.single(&world);
 
     let shared_shapes = [
-        world.query_state::<(ecs::Entity, &A), ()>().iter(&world).count(),
+        world.query_state::<(runen_ecs::Entity, &A), ()>().iter(&world).count(),
         world.query_state::<(&A, &B), ()>().iter(&world).count(),
         world.query_state::<Option<&A>, ()>().iter(&world).count(),
         world
@@ -22,7 +22,7 @@ fn main() {
             .iter(&world)
             .count(),
         world
-            .query_state::<(ecs::Entity, Option<&A>), ()>()
+            .query_state::<(runen_ecs::Entity, Option<&A>), ()>()
             .iter(&world)
             .count(),
         world

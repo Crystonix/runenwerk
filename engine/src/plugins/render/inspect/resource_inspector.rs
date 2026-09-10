@@ -4,13 +4,13 @@ use crate::plugins::render::{
 };
 use runen_gpu::GpuResourceLifetime;
 
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct RenderDebugOverlayState {
     pub enabled: bool,
     pub lines: Vec<String>,
 }
 
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct RenderRuntimeResourceInspectorState {
     pub entries: Vec<RuntimeResourceInspectionEntry>,
     pub pipeline_cache_hits: u64,

@@ -64,7 +64,7 @@ impl fmt::Display for PreparedRenderProductSelectionError {
 
 impl std::error::Error for PreparedRenderProductSelectionError {}
 
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct PreparedRenderProductSelectionResource {
     contributions: BTreeMap<RenderFrameProducerId, Vec<RenderProductSelection>>,
     diagnostics: Vec<PreparedRenderProductSelectionDiagnostic>,

@@ -144,7 +144,7 @@ impl ReplicationDriver for ReplicationProbeDriver {
     type Input = ReplicationProbeInput;
     type Error = io::Error;
 
-    fn capture_snapshot(world: &ecs::World) -> Result<Option<Self::Snapshot>, Self::Error> {
+    fn capture_snapshot(world: &runen_ecs::World) -> Result<Option<Self::Snapshot>, Self::Error> {
         let world_revision = world
             .resource::<WorldAuthorityState>()
             .map(|state| state.world_revision.0)
@@ -175,7 +175,7 @@ impl ReplicationDriver for ReplicationProbeDriver {
 
 impl SnapshotApplyDriver for ReplicationProbeDriver {
     fn apply_snapshot(
-        _world: &mut ecs::World,
+        _world: &mut runen_ecs::World,
         _tick: SimulationTick,
         _snapshot: Self::Snapshot,
     ) -> Result<bool, Self::Error> {
@@ -183,7 +183,7 @@ impl SnapshotApplyDriver for ReplicationProbeDriver {
     }
 
     fn apply_delta(
-        _world: &mut ecs::World,
+        _world: &mut runen_ecs::World,
         _tick: SimulationTick,
         _delta: Self::Delta,
     ) -> Result<bool, Self::Error> {
@@ -193,7 +193,7 @@ impl SnapshotApplyDriver for ReplicationProbeDriver {
 
 impl InputDriver for ReplicationProbeDriver {
     fn receive_remote_input(
-        _world: &mut ecs::World,
+        _world: &mut runen_ecs::World,
         _connection: ConnectionHandle,
         _tick: SimulationTick,
         _input: Vec<Self::Input>,
@@ -201,11 +201,14 @@ impl InputDriver for ReplicationProbeDriver {
         Ok(())
     }
 
-    fn take_local_input(_world: &mut ecs::World) -> Result<Vec<Self::Input>, Self::Error> {
+    fn take_local_input(_world: &mut runen_ecs::World) -> Result<Vec<Self::Input>, Self::Error> {
         Ok(Vec::new())
     }
 
-    fn apply_input(_world: &mut ecs::World, _input: &[Self::Input]) -> Result<(), Self::Error> {
+    fn apply_input(
+        _world: &mut runen_ecs::World,
+        _input: &[Self::Input],
+    ) -> Result<(), Self::Error> {
         Ok(())
     }
 }

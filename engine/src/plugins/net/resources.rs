@@ -1,9 +1,9 @@
 use super::*;
 use crate::{App, CoreSet, FixedUpdate, FrameEnd, PreUpdate, SystemConfigExt};
-use ecs::World;
 use engine_net::replication::{InputDriver, ReplicationDriver, SnapshotApplyDriver};
 use engine_net::*;
 use engine_sim::SimulationTick;
+use runen_ecs::World;
 use runen_net::identity::ConnectionHandle;
 use std::collections::{BTreeMap, BTreeSet, HashMap, VecDeque};
 
@@ -84,16 +84,16 @@ pub struct InboundClientMessage {
     pub message: ClientMessage,
 }
 
-#[derive(Debug, Clone, Default, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Resource)]
 pub struct NetworkClientInbox(PendingNetworkQueue<ServerMessage>);
 
-#[derive(Debug, Clone, Default, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Resource)]
 pub struct NetworkServerInbox(PendingNetworkQueue<InboundClientMessage>);
 
-#[derive(Debug, Clone, Default, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Resource)]
 pub struct NetworkClientOutbox(PendingNetworkQueue<ClientMessage>);
 
-#[derive(Debug, Clone, Default, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Resource)]
 pub struct NetworkServerOutbox(PendingNetworkQueue<OutboundServerMessage>);
 
 fn enqueue_pending<T>(
@@ -286,7 +286,7 @@ pub(crate) enum NetworkInputStageError<T> {
     Backpressure { capacity: usize, input: T },
 }
 
-#[derive(Debug, Clone, ecs::Resource)]
+#[derive(Debug, Clone, runen_ecs::Resource)]
 pub(crate) struct NetworkInputStaging<TInput>
 where
     TInput: Clone + PartialEq + 'static,
@@ -452,7 +452,7 @@ where
     );
 }
 
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct NetworkInboundQueue {
     client_messages: Vec<InboundClientMessage>,
     server_messages: Vec<ServerMessage>,
@@ -484,7 +484,7 @@ impl NetworkInboundQueue {
     }
 }
 
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct NetworkOutboundQueue {
     client_messages: Vec<ClientMessage>,
     server_messages: Vec<OutboundServerMessage>,
@@ -518,7 +518,7 @@ impl NetworkOutboundQueue {
 /// This does not authorize membership or connection lifecycle. `connected` and
 /// `active_connection_count` are synchronized from [`RunenNetSessionProjection`]; reconnect
 /// attempts and errors are host policy/diagnostics only.
-#[derive(Debug, Clone, Default, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 pub struct NetworkSessionStatus {
     pub connected: bool,
     pub active_connection_count: usize,
@@ -526,7 +526,7 @@ pub struct NetworkSessionStatus {
     pub reconnect_attempt: Option<u32>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 pub struct ConnectionHealth {
     pub connected: bool,
     pub close_events: u64,
@@ -534,7 +534,7 @@ pub struct ConnectionHealth {
     pub reconnect_events: u64,
 }
 
-#[derive(Debug, Copy, Clone, Default, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, Default, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 pub struct RoundTripMetrics {
     pub last_rtt_millis: Option<u32>,
     pub samples: u64,
@@ -637,7 +637,7 @@ impl ConnectionBaselineCheckpoint {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, PartialEq, runen_ecs::Component, runen_ecs::Resource)]
 pub struct ServerSnapshotReplicationState<TSnapshot>
 where
     TSnapshot: Clone + PartialEq + 'static,
@@ -667,7 +667,7 @@ where
     }
 }
 
-#[derive(Debug, Clone, PartialEq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, PartialEq, runen_ecs::Component, runen_ecs::Resource)]
 pub struct ClientSnapshotReplicationState<TSnapshot>
 where
     TSnapshot: Clone + PartialEq + 'static,
@@ -703,7 +703,7 @@ where
     pub commands: Vec<TInput>,
 }
 
-#[derive(Debug, Clone, PartialEq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, PartialEq, runen_ecs::Component, runen_ecs::Resource)]
 pub struct PredictionState<TInput>
 where
     TInput: Clone + PartialEq + 'static,
@@ -731,7 +731,7 @@ where
     }
 }
 
-#[derive(Debug, Copy, Clone, Default, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, Default, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 pub struct NetworkDiagnostics {
     pub processed_client_messages_last_frame: usize,
     pub processed_server_messages_last_frame: usize,
@@ -743,7 +743,7 @@ pub struct NetworkDiagnostics {
     pub reconnect_attempts: u64,
 }
 
-#[derive(Debug, Copy, Clone, Default, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, Default, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 pub struct ReplicationDiagnostics {
     pub fixed_steps_observed: u64,
     pub last_snapshot_cursor: u64,
@@ -754,7 +754,7 @@ pub struct ReplicationDiagnostics {
     pub lagged: u64,
 }
 
-#[derive(Debug, Copy, Clone, Default, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, Default, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 pub struct PredictionDiagnostics {
     pub fixed_steps_observed: u64,
     pub commands_applied: u64,
@@ -762,7 +762,7 @@ pub struct PredictionDiagnostics {
     pub corrected: u64,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 pub struct NetDiagnosticsView {
     pub connected: bool,
     pub active_connection_count: usize,

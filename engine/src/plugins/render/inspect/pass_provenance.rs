@@ -5,7 +5,7 @@ use crate::plugins::render::{
 };
 use runen_gpu::{GpuPrimitiveTopology, GpuTextureFormat};
 
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct RenderPassProvenanceState {
     pub frame_index: u64,
     pub records: Vec<RenderPassProvenanceRecord>,

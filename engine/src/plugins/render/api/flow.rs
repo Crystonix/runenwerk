@@ -67,7 +67,7 @@ impl RenderFlow {
 
     pub fn with_state<T>(mut self) -> Self
     where
-        T: ecs::Resource + 'static,
+        T: runen_ecs::Resource + 'static,
     {
         self.graph.resources.add_state_resource::<T>();
         self
@@ -911,7 +911,7 @@ mod tests {
         value: u32,
     }
 
-    #[derive(Debug, Clone, ecs::Resource)]
+    #[derive(Debug, Clone, runen_ecs::Resource)]
     struct TestState {
         value: u32,
     }

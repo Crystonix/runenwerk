@@ -55,7 +55,7 @@ pub struct PlatformWindowEvent {
     pub event: PlatformEvent,
 }
 
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct PlatformWindowEventQueueResource {
     events: Vec<PlatformWindowEvent>,
 }

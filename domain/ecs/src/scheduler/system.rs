@@ -1,24 +1,18 @@
 use crate::World;
+use crate::errors::RuntimeError;
 use crate::scheduler::access::{AccessConflict, SystemAccess};
 use crate::scheduler::label::{ScheduleKey, ScheduleLabel, SystemSet, SystemSetKey};
-use anyhow::Result;
+use std::num::NonZeroU64;
 
-pub type RunnableSystemFn = Box<dyn FnMut(&mut World) -> Result<()>>;
+pub(crate) type RunnableSystemFn = Box<dyn FnMut(&mut World) -> Result<(), RuntimeError>>;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct SystemId(u64);
+#[allow(dead_code)]
+#[derive(Debug, Copy, Clone)]
+pub struct SystemId(NonZeroU64);
 
 impl SystemId {
-    pub const fn unassigned() -> Self {
-        Self(u64::MAX)
-    }
-
-    pub const fn from_raw(value: u64) -> Self {
+    pub(crate) const fn new(value: NonZeroU64) -> Self {
         Self(value)
-    }
-
-    pub const fn as_raw(self) -> u64 {
-        self.0
     }
 }
 
@@ -83,8 +77,8 @@ impl RegisteredSystem {
     pub fn new<L>(
         name: impl Into<String>,
         access: SystemAccess,
-        run: impl FnMut(&mut World) -> Result<()> + 'static,
-    ) -> Result<Self>
+        run: impl FnMut(&mut World) -> Result<(), RuntimeError> + 'static,
+    ) -> Result<Self, RuntimeError>
     where
         L: ScheduleLabel,
     {
@@ -93,7 +87,7 @@ impl RegisteredSystem {
             .validate_internal()
             .map_err(|conflict| internal_access_error(&name, &conflict))?;
         Ok(Self {
-            id: SystemId::unassigned(),
+            id: SystemId::new(NonZeroU64::new(1).expect("literal system id is non-zero")),
             name,
             label: L::key(),
             sets: Vec::new(),
@@ -177,7 +171,7 @@ impl RegisteredSystem {
         &self.param_slots
     }
 
-    pub fn run(&mut self, world: &mut World) -> Result<()> {
+    pub(crate) fn run(&mut self, world: &mut World) -> Result<(), RuntimeError> {
         (self.run)(world)
     }
 
@@ -186,9 +180,11 @@ impl RegisteredSystem {
     }
 }
 
-fn internal_access_error(system_name: &str, conflict: &AccessConflict) -> anyhow::Error {
-    anyhow::anyhow!(
-        "system '{system_name}' has conflicting access: {}",
-        conflict.diagnostic_message()
-    )
+fn internal_access_error(system_name: &str, conflict: &AccessConflict) -> RuntimeError {
+    RuntimeError::Setup {
+        message: format!(
+            "system '{system_name}' has conflicting access: {}",
+            conflict.diagnostic_message()
+        ),
+    }
 }

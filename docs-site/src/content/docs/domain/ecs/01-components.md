@@ -27,14 +27,14 @@ Components represent per-entity state in the ECS. They are small, focused, and e
 
 ## Implementation / API
 
-Components derive `ecs::Component`. Resources derive `ecs::Resource`. Bundles derive `ecs::Bundle`.
+Components derive `runen_ecs::Component`. Resources derive `runen_ecs::Resource`. Bundles derive `runen_ecs::Bundle`.
 
 ### Basic Component
 
 Example of a per-entity component:
 
 ```rust
-#[derive(Debug, Copy, Clone, PartialEq, ecs::Component)]
+#[derive(Debug, Copy, Clone, PartialEq, runen_ecs::Component)]
 struct Position {
     x: f32,
     y: f32,
@@ -44,21 +44,21 @@ struct Position {
 
 Zero-sized markers for entities:
 ```rust
-#[derive(Debug, Copy, Clone, PartialEq, ecs::Component)]
+#[derive(Debug, Copy, Clone, PartialEq, runen_ecs::Component)]
 struct Player;
 ```
 ### Resource
 
 Singleton world data:
 ```rust
-#[derive(Debug, PartialEq, Eq, ecs::Resource)]
+#[derive(Debug, PartialEq, Eq, runen_ecs::Resource)]
 struct Frame(u64);
 ```
 ### Bundle
 
 Grouping multiple components:
 ```rust
-#[derive(Debug, PartialEq, ecs::Bundle)]
+#[derive(Debug, PartialEq, runen_ecs::Bundle)]
 struct CombatBundle {
 health: Health,
 name: Name,
@@ -120,6 +120,6 @@ world.resource_mut::<Frame>().unwrap().0 += 1;
 ## References & Links
 
 - [usage-guide.md](usage-guide.md) – Basic ECS API usage.
-- [advanced-guide.md](advanced-guide.md) – Deferred commands, scheduling, telemetry, and runtime integration.
+- [advanced-guide.md](advanced-guide.md) – Deferred commands, scheduling, and runtime integration.
 - [architecture.md](architecture.md) – Internal invariants and unsafe boundaries.
 - [features.md](features.md) – ECS feature map.

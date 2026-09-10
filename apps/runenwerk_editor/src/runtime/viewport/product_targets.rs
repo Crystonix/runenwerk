@@ -112,7 +112,7 @@ impl ViewportProductTargetRecord {
     }
 }
 
-#[derive(Debug, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct ViewportProductTargetRegistryResource {
     records: BTreeMap<ViewportProductTargetKey, ViewportProductTargetRecord>,
     generation: u64,

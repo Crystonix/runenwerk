@@ -1,5 +1,5 @@
 // Owner: Engine Networking Tests - Runtime and Replication
-#[derive(Debug, Copy, Clone, Default, ecs::Resource)]
+#[derive(Debug, Copy, Clone, Default, runen_ecs::Resource)]
 struct BackpressureFrameDelta(f32);
 
 fn apply_backpressure_frame_delta(

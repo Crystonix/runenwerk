@@ -1,23 +1,23 @@
 use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
-use ecs::{With, Without};
 use engine::prelude::*;
+use runen_ecs::{With, Without};
 
-#[derive(Debug, Copy, Clone, PartialEq, Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Component, runen_ecs::Resource)]
 struct Position {
     x: f32,
     y: f32,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Component, runen_ecs::Resource)]
 struct Velocity {
     x: f32,
     y: f32,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Component, runen_ecs::Resource)]
 struct Simulated;
 
-#[derive(Debug, Copy, Clone, PartialEq, Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Component, runen_ecs::Resource)]
 struct Disabled;
 
 struct Phase5bRuntimeBenchPlugin {

@@ -5,11 +5,11 @@ use crate::{
     EcsInspectorBridge, InspectTarget, InspectorAdapter, InspectorAdapterError, InspectorField,
     InspectorPath, InspectorSection, InspectorValue,
 };
-use ecs::reflect::{ReflectValueRef, StructValueRef};
 use editor_core::{ComponentTypeId, EntityId, ResourceTypeId};
+use runen_ecs::reflect::{ReflectValueRef, StructValueRef};
 
 pub struct EcsInspectorAdapter<'a, B> {
-    world: &'a ecs::World,
+    world: &'a runen_ecs::World,
     bridge: &'a B,
 }
 
@@ -17,7 +17,7 @@ impl<'a, B> EcsInspectorAdapter<'a, B>
 where
     B: EcsInspectorBridge,
 {
-    pub fn new(world: &'a ecs::World, bridge: &'a B) -> Self {
+    pub fn new(world: &'a runen_ecs::World, bridge: &'a B) -> Self {
         Self { world, bridge }
     }
 
@@ -171,7 +171,7 @@ fn build_enum_field(
     stable_name: String,
     display_name: String,
     path: InspectorPath,
-    enum_ref: ecs::reflect::EnumValueRef<'_>,
+    enum_ref: runen_ecs::reflect::EnumValueRef<'_>,
 ) -> InspectorField {
     let Some(current) = enum_ref.current_symbol() else {
         return InspectorField::new(
@@ -249,30 +249,30 @@ mod tests {
     use super::*;
     use crate::StaticEcsInspectorBridge;
 
-    #[derive(Debug, Clone, ecs::Reflect)]
+    #[derive(Debug, Clone, runen_ecs::Reflect)]
     struct Vec2 {
         x: f32,
         y: f32,
     }
 
-    #[derive(Debug, Clone, ecs::Component, ecs::Reflect)]
+    #[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Reflect)]
     struct Position {
         value: Vec2,
         speed: f32,
     }
 
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, ecs::Reflect)]
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, runen_ecs::Reflect)]
     enum TextureFilter {
         Nearest,
         Linear,
     }
 
-    #[derive(Debug, Clone, ecs::Component, ecs::Reflect)]
+    #[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Reflect)]
     struct SpritePreview {
         filter: TextureFilter,
     }
 
-    #[derive(Debug, Clone, ecs::Resource, ecs::Reflect)]
+    #[derive(Debug, Clone, runen_ecs::Resource, runen_ecs::Reflect)]
     struct CameraSettings {
         zoom: f32,
         exposure: f32,
@@ -280,7 +280,7 @@ mod tests {
 
     #[test]
     fn builds_component_sections_for_reflected_component() {
-        let mut world = ecs::World::new();
+        let mut world = runen_ecs::World::new();
         world.register_reflected_component::<Position>();
 
         let entity = world
@@ -313,7 +313,7 @@ mod tests {
 
     #[test]
     fn builds_resource_sections_for_reflected_resource() {
-        let mut world = ecs::World::new();
+        let mut world = runen_ecs::World::new();
         world.register_reflected_resource::<CameraSettings>();
         world.insert_resource(CameraSettings {
             zoom: 2.0,
@@ -339,7 +339,7 @@ mod tests {
 
     #[test]
     fn builds_enum_fields_for_reflected_component() {
-        let mut world = ecs::World::new();
+        let mut world = runen_ecs::World::new();
         world.register_reflected_component::<SpritePreview>();
 
         let entity = world

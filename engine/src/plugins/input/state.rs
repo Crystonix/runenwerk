@@ -60,7 +60,7 @@ pub struct TouchInputSample {
     pub pressure: Option<f32>,
 }
 
-#[derive(Debug, ecs::Component, ecs::Resource)]
+#[derive(Debug, runen_ecs::Component, runen_ecs::Resource)]
 pub struct InputState {
     pub(crate) keys_down: HashSet<KeyCode>,
     bindings: InputBindings,

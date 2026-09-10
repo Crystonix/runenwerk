@@ -21,7 +21,7 @@ pub enum WindowCursorIcon {
     Grabbing,
 }
 
-#[derive(Debug, Clone, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Resource)]
 pub struct WindowState {
     pub title: String,
     pub size_px: (u32, u32),
@@ -219,7 +219,7 @@ impl NativeWindowRecord {
     }
 }
 
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct WindowStateRegistryResource {
     primary_window_id: Option<NativeWindowId>,
     next_window_raw: u64,

@@ -6,7 +6,7 @@ publish = false
 license.workspace = true
 
 [dependencies]
-ecs = { path = "../../domain/ecs" }
+runen_ecs.workspace = true
 engine_sim = { path = "../engine_sim" }
 engine_net_macros = { path = "../engine_net_macros" }
 runen-net.workspace = true

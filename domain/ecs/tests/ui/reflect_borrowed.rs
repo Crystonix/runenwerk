@@ -1,4 +1,4 @@
-use ecs::Reflect;
+use runen_ecs::Reflect;
 
 #[derive(Reflect)]
 struct Borrowed<'a> {

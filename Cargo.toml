@@ -3,6 +3,7 @@ resolver = "3"
 members = [
     "domain/ecs",
     "domain/ecs_macros",
+    "domain/ecs_conformance",
     "domain/geometry",
     "domain/asset",
     "domain/product",
@@ -145,7 +146,8 @@ editor_scene = { path = "domain/editor/editor_scene" }
 editor_inspector = { path = "domain/editor/editor_inspector" }
 editor_persistence = { path = "domain/editor/editor_persistence" }
 
-ecs = { path = "domain/ecs" }
+runen_ecs = { package = "runen-ecs", path = "domain/ecs" }
+runen_ecs_macros = { package = "runen-ecs-macros", path = "domain/ecs_macros" }
 graph = { path = "domain/graph" }
 texture = { path = "domain/texture" }
 material_graph = { path = "domain/material_graph" }

@@ -1,5 +1,5 @@
 use anyhow::Result;
-use ecs::{Entity, World};
+use runen_ecs::{Entity, World};
 use std::path::Path;
 use ui_render_data::UiFrame;
 
@@ -10,7 +10,7 @@ pub enum UiPresentationMode {
     CenteredDemo,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Default, ecs::Component)]
+#[derive(Debug, Clone, Copy, PartialEq, Default, runen_ecs::Component)]
 pub struct UiTransform {
     pub x: f32,
     pub y: f32,
@@ -18,7 +18,7 @@ pub struct UiTransform {
     pub h: f32,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, ecs::Component)]
+#[derive(Debug, Clone, Copy, PartialEq, runen_ecs::Component)]
 pub struct UiStyle {
     pub bg_color: [f32; 4],
     pub border_color: [f32; 4],
@@ -37,7 +37,7 @@ impl Default for UiStyle {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, ecs::Component)]
+#[derive(Debug, Clone, PartialEq, runen_ecs::Component)]
 pub struct UiText {
     pub content: String,
     pub color: [f32; 4],
@@ -54,7 +54,7 @@ impl Default for UiText {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ecs::Component)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, runen_ecs::Component)]
 pub struct UiNode {
     pub visible: bool,
 }
@@ -65,7 +65,7 @@ impl Default for UiNode {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, ecs::Component)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, runen_ecs::Component)]
 pub struct UiDirty;
 
 #[derive(Debug, Clone, PartialEq, serde::Deserialize, Default)]
@@ -83,7 +83,7 @@ pub struct UiTextTemplate {
     pub size: Option<f32>,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, ecs::Resource)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, runen_ecs::Resource)]
 pub struct UiRenderShaderConfig {
     pub rect_shader_asset_id: String,
 }

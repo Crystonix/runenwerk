@@ -1,10 +1,10 @@
 use super::*;
 use crate::WorldMut;
 use anyhow::Context;
-use ecs::World;
 use engine_net::replication::{InputDriver, ReplicationDriver, SnapshotApplyDriver};
 use engine_net::*;
 use engine_sim::{AuthorityRole, SimulationProfileConfig, SimulationTick};
+use runen_ecs::World;
 use runen_net::identity::ConnectionHandle;
 use world_ops::SyncCursor;
 

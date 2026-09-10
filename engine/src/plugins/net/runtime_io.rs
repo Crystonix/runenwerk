@@ -1,17 +1,17 @@
 use super::*;
 use crate::WorldMut;
 use anyhow::Context;
-use ecs::World;
 use engine_net::replication::{InputDriver, ReplicationDriver, SnapshotApplyDriver};
 use engine_net::*;
 use engine_sim::SimulationTick;
+use runen_ecs::World;
 use runen_net::identity::ConnectionHandle;
 use std::collections::HashSet;
 use world_ops::SyncCursor;
 
 // engine/src/plugins/net/runtime_io.rs
 
-#[derive(Debug, Default, ecs::Resource)]
+#[derive(Debug, Default, runen_ecs::Resource)]
 struct NetworkSessionDiagnosticsCursor {
     active_connections: HashSet<ConnectionHandle>,
 }

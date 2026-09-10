@@ -7,10 +7,7 @@
 //! while the invocation's structural freeze is active.
 
 use super::World;
-use super::change_tracking::{
-    ComponentChangeKind, ComponentChangeRecord, ComponentMeta, RemovedComponentRecord,
-    ResourceChangeKind, ResourceChangeRecord, ResourceMeta,
-};
+use super::change_tracking::{ChangeCursor, RemovedComponentRecord};
 use super::component_indexes::{ComponentIndexKey, ComponentIndexStorage};
 use crate::component::Component;
 use crate::entity::{Entity, WorldScopeId};
@@ -21,7 +18,6 @@ use std::cell::RefCell;
 use std::collections::{BTreeSet, HashMap};
 use std::marker::PhantomData;
 use std::ptr::NonNull;
-use std::time::Instant;
 
 /// The sole invocation-scoped authority from which narrow capabilities are
 /// projected. It is never stored in a user-facing parameter value.
@@ -74,11 +70,9 @@ pub struct QueryCapability<'world> {
     alive_entities: NonNull<BTreeSet<Entity>>,
     archetype_registry: NonNull<ArchetypeRegistry>,
     entity_locations: NonNull<EntityLocationMap>,
-    component_type_registry: NonNull<HashMap<TypeId, ComponentMeta>>,
     component_indexes: NonNull<RefCell<HashMap<ComponentIndexKey, Box<dyn ComponentIndexStorage>>>>,
-    change_tick: NonNull<u64>,
-    component_change_ticks: NonNull<HashMap<TypeId, u64>>,
-    component_change_log: NonNull<Vec<ComponentChangeRecord>>,
+    change_tick: NonNull<ChangeCursor>,
+    component_change_ticks: NonNull<HashMap<TypeId, ChangeCursor>>,
     removed_component_records: NonNull<HashMap<TypeId, Vec<RemovedComponentRecord>>>,
     _marker: PhantomData<&'world World>,
 }
@@ -101,11 +95,9 @@ impl<'world> QueryCapability<'world> {
             alive_entities: NonNull::from(&world.alive_entities),
             archetype_registry: NonNull::from(&world.archetype_registry),
             entity_locations: NonNull::from(&world.entity_locations),
-            component_type_registry: NonNull::from(&world.component_type_registry),
             component_indexes: NonNull::from(&world.component_indexes),
             change_tick: NonNull::from(&world.change_tick),
             component_change_ticks: NonNull::from(&world.component_change_ticks),
-            component_change_log: NonNull::from(&world.component_change_log),
             removed_component_records: NonNull::from(&world.removed_component_records),
             _marker: PhantomData,
         }
@@ -117,11 +109,9 @@ impl<'world> QueryCapability<'world> {
             alive_entities: NonNull::from(&mut world.alive_entities),
             archetype_registry: NonNull::from(&mut world.archetype_registry),
             entity_locations: NonNull::from(&mut world.entity_locations),
-            component_type_registry: NonNull::from(&mut world.component_type_registry),
             component_indexes: NonNull::from(&mut world.component_indexes),
             change_tick: NonNull::from(&mut world.change_tick),
             component_change_ticks: NonNull::from(&mut world.component_change_ticks),
-            component_change_log: NonNull::from(&mut world.component_change_log),
             removed_component_records: NonNull::from(&mut world.removed_component_records),
             _marker: PhantomData,
         }
@@ -140,9 +130,6 @@ impl<'world> QueryCapability<'world> {
             entity_locations: unsafe {
                 NonNull::new_unchecked(std::ptr::addr_of_mut!((*world_ptr).entity_locations))
             },
-            component_type_registry: unsafe {
-                NonNull::new_unchecked(std::ptr::addr_of_mut!((*world_ptr).component_type_registry))
-            },
             component_indexes: unsafe {
                 NonNull::new_unchecked(std::ptr::addr_of_mut!((*world_ptr).component_indexes))
             },
@@ -151,9 +138,6 @@ impl<'world> QueryCapability<'world> {
             },
             component_change_ticks: unsafe {
                 NonNull::new_unchecked(std::ptr::addr_of_mut!((*world_ptr).component_change_ticks))
-            },
-            component_change_log: unsafe {
-                NonNull::new_unchecked(std::ptr::addr_of_mut!((*world_ptr).component_change_log))
             },
             removed_component_records: unsafe {
                 NonNull::new_unchecked(std::ptr::addr_of_mut!(
@@ -164,7 +148,7 @@ impl<'world> QueryCapability<'world> {
         }
     }
 
-    pub(crate) fn current_change_tick(self) -> u64 {
+    pub(crate) fn current_change_tick(self) -> ChangeCursor {
         unsafe { *self.change_tick.as_ptr() }
     }
 
@@ -178,7 +162,6 @@ impl<'world> QueryCapability<'world> {
         excluded: &[TypeId],
         out: &mut Vec<Entity>,
     ) {
-        let start = Instant::now();
         unsafe {
             self.archetype_registry.as_ref().collect_matching_entities(
                 required_present,
@@ -186,8 +169,6 @@ impl<'world> QueryCapability<'world> {
                 out,
             )
         };
-        let count = out.len() as u64;
-        crate::telemetry::record_query_matching(start.elapsed().as_nanos() as u64, count, count);
     }
 
     pub(crate) fn matching_archetype_bindings_into(
@@ -270,7 +251,10 @@ impl<'world> QueryCapability<'world> {
         Some(unsafe { &mut *ptr })
     }
 
-    pub(crate) fn component_metadata<T: Component>(self, entity: Entity) -> Option<(u64, u64)> {
+    pub(crate) fn component_metadata<T: Component>(
+        self,
+        entity: Entity,
+    ) -> Option<(ChangeCursor, ChangeCursor)> {
         let locations = unsafe { self.entity_locations.as_ref() };
         let metadata = unsafe {
             self.archetype_registry
@@ -280,18 +264,8 @@ impl<'world> QueryCapability<'world> {
         Some((metadata.added_tick, metadata.changed_tick))
     }
 
-    pub(crate) fn mark_component_modified_by_id(
-        mut self,
-        entity: Entity,
-        component_type: TypeId,
-        component_name: &'static str,
-    ) {
-        let tick = self.record_component_change(
-            entity,
-            component_type,
-            component_name,
-            ComponentChangeKind::Modified,
-        );
+    pub(crate) fn mark_component_modified_by_id(mut self, entity: Entity, component_type: TypeId) {
+        let tick = self.record_component_change(entity, component_type, false);
         let locations = unsafe { self.entity_locations.as_ref() };
         let _ = unsafe {
             self.archetype_registry
@@ -302,7 +276,7 @@ impl<'world> QueryCapability<'world> {
 
     pub(crate) fn mark_component_modified<T: Component>(self, entity: Entity) {
         if self.component::<T>(entity).is_some() {
-            self.mark_component_modified_by_id(entity, TypeId::of::<T>(), T::component_name());
+            self.mark_component_modified_by_id(entity, TypeId::of::<T>());
         }
     }
 
@@ -310,12 +284,11 @@ impl<'world> QueryCapability<'world> {
         mut self,
         entity: Entity,
         component_type: TypeId,
-        component_name: &'static str,
-        kind: ComponentChangeKind,
-    ) -> u64 {
+        removed: bool,
+    ) -> ChangeCursor {
         let tick = unsafe {
             let tick = self.change_tick.as_mut();
-            *tick = tick.saturating_add(1);
+            *tick = tick.next().expect("ECS change cursor exhausted");
             *tick
         };
         unsafe {
@@ -323,22 +296,7 @@ impl<'world> QueryCapability<'world> {
                 .as_mut()
                 .insert(component_type, tick)
         };
-        let component_key = unsafe { self.component_type_registry.as_ref().get(&component_type) }
-            .map(|meta| meta.id)
-            .unwrap_or_default();
-        unsafe {
-            self.component_change_log
-                .as_mut()
-                .push(ComponentChangeRecord {
-                    tick,
-                    entity,
-                    component_type,
-                    component_key,
-                    component_name,
-                    kind,
-                })
-        };
-        if matches!(kind, ComponentChangeKind::Removed) {
+        if removed {
             unsafe {
                 self.removed_component_records
                     .as_mut()
@@ -363,33 +321,25 @@ impl<'world> QueryCapability<'world> {
     pub(crate) fn component_changed_for_entity_since<T: Component>(
         self,
         entity: Entity,
-        tick: u64,
+        tick: ChangeCursor,
     ) -> bool {
-        let start = Instant::now();
-        let changed = self
-            .component_metadata::<T>(entity)
-            .is_some_and(|(_, changed_tick)| changed_tick > tick);
-        crate::telemetry::record_changed_check(start.elapsed().as_nanos() as u64);
-        changed
+        self.component_metadata::<T>(entity)
+            .is_some_and(|(_, changed_tick)| changed_tick > tick)
     }
 
     pub(crate) fn component_added_for_entity_since<T: Component>(
         self,
         entity: Entity,
-        tick: u64,
+        tick: ChangeCursor,
     ) -> bool {
-        let start = Instant::now();
-        let added = self
-            .component_metadata::<T>(entity)
-            .is_some_and(|(added_tick, _)| added_tick > tick);
-        crate::telemetry::record_added_check(start.elapsed().as_nanos() as u64);
-        added
+        self.component_metadata::<T>(entity)
+            .is_some_and(|(added_tick, _)| added_tick > tick)
     }
 
     pub(crate) fn removed_component_records_current_window(
         self,
         component_type: TypeId,
-        out: &mut Vec<(Entity, u64)>,
+        out: &mut Vec<(Entity, ChangeCursor)>,
     ) {
         out.clear();
         let records = unsafe { self.removed_component_records.as_ref() };
@@ -399,7 +349,7 @@ impl<'world> QueryCapability<'world> {
     }
 }
 
-/// Stable typed resource payload plus the separate narrow change recorder used
+/// Stable typed resource payload plus the separate narrow change-tick recorder used
 /// by `ResMut`. No resource parameter retains a world or registry-entry pointer.
 #[doc(hidden)]
 pub struct ResourceCapability<'world, T> {
@@ -417,47 +367,20 @@ impl<'world, T> Clone for ResourceCapability<'world, T> {
 
 #[derive(Copy, Clone)]
 pub(crate) struct ResourceMutationCapability<'world> {
-    next_resource_id: NonNull<u32>,
-    resource_type_registry: NonNull<HashMap<TypeId, ResourceMeta>>,
-    change_tick: NonNull<u64>,
-    resource_change_ticks: NonNull<HashMap<TypeId, u64>>,
-    resource_change_log: NonNull<Vec<ResourceChangeRecord>>,
+    change_tick: NonNull<ChangeCursor>,
+    resource_change_ticks: NonNull<HashMap<TypeId, ChangeCursor>>,
     _marker: PhantomData<&'world mut World>,
 }
 
 impl<'world> ResourceMutationCapability<'world> {
     pub(crate) fn mark_modified<T: 'static>(mut self) {
         let type_id = TypeId::of::<T>();
-        let name = type_name::<T>();
-        let registry = unsafe { self.resource_type_registry.as_mut() };
-        let key = registry
-            .entry(type_id)
-            .or_insert_with(|| {
-                let id = unsafe { *self.next_resource_id.as_ptr() };
-                unsafe { *self.next_resource_id.as_mut() = id.saturating_add(1) };
-                ResourceMeta {
-                    id: super::change_tracking::ResourceTypeKey(id),
-                    name,
-                }
-            })
-            .id;
         let tick = unsafe {
             let tick = self.change_tick.as_mut();
-            *tick = tick.saturating_add(1);
+            *tick = tick.next().expect("ECS change cursor exhausted");
             *tick
         };
         unsafe { self.resource_change_ticks.as_mut().insert(type_id, tick) };
-        unsafe {
-            self.resource_change_log
-                .as_mut()
-                .push(ResourceChangeRecord {
-                    tick,
-                    resource_type: type_id,
-                    resource_key: key,
-                    resource_name: name,
-                    kind: ResourceChangeKind::Modified,
-                })
-        };
     }
 }
 
@@ -488,14 +411,6 @@ impl World {
                 resource: type_name::<T>(),
             })?;
             let mutation = ResourceMutationCapability {
-                next_resource_id: unsafe {
-                    NonNull::new_unchecked(std::ptr::addr_of_mut!((*world_ptr).next_resource_id))
-                },
-                resource_type_registry: unsafe {
-                    NonNull::new_unchecked(std::ptr::addr_of_mut!(
-                        (*world_ptr).resource_type_registry
-                    ))
-                },
                 change_tick: unsafe {
                     NonNull::new_unchecked(std::ptr::addr_of_mut!((*world_ptr).change_tick))
                 },
@@ -503,9 +418,6 @@ impl World {
                     NonNull::new_unchecked(std::ptr::addr_of_mut!(
                         (*world_ptr).resource_change_ticks
                     ))
-                },
-                resource_change_log: unsafe {
-                    NonNull::new_unchecked(std::ptr::addr_of_mut!((*world_ptr).resource_change_log))
                 },
                 _marker: PhantomData,
             };

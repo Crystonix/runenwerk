@@ -8,7 +8,7 @@ license.workspace = true
 [dependencies]
 anyhow = "1.0.100"
 drawing.workspace = true
-ecs.workspace = true
+runen_ecs.workspace = true
 engine = { path = "../../engine" }
 graph.workspace = true
 native_tablet_input.workspace = true

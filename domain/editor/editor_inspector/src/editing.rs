@@ -2,8 +2,8 @@
 //! Purpose: Path-based reflective mutation for ECS-backed inspector targets.
 
 use crate::{EcsInspectorBridge, InspectorPath, InspectorPathSegment, InspectorValue};
-use ecs::reflect::ReflectValueMut;
 use editor_core::{ComponentTypeId, EntityId, ResourceTypeId};
+use runen_ecs::reflect::ReflectValueMut;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum InspectorEditValue {
@@ -68,7 +68,7 @@ pub fn enum_symbol_edit_value_for_field(
 }
 
 pub fn set_component_field_value<B>(
-    world: &mut ecs::World,
+    world: &mut runen_ecs::World,
     bridge: &B,
     entity_id: EntityId,
     component_type: ComponentTypeId,
@@ -94,7 +94,7 @@ where
 }
 
 pub fn set_resource_field_value<B>(
-    world: &mut ecs::World,
+    world: &mut runen_ecs::World,
     bridge: &B,
     resource_type: ResourceTypeId,
     path: &InspectorPath,
@@ -287,31 +287,31 @@ mod tests {
     use super::*;
     use crate::{InspectorPath, StaticEcsInspectorBridge};
 
-    #[derive(Debug, Clone, ecs::Reflect)]
+    #[derive(Debug, Clone, runen_ecs::Reflect)]
     struct Vec2 {
         x: f32,
         y: f32,
     }
 
-    #[derive(Debug, Clone, ecs::Component, ecs::Reflect)]
+    #[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Reflect)]
     struct Position {
         value: Vec2,
         speed: f32,
         label: String,
     }
 
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, ecs::Reflect)]
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, runen_ecs::Reflect)]
     enum TextureFilter {
         Nearest,
         Linear,
     }
 
-    #[derive(Debug, Clone, ecs::Component, ecs::Reflect)]
+    #[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Reflect)]
     struct SpritePreview {
         filter: TextureFilter,
     }
 
-    #[derive(Debug, Clone, ecs::Resource, ecs::Reflect)]
+    #[derive(Debug, Clone, runen_ecs::Resource, runen_ecs::Reflect)]
     struct CameraSettings {
         zoom: f32,
         exposure: f32,
@@ -319,7 +319,7 @@ mod tests {
 
     #[test]
     fn updates_nested_component_float_field_by_path() {
-        let mut world = ecs::World::new();
+        let mut world = runen_ecs::World::new();
         world.register_reflected_component::<Position>();
 
         let entity = world
@@ -354,7 +354,7 @@ mod tests {
 
     #[test]
     fn updates_component_string_field_by_path() {
-        let mut world = ecs::World::new();
+        let mut world = runen_ecs::World::new();
         world.register_reflected_component::<Position>();
 
         let entity = world
@@ -389,7 +389,7 @@ mod tests {
 
     #[test]
     fn updates_resource_float_field_by_path() {
-        let mut world = ecs::World::new();
+        let mut world = runen_ecs::World::new();
         world.register_reflected_resource::<CameraSettings>();
         world.insert_resource(CameraSettings {
             zoom: 2.0,
@@ -418,7 +418,7 @@ mod tests {
 
     #[test]
     fn updates_component_enum_field_by_path() {
-        let mut world = ecs::World::new();
+        let mut world = runen_ecs::World::new();
         world.register_reflected_component::<SpritePreview>();
 
         let entity = world
@@ -451,7 +451,7 @@ mod tests {
 
     #[test]
     fn rejects_unknown_component_enum_symbol() {
-        let mut world = ecs::World::new();
+        let mut world = runen_ecs::World::new();
         world.register_reflected_component::<SpritePreview>();
 
         let entity = world
@@ -486,7 +486,7 @@ mod tests {
 
     #[test]
     fn rejects_invalid_component_path() {
-        let mut world = ecs::World::new();
+        let mut world = runen_ecs::World::new();
         world.register_reflected_component::<Position>();
 
         let entity = world

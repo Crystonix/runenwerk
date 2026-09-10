@@ -1,5 +1,5 @@
 use anyhow::Result;
-use ecs::{DeferredApplyBoundary, Runtime, ScheduleLabel, World};
+use runen_ecs::{DeferredApplyBoundary, Runtime, ScheduleLabel, World};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct PublicationBoundary {
@@ -35,7 +35,7 @@ pub(crate) struct PublicationHandlers {
     next_boundary_index: usize,
 }
 
-impl ecs::Resource for PublicationHandlers {}
+impl runen_ecs::Resource for PublicationHandlers {}
 
 impl PublicationHandlers {
     pub(crate) fn add_product<F>(&mut self, handler: F)
@@ -74,9 +74,9 @@ pub(crate) fn run_schedule_with_publication<L: ScheduleLabel>(
         .remove_resource::<PublicationHandlers>()
         .unwrap_or_default();
     let result = runtime
-        .run_schedule_with_deferred_apply_boundary::<L, _>(world, |boundary, world| {
+        .run_schedule_with_deferred_apply_boundary::<L, _, _>(world, |boundary, world| {
             publications.dispatch(boundary, world)
         });
     world.insert_resource(publications);
-    result
+    result.map_err(anyhow::Error::new)
 }

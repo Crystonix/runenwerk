@@ -7,7 +7,6 @@ use drawing::{
     drawing_ink_tile_product_cache_identity, drawing_ink_tile_query_snapshot_for_descriptor,
     form_drawing_ink_tiles_for_ids,
 };
-use ecs::World;
 use engine::runtime::{
     ProductPublicationRuntimeResource, PublicationBoundary, QuerySnapshotRuntimeResource,
     RuntimeJobExecutorResource, RuntimeJobStatus, RuntimeProductCacheResource,
@@ -16,6 +15,7 @@ use product::{
     ProductCacheDecisionKind, ProductDescriptorCore, ProductPublicationReport,
     QuerySnapshotPublicationReport, QuerySnapshotPublicationStatus,
 };
+use runen_ecs::World;
 
 use crate::app::{
     DrawingInkJournalStage, DrawingPreviewTileJobSnapshot, DrawingPreviewTileJobTracker,

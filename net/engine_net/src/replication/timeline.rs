@@ -19,8 +19,8 @@ use std::collections::{BTreeMap, BTreeSet};
     Default,
     Serialize,
     Deserialize,
-    ecs::Component,
-    ecs::Resource,
+    runen_ecs::Component,
+    runen_ecs::Resource,
 )]
 pub struct SnapshotCursor(pub u64);
 

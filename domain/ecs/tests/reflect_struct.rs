@@ -1,25 +1,25 @@
-use ecs::Reflect;
+use runen_ecs::Reflect;
 
-fn assert_reflect<T: ecs::reflect::Reflect>() {}
+fn assert_reflect<T: runen_ecs::reflect::Reflect>() {}
 
 #[test]
 fn position_implements_reflect() {
     assert_reflect::<Position>();
 }
 
-#[derive(Debug, Clone, ecs::Reflect)]
+#[derive(Debug, Clone, runen_ecs::Reflect)]
 struct Vec2 {
     x: f32,
     y: f32,
 }
 
-#[derive(Debug, Clone, ecs::Component, ecs::Reflect)]
+#[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Reflect)]
 struct Position {
     value: Vec2,
     speed: f32,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ecs::Reflect)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, runen_ecs::Reflect)]
 enum TextureFilter {
     Nearest,
     Linear,
@@ -27,7 +27,7 @@ enum TextureFilter {
 
 #[test]
 fn reflected_named_struct_exposes_fields() {
-    let mut registry = ecs::TypeRegistry::new();
+    let mut registry = runen_ecs::TypeRegistry::new();
     let info = registry.register::<Position>();
 
     let struct_info = info.struct_info().expect("Position should be a struct");
@@ -84,7 +84,7 @@ fn reflected_value_supports_field_mutation() {
 
 #[test]
 fn reflected_unit_enum_exposes_variants_and_current_symbol() {
-    let mut registry = ecs::TypeRegistry::new();
+    let mut registry = runen_ecs::TypeRegistry::new();
     let info = registry.register::<TextureFilter>();
     let enum_info = info.enum_info().expect("TextureFilter should be an enum");
 

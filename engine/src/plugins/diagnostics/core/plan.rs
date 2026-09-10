@@ -2,7 +2,7 @@ use super::config::DiagnosticsConfigResource;
 use crate::runtime::{Res, ResMut};
 use std::path::PathBuf;
 
-#[derive(Debug, Clone, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Resource)]
 pub struct ResolvedDiagnosticsPlan {
     pub enabled: bool,
     pub retention_max_reports: usize,

@@ -1,11 +1,11 @@
-use ecs::prelude::*;
+use runen_ecs::prelude::*;
 
 #[derive(Copy, Clone)]
 struct Update;
 
 impl ScheduleLabel for Update {
     fn name() -> &'static str {
-        "QueryOrphanedUpdate"
+        "RemovedQueryUpdate"
     }
 }
 
@@ -14,7 +14,7 @@ struct QueueSet;
 
 impl SystemSet for QueueSet {
     fn name() -> &'static str {
-        "QueryOrphanedQueueSet"
+        "RemovedQueryQueueSet"
     }
 }
 
@@ -23,7 +23,7 @@ struct ObserveSet;
 
 impl SystemSet for ObserveSet {
     fn name() -> &'static str {
-        "QueryOrphanedObserveSet"
+        "RemovedQueryObserveSet"
     }
 }
 
@@ -32,47 +32,47 @@ struct LateObserveSet;
 
 impl SystemSet for LateObserveSet {
     fn name() -> &'static str {
-        "QueryOrphanedLateObserveSet"
+        "RemovedQueryLateObserveSet"
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 struct A(i32);
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 struct B(i32);
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, runen_ecs::Resource)]
 struct Target(Entity);
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, runen_ecs::Resource)]
 struct TargetPair(Entity, Entity);
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, runen_ecs::Resource)]
 struct Gate(bool);
 
-#[derive(Debug, Default, PartialEq, Eq, ecs::Resource)]
+#[derive(Debug, Default, PartialEq, Eq, runen_ecs::Resource)]
 struct StageCounts {
     same_stage: Vec<usize>,
     post_stage: Vec<usize>,
     late_stage: Vec<usize>,
 }
 
-#[derive(Debug, Default, PartialEq, Eq, ecs::Resource)]
+#[derive(Debug, Default, PartialEq, Eq, runen_ecs::Resource)]
 struct EntityHistory(Vec<Vec<Entity>>);
 
-#[derive(Debug, Default, PartialEq, Eq, ecs::Resource)]
+#[derive(Debug, Default, PartialEq, Eq, runen_ecs::Resource)]
 struct TypeIsolationCounts {
     a_entities: Vec<Entity>,
     b_entities: Vec<Entity>,
 }
 
-#[derive(Debug, Default, PartialEq, Eq, ecs::Resource)]
+#[derive(Debug, Default, PartialEq, Eq, runen_ecs::Resource)]
 struct DoubleReadCounts(Vec<(usize, usize)>);
 
-#[derive(Debug, Default, PartialEq, Eq, ecs::Resource)]
+#[derive(Debug, Default, PartialEq, Eq, runen_ecs::Resource)]
 struct WindowSnapshot {
-    orphaned: Vec<usize>,
+    removed: Vec<usize>,
     live: Vec<usize>,
 }
 
@@ -86,12 +86,12 @@ fn explicit_remove_is_not_visible_before_flush_and_visible_after_flush() {
         gate.0 = true;
     }
 
-    fn observe_same_stage(mut orphaned: QueryOrphaned<A>, mut counts: ResMut<StageCounts>) {
-        counts.same_stage.push(orphaned.iter().count());
+    fn observe_same_stage(mut removed: RemovedQuery<A>, mut counts: ResMut<StageCounts>) {
+        counts.same_stage.push(removed.iter().count());
     }
 
-    fn observe_post_stage(mut orphaned: QueryOrphaned<A>, mut counts: ResMut<StageCounts>) {
-        counts.post_stage.push(orphaned.iter().count());
+    fn observe_post_stage(mut removed: RemovedQuery<A>, mut counts: ResMut<StageCounts>) {
+        counts.post_stage.push(removed.iter().count());
     }
 
     let mut world = World::new();
@@ -125,8 +125,8 @@ fn despawn_with_component_is_visible_after_flush() {
         gate.0 = true;
     }
 
-    fn observe_post_stage(mut orphaned: QueryOrphaned<A>, mut counts: ResMut<StageCounts>) {
-        counts.post_stage.push(orphaned.iter().count());
+    fn observe_post_stage(mut removed: RemovedQuery<A>, mut counts: ResMut<StageCounts>) {
+        counts.post_stage.push(removed.iter().count());
     }
 
     let mut world = World::new();
@@ -149,7 +149,7 @@ fn despawn_with_component_is_visible_after_flush() {
 }
 
 #[test]
-fn orphaned_records_are_visible_only_for_one_stage_window() {
+fn removed_records_are_visible_only_for_one_stage_window() {
     fn queue_remove_once(mut gate: ResMut<Gate>, target: Res<Target>, mut commands: Commands) {
         if gate.0 {
             return;
@@ -158,12 +158,12 @@ fn orphaned_records_are_visible_only_for_one_stage_window() {
         gate.0 = true;
     }
 
-    fn observe_post_stage(mut orphaned: QueryOrphaned<A>, mut counts: ResMut<StageCounts>) {
-        counts.post_stage.push(orphaned.iter().count());
+    fn observe_post_stage(mut removed: RemovedQuery<A>, mut counts: ResMut<StageCounts>) {
+        counts.post_stage.push(removed.iter().count());
     }
 
-    fn observe_late_stage(mut orphaned: QueryOrphaned<A>, mut counts: ResMut<StageCounts>) {
-        counts.late_stage.push(orphaned.iter().count());
+    fn observe_late_stage(mut removed: RemovedQuery<A>, mut counts: ResMut<StageCounts>) {
+        counts.late_stage.push(removed.iter().count());
     }
 
     let mut world = World::new();
@@ -205,8 +205,8 @@ fn multiple_removals_in_one_stage_are_reported() {
         gate.0 = true;
     }
 
-    fn observe_entities(mut orphaned: QueryOrphaned<A>, mut history: ResMut<EntityHistory>) {
-        let mut entities = orphaned
+    fn observe_entities(mut removed: RemovedQuery<A>, mut history: ResMut<EntityHistory>) {
+        let mut entities = removed
             .iter()
             .map(|record| record.entity())
             .collect::<Vec<_>>();
@@ -236,7 +236,7 @@ fn multiple_removals_in_one_stage_are_reported() {
 }
 
 #[test]
-fn query_orphaned_is_component_type_isolated() {
+fn query_removed_is_component_type_isolated() {
     fn queue_type_specific_removes_once(
         mut gate: ResMut<Gate>,
         targets: Res<TargetPair>,
@@ -251,12 +251,12 @@ fn query_orphaned_is_component_type_isolated() {
     }
 
     fn observe_type_isolation(
-        mut orphaned_a: QueryOrphaned<A>,
-        mut orphaned_b: QueryOrphaned<B>,
+        mut removed_a: RemovedQuery<A>,
+        mut removed_b: RemovedQuery<B>,
         mut counts: ResMut<TypeIsolationCounts>,
     ) {
-        counts.a_entities = orphaned_a.iter().map(|record| record.entity()).collect();
-        counts.b_entities = orphaned_b.iter().map(|record| record.entity()).collect();
+        counts.a_entities = removed_a.iter().map(|record| record.entity()).collect();
+        counts.b_entities = removed_b.iter().map(|record| record.entity()).collect();
     }
 
     let mut world = World::new();
@@ -284,7 +284,7 @@ fn query_orphaned_is_component_type_isolated() {
 }
 
 #[test]
-fn orphaned_entries_do_not_repeat_across_later_runs() {
+fn removed_entries_do_not_repeat_across_later_runs() {
     fn queue_remove_once(mut gate: ResMut<Gate>, target: Res<Target>, mut commands: Commands) {
         if gate.0 {
             return;
@@ -293,8 +293,8 @@ fn orphaned_entries_do_not_repeat_across_later_runs() {
         gate.0 = true;
     }
 
-    fn observe_post_stage(mut orphaned: QueryOrphaned<A>, mut counts: ResMut<StageCounts>) {
-        counts.post_stage.push(orphaned.iter().count());
+    fn observe_post_stage(mut removed: RemovedQuery<A>, mut counts: ResMut<StageCounts>) {
+        counts.post_stage.push(removed.iter().count());
     }
 
     let mut world = World::new();
@@ -327,9 +327,9 @@ fn repeated_iter_calls_return_same_window_snapshot() {
         gate.0 = true;
     }
 
-    fn observe_twice(mut orphaned: QueryOrphaned<A>, mut counts: ResMut<DoubleReadCounts>) {
-        let first = orphaned.iter().count();
-        let second = orphaned.iter().count();
+    fn observe_twice(mut removed: RemovedQuery<A>, mut counts: ResMut<DoubleReadCounts>) {
+        let first = removed.iter().count();
+        let second = removed.iter().count();
         counts.0.push((first, second));
     }
 
@@ -351,7 +351,7 @@ fn repeated_iter_calls_return_same_window_snapshot() {
 }
 
 #[test]
-fn remove_then_reinsert_in_one_flush_still_reports_orphaned_removal() {
+fn remove_then_reinsert_in_one_flush_still_reports_removed_removal() {
     fn queue_remove_then_reinsert_once(
         mut gate: ResMut<Gate>,
         target: Res<Target>,
@@ -366,11 +366,11 @@ fn remove_then_reinsert_in_one_flush_still_reports_orphaned_removal() {
     }
 
     fn observe_window(
-        mut orphaned: QueryOrphaned<A>,
+        mut removed: RemovedQuery<A>,
         mut live: Query<&A>,
         mut snapshot: ResMut<WindowSnapshot>,
     ) {
-        snapshot.orphaned.push(orphaned.iter().count());
+        snapshot.removed.push(removed.iter().count());
         snapshot.live.push(live.iter().count());
     }
 
@@ -391,13 +391,13 @@ fn remove_then_reinsert_in_one_flush_still_reports_orphaned_removal() {
     runtime.run_schedule::<Update>(&mut world).unwrap();
 
     let snapshot = world.resource::<WindowSnapshot>().unwrap();
-    assert_eq!(snapshot.orphaned, vec![1]);
+    assert_eq!(snapshot.removed, vec![1]);
     assert_eq!(snapshot.live, vec![1]);
     assert_eq!(world.require::<A>(entity).unwrap().0, 99);
 }
 
 #[test]
-fn previous_run_orphaned_window_is_visible_in_next_run_first_stage_only() {
+fn previous_run_removed_window_is_visible_in_next_run_first_stage_only() {
     fn queue_remove_once(mut gate: ResMut<Gate>, target: Res<Target>, mut commands: Commands) {
         if gate.0 {
             return;
@@ -406,8 +406,8 @@ fn previous_run_orphaned_window_is_visible_in_next_run_first_stage_only() {
         gate.0 = true;
     }
 
-    fn observe_same_stage(mut orphaned: QueryOrphaned<A>, mut counts: ResMut<StageCounts>) {
-        counts.same_stage.push(orphaned.iter().count());
+    fn observe_same_stage(mut removed: RemovedQuery<A>, mut counts: ResMut<StageCounts>) {
+        counts.same_stage.push(removed.iter().count());
     }
 
     let mut world = World::new();
@@ -434,15 +434,15 @@ fn previous_run_orphaned_window_is_visible_in_next_run_first_stage_only() {
 }
 
 #[test]
-fn query_orphaned_does_not_conflict_with_live_mut_query_access() {
+fn query_removed_does_not_conflict_with_live_mut_query_access() {
     fn mutate_live(mut query: Query<&mut A>) {
         for value in query.iter() {
             value.0 += 1;
         }
     }
 
-    fn observe_orphaned(mut orphaned: QueryOrphaned<A>, mut counts: ResMut<StageCounts>) {
-        counts.same_stage.push(orphaned.iter().count());
+    fn observe_removed(mut removed: RemovedQuery<A>, mut counts: ResMut<StageCounts>) {
+        counts.same_stage.push(removed.iter().count());
     }
 
     let mut world = World::new();
@@ -450,15 +450,7 @@ fn query_orphaned_does_not_conflict_with_live_mut_query_access() {
     world.insert_resource(StageCounts::default());
 
     let mut runtime = Runtime::new();
-    runtime.add_systems::<Update, _, _>(&mut world, (mutate_live, observe_orphaned));
-
-    let plan = runtime
-        .plan_for::<Update>()
-        .expect("schedule plan should validate")
-        .expect("registered update schedule should have a plan");
-    assert_eq!(plan.conflicts.len(), 0);
-    assert_eq!(plan.stages.len(), 1);
-    assert_eq!(plan.stages[0].system_indices.len(), 2);
+    runtime.add_systems::<Update, _, _>(&mut world, (mutate_live, observe_removed));
 
     runtime.run_schedule::<Update>(&mut world).unwrap();
 
@@ -467,7 +459,7 @@ fn query_orphaned_does_not_conflict_with_live_mut_query_access() {
 }
 
 #[test]
-fn batch_remove_and_despawn_preserve_orphaned_stage_window_semantics() {
+fn batch_remove_and_despawn_preserve_removed_stage_window_semantics() {
     fn queue_batch_once(mut gate: ResMut<Gate>, targets: Res<TargetPair>, mut commands: Commands) {
         if gate.0 {
             return;
@@ -479,12 +471,12 @@ fn batch_remove_and_despawn_preserve_orphaned_stage_window_semantics() {
         gate.0 = true;
     }
 
-    fn observe_same_stage(mut orphaned: QueryOrphaned<A>, mut counts: ResMut<StageCounts>) {
-        counts.same_stage.push(orphaned.iter().count());
+    fn observe_same_stage(mut removed: RemovedQuery<A>, mut counts: ResMut<StageCounts>) {
+        counts.same_stage.push(removed.iter().count());
     }
 
-    fn observe_post_stage(mut orphaned: QueryOrphaned<A>, mut counts: ResMut<StageCounts>) {
-        counts.post_stage.push(orphaned.iter().count());
+    fn observe_post_stage(mut removed: RemovedQuery<A>, mut counts: ResMut<StageCounts>) {
+        counts.post_stage.push(removed.iter().count());
     }
 
     let mut world = World::new();

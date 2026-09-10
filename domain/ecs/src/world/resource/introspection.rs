@@ -1,4 +1,4 @@
-// Owner: ecs World Resource - Introspection APIs
+// Owner: RunenECS World Resource - Introspection APIs
 use crate::reflect::{ReflectValueMut, ReflectValueRef, TypeInfo};
 use crate::world::World;
 use std::any::TypeId;

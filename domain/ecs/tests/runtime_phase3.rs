@@ -1,7 +1,5 @@
-use ecs::prelude::*;
-use ecs::{
-    AccessDomain, ConflictKind, QueryAccess, ScheduleValidationError, SystemParam, SystemParamError,
-};
+use runen_ecs::prelude::*;
+use runen_ecs::{QueryAccess, RuntimeError, SystemParam, SystemParamError};
 use std::marker::PhantomData;
 use std::sync::atomic::{AtomicU32, AtomicUsize, Ordering};
 use std::sync::{Mutex, OnceLock};
@@ -42,35 +40,23 @@ impl SystemSet for LateObserveSet {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 struct Marker(u32);
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 struct Extra(i32);
 
-#[derive(Debug, Clone, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 struct IndexedName(String);
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 struct SeenCount(u32);
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 struct TargetEntity(Entity);
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 struct Step(u32);
-
-#[derive(ecs::SystemParam)]
-struct CounterParamGroup<'w> {
-    step: Res<'w, Step>,
-    seen: ResMut<'w, SeenCount>,
-}
-
-#[derive(ecs::SystemParam)]
-struct GenericParamGroup<'w, T: Resource> {
-    value: Res<'w, T>,
-    seen: ResMut<'w, SeenCount>,
-}
 
 struct LifetimeMarkerParam<'a>(PhantomData<&'a ()>);
 
@@ -88,67 +74,33 @@ unsafe impl<'a> SystemParam for LifetimeMarkerParam<'a> {
 
     unsafe fn extract<'world, 'state>(
         _state: &'state mut Self::State,
-        _context: ecs::SystemParamContext<'world>,
+        _context: runen_ecs::SystemParamContext<'world>,
     ) -> Result<Self::Item<'world, 'state>, SystemParamError> {
         Ok(LifetimeMarkerParam(PhantomData))
     }
 }
 
-#[derive(ecs::SystemParam)]
+#[derive(runen_ecs::SystemParam)]
 struct LifetimeCollisionParamGroup<'w> {
     marker: LifetimeMarkerParam<'w>,
     step: Res<'w, Step>,
     seen: ResMut<'w, SeenCount>,
 }
 
-#[derive(ecs::SystemParam)]
-struct InnerParamGroup<'w> {
-    step: Res<'w, Step>,
-}
-
-#[derive(ecs::SystemParam)]
-struct OuterParamGroup<'w> {
-    inner: InnerParamGroup<'w>,
-    seen: ResMut<'w, SeenCount>,
-}
-
-#[derive(ecs::SystemParam)]
+#[derive(runen_ecs::SystemParam)]
 struct ConflictingResourceParamGroup<'w> {
     read: Res<'w, Step>,
     write: ResMut<'w, Step>,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 struct SpawnGate(bool);
 
-#[derive(Debug, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 struct CountHistory(Vec<usize>);
 
-#[derive(Debug, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 struct AddedChangedHistory(Vec<(usize, usize)>);
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-struct SpawnMarkerDeferred(u32);
-
-impl DeferredCommand<()> for SpawnMarkerDeferred {
-    fn apply(self: Box<Self>, world: &mut World) -> Result<(), ecs::CommandError> {
-        let _ = world.spawn(Marker(self.0))?;
-        Ok(())
-    }
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-struct InsertExtraDeferred {
-    entity: Entity,
-    value: i32,
-}
-
-impl DeferredCommand<()> for InsertExtraDeferred {
-    fn apply(self: Box<Self>, world: &mut World) -> Result<(), ecs::CommandError> {
-        world.insert(self.entity, Extra(self.value))?;
-        Ok(())
-    }
-}
 
 fn run_order_log() -> &'static Mutex<Vec<&'static str>> {
     static LOG: OnceLock<Mutex<Vec<&'static str>>> = OnceLock::new();
@@ -188,12 +140,6 @@ fn runtime_honors_in_set_before_and_after_ordering() {
     runtime.add_systems::<Update, _, _>(&mut world, run_before_set.before(GameplaySet));
     runtime.add_systems::<Update, _, _>(&mut world, run_after_set.after(GameplaySet));
 
-    let plan = runtime.plan_for::<Update>().unwrap().unwrap().clone();
-    assert_eq!(plan.stages.len(), 3);
-    assert_eq!(plan.stages[0].system_indices.len(), 1);
-    assert_eq!(plan.stages[1].system_indices.len(), 1);
-    assert_eq!(plan.stages[2].system_indices.len(), 1);
-
     runtime.run_schedule::<Update>(&mut world).unwrap();
     assert_eq!(snapshot_run_order(), vec!["before", "in_set", "after"]);
 }
@@ -213,100 +159,9 @@ fn semantic_ordering_cycle_is_rejected_deterministically() {
     );
 
     let error = runtime
-        .plan_for::<Update>()
+        .run_schedule::<Update>(&mut world)
         .expect_err("cyclic set ordering must be rejected");
-    assert_eq!(
-        error,
-        ScheduleValidationError::OrderingCycle { schedule: "Update" }
-    );
-}
-
-#[test]
-fn access_conflicts_are_diagnostics_not_semantic_ordering() {
-    fn read_seen(_seen: Res<SeenCount>) {}
-    fn write_seen(_seen: ResMut<SeenCount>) {}
-
-    let mut world = World::new();
-    world.insert_resource(SeenCount(0));
-    let mut runtime = Runtime::new();
-    runtime.add_systems::<Update, _, _>(&mut world, (read_seen, write_seen));
-
-    let plan = runtime.plan_for::<Update>().unwrap().unwrap().clone();
-    assert_eq!(plan.stages.len(), 1);
-    assert_eq!(plan.stages[0].system_ids.len(), 2);
-    assert_eq!(plan.conflicts.len(), 1);
-
-    let report = runtime.plan_report_for::<Update>().unwrap().unwrap();
-    assert_eq!(report.conflicts.len(), 1);
-    let conflict = &report.conflicts[0];
-    assert_eq!(conflict.first_system_id.as_raw(), 0);
-    assert_eq!(conflict.second_system_id.as_raw(), 1);
-    assert!(conflict.first_system.contains("read_seen"));
-    assert!(conflict.second_system.contains("write_seen"));
-    assert_eq!(conflict.access_domain, AccessDomain::Resource);
-    assert!(conflict.access_name.ends_with("SeenCount"));
-    assert_eq!(conflict.conflict_kind, ConflictKind::ReadWrite);
-    assert!(conflict.message.contains("read/write conflict"));
-    assert!(conflict.message.contains("resource"));
-}
-
-#[test]
-fn derived_named_param_group_executes_and_reports_named_children() {
-    fn use_group(mut group: CounterParamGroup<'_>) {
-        group.seen.0 = group.step.0.saturating_add(1);
-    }
-
-    let mut world = World::new();
-    world.insert_resource(Step(41));
-    world.insert_resource(SeenCount(0));
-
-    let mut runtime = Runtime::new();
-    runtime.add_systems::<Update, _, _>(&mut world, use_group);
-    runtime.run_schedule::<Update>(&mut world).unwrap();
-
-    assert_eq!(world.resource::<SeenCount>().unwrap().0, 42);
-
-    let report = runtime.plan_report_for::<Update>().unwrap().unwrap();
-    let system_id = report.stages[0].systems[0].system_id;
-    let slots = runtime.param_slots_for_system(system_id).unwrap();
-    assert_eq!(slots.len(), 1);
-    assert_eq!(slots[0].kind, "param_group");
-    assert!(slots[0].type_name.contains("CounterParamGroup<'_>"));
-    assert_eq!(slots[0].id.path.as_slice(), [0]);
-    assert_eq!(slots[0].children.len(), 2);
-    assert_eq!(slots[0].children[0].name, Some("step"));
-    assert_eq!(slots[0].children[0].kind, "res");
-    assert_eq!(slots[0].children[0].id.path.as_slice(), [0, 0]);
-    assert_eq!(slots[0].children[1].name, Some("seen"));
-    assert_eq!(slots[0].children[1].kind, "res_mut");
-    assert_eq!(slots[0].children[1].id.path.as_slice(), [0, 1]);
-}
-
-#[test]
-fn generic_named_param_group_executes_and_reports_named_children() {
-    fn use_generic_group(mut group: GenericParamGroup<'_, Step>) {
-        group.seen.0 = group.value.0.saturating_add(1);
-    }
-
-    let mut world = World::new();
-    world.insert_resource(Step(41));
-    world.insert_resource(SeenCount(0));
-
-    let mut runtime = Runtime::new();
-    runtime.add_systems::<Update, _, _>(&mut world, use_generic_group);
-    runtime.run_schedule::<Update>(&mut world).unwrap();
-
-    assert_eq!(world.resource::<SeenCount>().unwrap().0, 42);
-
-    let report = runtime.plan_report_for::<Update>().unwrap().unwrap();
-    let slots = &report.stages[0].systems[0].param_slots;
-    assert_eq!(slots.len(), 1);
-    assert_eq!(slots[0].kind, "param_group");
-    assert!(slots[0].type_name.contains("GenericParamGroup"));
-    assert_eq!(slots[0].children[0].name, Some("value"));
-    assert_eq!(slots[0].children[0].kind, "res");
-    assert_eq!(slots[0].children[1].name, Some("seen"));
-    assert_eq!(slots[0].children[1].kind, "res_mut");
+    assert!(format!("{error:#}").contains("cyclic system ordering"));
 }
 
 #[test]
@@ -328,64 +183,6 @@ fn derive_handles_user_lifetime_named_w() {
 }
 
 #[test]
-fn nested_param_group_reports_recursive_child_paths() {
-    fn use_nested_group(mut group: OuterParamGroup<'_>) {
-        group.seen.0 = group.inner.step.0.saturating_add(2);
-    }
-
-    let mut world = World::new();
-    world.insert_resource(Step(40));
-    world.insert_resource(SeenCount(0));
-
-    let mut runtime = Runtime::new();
-    runtime.add_systems::<Update, _, _>(&mut world, use_nested_group);
-    runtime.run_schedule::<Update>(&mut world).unwrap();
-
-    assert_eq!(world.resource::<SeenCount>().unwrap().0, 42);
-
-    let report = runtime.plan_report_for::<Update>().unwrap().unwrap();
-    let slot = &report.stages[0].systems[0].param_slots[0];
-    assert_eq!(slot.kind, "param_group");
-    assert_eq!(slot.name, None);
-    assert_eq!(slot.id.path.as_slice(), [0]);
-    assert_eq!(slot.children[0].name, Some("inner"));
-    assert_eq!(slot.children[0].kind, "param_group");
-    assert_eq!(slot.children[0].id.path.as_slice(), [0, 0]);
-    assert_eq!(slot.children[0].children[0].name, Some("step"));
-    assert_eq!(slot.children[0].children[0].id.path.as_slice(), [0, 0, 0]);
-    assert_eq!(slot.children[1].name, Some("seen"));
-    assert_eq!(slot.children[1].id.path.as_slice(), [0, 1]);
-}
-
-#[test]
-fn tuple_param_group_reports_indexed_children_and_executes() {
-    fn use_tuple_group(mut group: (Res<Step>, ResMut<SeenCount>)) {
-        group.1.0 = group.0.0.saturating_add(3);
-    }
-
-    let mut world = World::new();
-    world.insert_resource(Step(39));
-    world.insert_resource(SeenCount(0));
-
-    let mut runtime = Runtime::new();
-    runtime.add_systems::<Update, _, _>(&mut world, use_tuple_group);
-    runtime.run_schedule::<Update>(&mut world).unwrap();
-
-    assert_eq!(world.resource::<SeenCount>().unwrap().0, 42);
-
-    let report = runtime.plan_report_for::<Update>().unwrap().unwrap();
-    let system_id = report.stages[0].systems[0].system_id;
-    let slots = runtime.param_slots_for_system(system_id).unwrap();
-    assert_eq!(slots.len(), 1);
-    assert_eq!(slots[0].kind, "tuple");
-    assert_eq!(slots[0].children.len(), 2);
-    assert_eq!(slots[0].children[0].name, Some("0"));
-    assert_eq!(slots[0].children[0].id.path.as_slice(), [0, 0]);
-    assert_eq!(slots[0].children[1].name, Some("1"));
-    assert_eq!(slots[0].children[1].id.path.as_slice(), [0, 1]);
-}
-
-#[test]
 fn grouped_conflicting_resource_borrows_are_rejected() {
     fn invalid_group(group: ConflictingResourceParamGroup<'_>) {
         let _ = (&group.read, &group.write);
@@ -401,91 +198,6 @@ fn grouped_conflicting_resource_borrows_are_rejected() {
         .expect_err("read/write group for one resource should fail registration");
     let message = format!("{err:#}");
     assert!(message.contains("conflicting param borrows"), "{message}");
-}
-
-#[test]
-fn system_ids_and_param_slot_ids_are_stable_and_skip_failed_registration() {
-    fn valid_a(_step: Res<Step>) {}
-    fn invalid(_group: ConflictingResourceParamGroup<'_>) {}
-    fn valid_b(_step: Res<Step>, _seen: Res<SeenCount>) {}
-
-    let mut world = World::new();
-    world.insert_resource(Step(0));
-    world.insert_resource(SeenCount(0));
-
-    let mut runtime = Runtime::new();
-    runtime.add_systems::<Update, _, _>(&mut world, (valid_a, invalid, valid_b));
-
-    let report = runtime.plan_report_for::<Update>().unwrap().unwrap();
-    let ids = report
-        .stages
-        .iter()
-        .flat_map(|stage| stage.systems.iter().map(|system| system.system_id.as_raw()))
-        .collect::<Vec<_>>();
-    assert_eq!(
-        ids,
-        vec![0, 1],
-        "failed registration must not consume system IDs"
-    );
-
-    let first_id = report.stages[0].systems[0].system_id;
-    let first_slots = runtime.param_slots_for_system(first_id).unwrap();
-    assert_eq!(first_slots.len(), 1);
-    assert_eq!(first_slots[0].id.system_id.as_raw(), first_id.as_raw());
-    assert_eq!(first_slots[0].id.path.as_slice(), [0]);
-    assert_eq!(first_slots[0].kind, "res");
-
-    let second_id = report.stages[0].systems[1].system_id;
-    let second_slots = runtime.param_slots_for_system(second_id).unwrap();
-    assert_eq!(second_slots.len(), 2);
-    assert_eq!(second_slots[0].id.path.as_slice(), [0]);
-    assert_eq!(second_slots[1].id.path.as_slice(), [1]);
-    assert_eq!(second_slots[0].kind, "res");
-    assert_eq!(second_slots[1].kind, "res");
-}
-
-#[test]
-fn runtime_plan_report_is_ecs_neutral_and_exposes_system_slots() {
-    fn stage_product(_step: Res<Step>, mut seen: ResMut<SeenCount>) {
-        seen.0 = seen.0.saturating_add(1);
-    }
-
-    fn consume_product(_seen: Res<SeenCount>) {}
-
-    let mut world = World::new();
-    world.insert_resource(Step(0));
-    world.insert_resource(SeenCount(0));
-
-    let mut runtime = Runtime::new();
-    runtime.add_systems::<Update, _, _>(&mut world, stage_product.in_set(GameplaySet));
-    runtime.add_systems::<Update, _, _>(
-        &mut world,
-        consume_product.in_set(PostGameplaySet).after(GameplaySet),
-    );
-
-    let report = runtime.plan_report_for::<Update>().unwrap().unwrap();
-
-    assert_eq!(report.schedule_label, "Update");
-    assert_eq!(report.stages.len(), 2);
-    assert!(report.stages[0].missing_system_indices.is_empty());
-    assert!(report.stages[1].missing_system_indices.is_empty());
-
-    let producer = &report.stages[0].systems[0];
-    assert_eq!(producer.system_id.as_raw(), 0);
-    assert!(producer.name.contains("stage_product"));
-    assert_eq!(producer.param_slots.len(), 2);
-    assert_eq!(producer.param_slots[0].kind, "res");
-    assert_eq!(producer.param_slots[0].id.system_id, producer.system_id);
-    assert_eq!(producer.param_slots[0].id.path.as_slice(), [0]);
-    assert_eq!(producer.param_slots[1].kind, "res_mut");
-    assert_eq!(producer.param_slots[1].id.system_id, producer.system_id);
-    assert_eq!(producer.param_slots[1].id.path.as_slice(), [1]);
-
-    let consumer = &report.stages[1].systems[0];
-    assert_eq!(consumer.system_id.as_raw(), 1);
-    assert!(consumer.name.contains("consume_product"));
-    assert_eq!(consumer.param_slots.len(), 1);
-    assert_eq!(consumer.param_slots[0].kind, "res");
 }
 
 #[test]
@@ -510,11 +222,6 @@ fn structural_command_systems_share_stage_and_merge_deterministically() {
         &mut world,
         (enqueue_first, enqueue_second, observe_stage_visibility),
     );
-
-    let plan = runtime.plan_for::<Update>().unwrap().unwrap().clone();
-    assert_eq!(plan.conflicts.len(), 0);
-    assert_eq!(plan.stages.len(), 1);
-    assert_eq!(plan.stages[0].system_indices.len(), 3);
 
     runtime.run_schedule::<Update>(&mut world).unwrap();
 
@@ -549,15 +256,12 @@ fn deferred_commands_flush_before_ecs_deferred_apply_boundary_callback() {
             .after(GameplaySet),
     );
 
-    let plan = runtime.plan_for::<Update>().unwrap().unwrap().clone();
-    assert_eq!(plan.stages.len(), 2);
-
     let mut boundaries = Vec::new();
     runtime
-        .run_schedule_with_deferred_apply_boundary::<Update, _>(&mut world, |boundary, world| {
+        .run_schedule_with_deferred_apply_boundary::<Update, _, _>(&mut world, |boundary, world| {
             let marker_count = world.query_state::<&Marker, ()>().iter(&*world).count();
             boundaries.push((boundary.schedule().name(), boundary.index(), marker_count));
-            Ok(())
+            Ok::<(), std::io::Error>(())
         })
         .unwrap();
 
@@ -589,7 +293,10 @@ fn closure_commands_queue_api_remains_functional() {
 fn typed_deferred_commands_apply_correctly() {
     let mut world = World::new();
     let mut commands = world.commands();
-    commands.defer(SpawnMarkerDeferred(77));
+    commands.queue(|world| {
+        let _ = world.spawn(Marker(77))?;
+        Ok(())
+    });
 
     assert_eq!(world.query_state::<&Marker, ()>().iter(&world).count(), 0);
     commands.apply(&mut world).unwrap();
@@ -607,12 +314,18 @@ fn mixed_closure_and_typed_commands_apply_in_deterministic_order() {
     let mut world = World::new();
     let mut commands = world.commands();
     commands.spawn(Marker(1));
-    commands.defer(SpawnMarkerDeferred(2));
+    commands.queue(|world| {
+        let _ = world.spawn(Marker(2))?;
+        Ok(())
+    });
     commands.queue(|world| {
         let _ = world.spawn(Marker(3))?;
         Ok(())
     });
-    commands.defer(SpawnMarkerDeferred(4));
+    commands.queue(|world| {
+        let _ = world.spawn(Marker(4))?;
+        Ok(())
+    });
 
     commands.apply(&mut world).unwrap();
 
@@ -630,7 +343,10 @@ fn batch_commands_apply_in_deterministic_insertion_order() {
     let mut commands = world.commands();
     commands.batch(|batch| {
         batch.spawn(Marker(1));
-        batch.defer(SpawnMarkerDeferred(2));
+        batch.queue(|world| {
+            let _ = world.spawn(Marker(2))?;
+            Ok(())
+        });
         batch.queue(|world| {
             let _ = world.spawn(Marker(3))?;
             Ok(())
@@ -683,7 +399,10 @@ fn batch_and_non_batch_commands_share_queue_order_deterministically() {
         Ok(())
     });
     commands.batch(|batch| {
-        batch.defer(SpawnMarkerDeferred(4));
+        batch.queue(|world| {
+            let _ = world.spawn(Marker(4))?;
+            Ok(())
+        });
     });
 
     commands.apply(&mut world).unwrap();
@@ -706,7 +425,10 @@ fn batch_supports_mixed_command_kinds() {
             world.insert(entity, Extra(5))?;
             Ok(())
         });
-        batch.defer(InsertExtraDeferred { entity, value: 6 });
+        batch.queue(move |world| {
+            world.insert(entity, Extra(6))?;
+            Ok(())
+        });
         batch.remove::<Extra>(entity);
     });
 
@@ -728,8 +450,8 @@ fn batch_stops_on_first_error_and_keeps_earlier_mutations() {
     let result = commands.apply(&mut world);
     assert!(matches!(
         result,
-        Err(ecs::CommandError::Entity(
-            ecs::EntityError::MissingComponent { .. }
+        Err(runen_ecs::CommandError::Entity(
+            runen_ecs::EntityError::MissingComponent { .. }
         ))
     ));
 
@@ -772,7 +494,10 @@ fn multiple_batches_in_one_stage_keep_deterministic_system_order() {
 #[test]
 fn typed_commands_do_not_mutate_before_stage_flush() {
     fn enqueue_typed(mut commands: Commands) {
-        commands.defer(SpawnMarkerDeferred(9));
+        commands.queue(|world| {
+            let _ = world.spawn(Marker(9))?;
+            Ok(())
+        });
     }
 
     fn observe_same_stage(mut seen: ResMut<SeenCount>, mut query: Query<&Marker>) {
@@ -793,9 +518,10 @@ fn typed_commands_do_not_mutate_before_stage_flush() {
 #[test]
 fn typed_commands_follow_stage_boundary_visibility_contract() {
     fn enqueue_stage_typed(target: Res<TargetEntity>, mut commands: Commands) {
-        commands.defer(InsertExtraDeferred {
-            entity: target.0,
-            value: 17,
+        let entity = target.0;
+        commands.queue(move |world| {
+            world.insert(entity, Extra(17))?;
+            Ok(())
         });
     }
 
@@ -862,13 +588,13 @@ fn failed_schedule_drops_stage_deferred_commands_instead_of_replaying_next_run()
     fn enqueue_then_fail_once(
         mut gate: ResMut<SpawnGate>,
         mut commands: Commands,
-    ) -> anyhow::Result<()> {
+    ) -> Result<(), std::io::Error> {
         if gate.0 {
             return Ok(());
         }
         commands.spawn(Marker(99));
         gate.0 = true;
-        anyhow::bail!("intentional failure");
+        Err(std::io::Error::other("intentional failure"))
     }
 
     let mut world = World::new();
@@ -877,7 +603,9 @@ fn failed_schedule_drops_stage_deferred_commands_instead_of_replaying_next_run()
     let mut runtime = Runtime::new();
     runtime.add_systems::<Update, _, _>(&mut world, enqueue_then_fail_once);
 
-    assert!(runtime.run_schedule::<Update>(&mut world).is_err());
+    let error = runtime.run_schedule::<Update>(&mut world).unwrap_err();
+    assert!(matches!(error, RuntimeError::System { .. }));
+    assert!(error.to_string().contains("intentional failure"));
     assert_eq!(world.query_state::<&Marker, ()>().iter(&world).count(), 0);
 
     runtime.run_schedule::<Update>(&mut world).unwrap();
@@ -905,7 +633,7 @@ unsafe impl SystemParam for StatefulParam {
 
     unsafe fn extract<'world, 'state>(
         state: &'state mut Self::State,
-        _context: ecs::SystemParamContext<'world>,
+        _context: runen_ecs::SystemParamContext<'world>,
     ) -> Result<Self::Item<'world, 'state>, SystemParamError> {
         *state = state.saturating_add(1);
         PARAM_EXTRACT_CALLS.fetch_add(1, Ordering::SeqCst);

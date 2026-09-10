@@ -25,7 +25,7 @@ struct TargetInputState {
     modifiers: Modifiers,
 }
 
-#[derive(Debug, Default, ecs::Resource)]
+#[derive(Debug, Default, runen_ecs::Resource)]
 pub struct EditorTargetInputRuntimeResource {
     by_window: BTreeMap<NativeWindowId, TargetInputState>,
 }

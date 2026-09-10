@@ -2,7 +2,7 @@ use super::domain::{
     OverlaySceneRuntime, SceneChannels, SceneCommand, SceneRegistry, SceneSlot, WorldSceneRuntime,
 };
 
-#[derive(Default, ecs::Component, ecs::Resource)]
+#[derive(Default, runen_ecs::Component, runen_ecs::Resource)]
 pub(crate) struct SceneResource {
     pub(crate) manager: Option<SceneManager>,
 }

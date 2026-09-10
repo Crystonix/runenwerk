@@ -1,5 +1,5 @@
 use anyhow::Result;
-use ecs::World;
+use runen_ecs::World;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 

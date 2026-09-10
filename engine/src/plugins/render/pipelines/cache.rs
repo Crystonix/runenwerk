@@ -5,7 +5,7 @@ pub struct PipelineCacheStats {
     pub failures: u64,
 }
 
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct PipelineCacheResource {
     stats: PipelineCacheStats,
 }

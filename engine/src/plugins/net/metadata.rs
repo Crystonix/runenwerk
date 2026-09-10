@@ -1,10 +1,10 @@
-use ecs::World;
 use engine_net::replication::{
     NetComponentMetadata, NetEntityMetadata, NetResourceMetadata, ReplicatedComponentDescriptor,
     ReplicatedEntityDescriptor, ReplicatedResourceDescriptor, ReplicationRegistry,
 };
+use runen_ecs::World;
 
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct NetworkReplicationMetadata {
     registry: ReplicationRegistry,
 }

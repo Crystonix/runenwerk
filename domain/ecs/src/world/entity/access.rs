@@ -1,12 +1,12 @@
-// Owner: ecs World Entity - Access APIs
+// Owner: RunenECS World Entity - Access APIs
 use crate::bundle::{
     Bundle, BundleComponentValue, BundleComponents, bundle_descriptors, prepare_bundle,
 };
 use crate::component::Component;
 use crate::entity::Entity;
 use crate::errors::EntityError;
-use crate::world::World;
 use crate::world::entity_handles::{EntityMut, EntityRef};
+use crate::world::{ChangeCursor, World};
 use std::collections::HashSet;
 
 impl World {
@@ -77,7 +77,10 @@ impl World {
     }
 
     #[doc(hidden)]
-    pub fn __entity_component_ticks<T: Component>(&self, entity: Entity) -> Option<(u64, u64)> {
+    pub fn __entity_component_ticks<T: Component>(
+        &self,
+        entity: Entity,
+    ) -> Option<(ChangeCursor, ChangeCursor)> {
         self.archetype_component_metadata::<T>(entity)
     }
 }

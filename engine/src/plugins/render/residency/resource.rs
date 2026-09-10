@@ -119,7 +119,7 @@ pub struct RenderGpuResidencySummary {
     pub diagnostic_count: usize,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 pub struct RenderGpuResidencyBudgetResource {
     pub max_resident_entries: usize,
     pub max_resident_bytes: u64,
@@ -140,7 +140,7 @@ impl Default for RenderGpuResidencyBudgetResource {
     }
 }
 
-#[derive(Debug, Clone, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Resource)]
 pub struct RenderGpuResidencyResource {
     entries: BTreeMap<ProductIdentity, RenderGpuResidencyEntry>,
     journal: Vec<RenderGpuResidencyJournalEntry>,

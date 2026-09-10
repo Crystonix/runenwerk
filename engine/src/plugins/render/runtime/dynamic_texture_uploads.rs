@@ -184,7 +184,7 @@ impl fmt::Display for RenderDynamicTextureUploadRegistryError {
 
 impl std::error::Error for RenderDynamicTextureUploadRegistryError {}
 
-#[derive(Debug, Default, Clone, ecs::Component, ecs::Resource)]
+#[derive(Debug, Default, Clone, runen_ecs::Component, runen_ecs::Resource)]
 pub struct RenderDynamicTextureUploadRegistryResource {
     contributions: BTreeMap<RenderFrameProducerId, Vec<RenderDynamicTextureUploadDescriptor>>,
     diagnostics: Vec<RenderDynamicTextureUploadDiagnostic>,

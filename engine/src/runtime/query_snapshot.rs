@@ -2,7 +2,6 @@ use std::collections::BTreeMap;
 
 use crate::runtime::publication::PublicationBoundary;
 use anyhow::Result;
-use ecs::World;
 use product::{
     FieldProductDiagnostic, FieldProductDiagnosticCode, FieldProductDiagnosticSeverity,
     ProductConsumptionRequest, ProductConsumptionStatus, ProductIdentity,
@@ -10,6 +9,7 @@ use product::{
     QuerySnapshotPublicationReport, QuerySnapshotPublicationStatus, evaluate_product_consumption,
     ratify_query_snapshot_product,
 };
+use runen_ecs::World;
 
 const QUERY_SNAPSHOT_JOURNAL_LIMIT: usize = 512;
 
@@ -25,7 +25,7 @@ pub struct QuerySnapshotJournalEntry {
     pub diagnostics: Vec<FieldProductDiagnostic>,
 }
 
-#[derive(Debug, Clone, Default, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Resource)]
 pub struct QuerySnapshotRuntimeResource {
     staged: Vec<QuerySnapshotProductDescriptor>,
     current: BTreeMap<ProductIdentity, QuerySnapshotProductDescriptor>,

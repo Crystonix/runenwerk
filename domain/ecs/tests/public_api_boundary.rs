@@ -10,7 +10,6 @@ const WORLD_STATE_RS: &str = include_str!("../src/world/state.rs");
 const WORLD_CAPABILITY_RS: &str = include_str!("../src/world/capability.rs");
 const WORLD_RUNTIME_RS: &str = include_str!("../src/world/runtime.rs");
 const CHANGE_TRACKING_RS: &str = include_str!("../src/world/change_tracking.rs");
-const TELEMETRY_RS: &str = include_str!("../src/telemetry.rs");
 const BUNDLE_RS: &str = include_str!("../src/bundle.rs");
 const COMPONENT_ACCESS_RS: &str = include_str!("../src/world/component/access.rs");
 const COMPONENT_REGISTRATION_RS: &str = include_str!("../src/world/component/registration.rs");
@@ -19,7 +18,7 @@ const COMPONENT_REGISTRATION_RS: &str = include_str!("../src/world/component/reg
 fn prelude_remains_gameplay_focused() {
     assert!(PRELUDE_RS.contains("Query"));
     assert!(PRELUDE_RS.contains("Res"));
-    assert!(PRELUDE_RS.contains("ResView"));
+    assert!(!PRELUDE_RS.contains("ResView"));
     assert!(PRELUDE_RS.contains("ResMut"));
     assert!(PRELUDE_RS.contains("Commands"));
     assert!(PRELUDE_RS.contains("Runtime"));
@@ -65,7 +64,6 @@ fn c6_messaging_authority_is_absent_from_ecs_surfaces() {
         WORLD_STATE_RS,
         WORLD_CAPABILITY_RS,
         QUERY_ACCESS_RS,
-        TELEMETRY_RS,
     ] {
         for removed in REMOVED {
             assert!(

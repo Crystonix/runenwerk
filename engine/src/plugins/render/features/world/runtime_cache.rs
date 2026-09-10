@@ -3,7 +3,7 @@ use runen_spatial::ChunkId;
 use std::collections::{BTreeMap, BTreeSet};
 use world_ops::{ChunkGeneration, ChunkRevision};
 
-#[derive(Debug, Clone, PartialEq, Eq, ecs::Resource)]
+#[derive(Debug, Clone, PartialEq, Eq, runen_ecs::Resource)]
 pub struct WorldGpuResidencyEntry {
     pub chunk_id: ChunkId,
     pub chunk_revision: ChunkRevision,
@@ -13,7 +13,7 @@ pub struct WorldGpuResidencyEntry {
     pub priority: i32,
 }
 
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct WorldRuntimeCacheResource {
     pub by_chunk: BTreeMap<ChunkId, WorldGpuResidencyEntry>,
     pub stale_chunks: BTreeSet<ChunkId>,

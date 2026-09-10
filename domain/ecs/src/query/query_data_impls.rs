@@ -1,4 +1,4 @@
-// Owner: Grotto Quest ecs - Query Runtime
+// Owner: RunenECS - Query Runtime
 use super::access_and_filters::QueryAccess;
 use super::traits_and_state::{QueryArchetypeRow, QueryData, QueryFastCache};
 use crate::component::Component;
@@ -127,12 +127,12 @@ impl<T: Component> QueryData for &mut T {
 
     fn mark_changed(world: QueryCapability<'_>, entity: Entity) {
         // Safety: query execution ensures exclusive mutable world access for this query form.
-        world.mark_component_modified_by_id(entity, TypeId::of::<T>(), T::component_name());
+        world.mark_component_modified_by_id(entity, TypeId::of::<T>());
     }
 
     fn mark_changed_fast(world: QueryCapability<'_>, entity: Entity, _cache: &mut QueryFastCache) {
         let world_mut = world;
-        world_mut.mark_component_modified_by_id(entity, TypeId::of::<T>(), T::component_name());
+        world_mut.mark_component_modified_by_id(entity, TypeId::of::<T>());
     }
 
     unsafe fn fetch<'w>(world: QueryCapability<'w>, entity: Entity) -> Option<Self::Item<'w>> {
@@ -178,7 +178,7 @@ impl<T: Component> QueryData for (Entity, &mut T) {
 
     fn mark_changed(world: QueryCapability<'_>, entity: Entity) {
         // Safety: query execution ensures exclusive mutable world access for this query form.
-        world.mark_component_modified_by_id(entity, TypeId::of::<T>(), T::component_name());
+        world.mark_component_modified_by_id(entity, TypeId::of::<T>());
     }
 
     unsafe fn fetch<'w>(world: QueryCapability<'w>, entity: Entity) -> Option<Self::Item<'w>> {
@@ -269,12 +269,12 @@ impl<A: Component, B: Component> QueryData for (&mut A, &B) {
 
     fn mark_changed(world: QueryCapability<'_>, entity: Entity) {
         // Safety: query execution ensures exclusive mutable world access for this query form.
-        world.mark_component_modified_by_id(entity, TypeId::of::<A>(), A::component_name());
+        world.mark_component_modified_by_id(entity, TypeId::of::<A>());
     }
 
     fn mark_changed_fast(world: QueryCapability<'_>, entity: Entity, _cache: &mut QueryFastCache) {
         let world_mut = world;
-        world_mut.mark_component_modified_by_id(entity, TypeId::of::<A>(), A::component_name());
+        world_mut.mark_component_modified_by_id(entity, TypeId::of::<A>());
     }
 
     unsafe fn fetch<'w>(world: QueryCapability<'w>, entity: Entity) -> Option<Self::Item<'w>> {
@@ -316,7 +316,7 @@ impl<A: Component, B: Component> QueryData for (&A, &mut B) {
 
     fn mark_changed(world: QueryCapability<'_>, entity: Entity) {
         // Safety: query execution ensures exclusive mutable world access for this query form.
-        world.mark_component_modified_by_id(entity, TypeId::of::<B>(), B::component_name());
+        world.mark_component_modified_by_id(entity, TypeId::of::<B>());
     }
 
     unsafe fn fetch<'w>(world: QueryCapability<'w>, entity: Entity) -> Option<Self::Item<'w>> {
@@ -406,8 +406,8 @@ impl<A: Component, B: Component> QueryData for (&mut A, &mut B) {
 
     fn mark_changed_fast(world: QueryCapability<'_>, entity: Entity, _cache: &mut QueryFastCache) {
         let world_mut = world;
-        world_mut.mark_component_modified_by_id(entity, TypeId::of::<A>(), A::component_name());
-        world_mut.mark_component_modified_by_id(entity, TypeId::of::<B>(), B::component_name());
+        world_mut.mark_component_modified_by_id(entity, TypeId::of::<A>());
+        world_mut.mark_component_modified_by_id(entity, TypeId::of::<B>());
     }
 
     unsafe fn fetch<'w>(world: QueryCapability<'w>, entity: Entity) -> Option<Self::Item<'w>> {
@@ -466,7 +466,7 @@ impl<T: Component> QueryData for Option<&mut T> {
         let should_mark = world.component::<T>(entity);
         if should_mark.is_some() {
             // Safety: query execution ensures exclusive mutable world access for this query form.
-            world.mark_component_modified_by_id(entity, TypeId::of::<T>(), T::component_name());
+            world.mark_component_modified_by_id(entity, TypeId::of::<T>());
         }
     }
 
@@ -490,7 +490,7 @@ impl<A: Component, B: Component> QueryData for (&mut A, Option<&B>) {
 
     fn mark_changed(world: QueryCapability<'_>, entity: Entity) {
         // Safety: query execution ensures exclusive mutable world access for this query form.
-        world.mark_component_modified_by_id(entity, TypeId::of::<A>(), A::component_name());
+        world.mark_component_modified_by_id(entity, TypeId::of::<A>());
     }
 
     unsafe fn fetch<'w>(world: QueryCapability<'w>, entity: Entity) -> Option<Self::Item<'w>> {
@@ -547,7 +547,7 @@ impl<A: Component, B: Component> QueryData for (&A, Option<&mut B>) {
         let should_mark = world.component::<B>(entity);
         if should_mark.is_some() {
             // Safety: query execution ensures exclusive mutable world access for this query form.
-            world.mark_component_modified_by_id(entity, TypeId::of::<B>(), B::component_name());
+            world.mark_component_modified_by_id(entity, TypeId::of::<B>());
         }
     }
 
@@ -655,7 +655,7 @@ impl<A: Component, B: Component, C: Component> QueryData for (&mut A, &B, &C) {
 
     fn mark_changed(world: QueryCapability<'_>, entity: Entity) {
         // Safety: query execution ensures exclusive mutable world access for this query form.
-        world.mark_component_modified_by_id(entity, TypeId::of::<A>(), A::component_name());
+        world.mark_component_modified_by_id(entity, TypeId::of::<A>());
     }
 
     unsafe fn fetch<'w>(world: QueryCapability<'w>, entity: Entity) -> Option<Self::Item<'w>> {

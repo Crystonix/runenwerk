@@ -1,4 +1,7 @@
 use crate::Entity;
+use crate::scheduler::plan::ScheduleValidationError;
+use crate::system::SystemParamError;
+use std::error::Error;
 use thiserror::Error;
 
 #[derive(Debug, Error, Clone, PartialEq, Eq)]
@@ -52,4 +55,30 @@ pub enum QueryError {
         domain: &'static str,
         target: &'static str,
     },
+}
+
+/// Structured envelope for failures owned by the ECS runtime boundary.
+#[derive(Debug, Error)]
+pub enum RuntimeError {
+    #[error("runtime setup failed: {message}")]
+    Setup { message: String },
+    #[error(transparent)]
+    Schedule(#[from] ScheduleValidationError),
+    #[error(transparent)]
+    Param(#[from] SystemParamError),
+    #[error(transparent)]
+    Command(#[from] CommandError),
+    #[error("system '{system}' failed: {source}")]
+    System {
+        system: String,
+        #[source]
+        source: Box<dyn Error + Send + Sync>,
+    },
+    #[error("runtime boundary callback failed: {source}")]
+    Boundary {
+        #[source]
+        source: Box<dyn Error + Send + Sync>,
+    },
+    #[error("runtime invariant violated: {message}")]
+    Invariant { message: &'static str },
 }

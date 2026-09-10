@@ -68,10 +68,10 @@ use crate::shell::{
     editor_lab_preview_scenarios, evidence_warning, mounted_surface_requests_with_registry,
 };
 
-#[derive(Debug, Copy, Clone, PartialEq, ecs::Component)]
+#[derive(Debug, Copy, Clone, PartialEq, runen_ecs::Component)]
 struct TestMarker;
 
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Reflect)]
+#[derive(Debug, Clone, Default, runen_ecs::Component, runen_ecs::Reflect)]
 struct QueryMarker {
     value: i32,
 }

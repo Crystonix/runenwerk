@@ -376,7 +376,7 @@ pub(crate) fn clear_prepared_frame(world: &mut WorldMut) {
 }
 
 pub(crate) fn build_frame_feature_contributions(
-    world: &ecs::World,
+    world: &runen_ecs::World,
     world_scene_label: String,
     overlay_scene_label: String,
     execution_feature_ids: &[RenderFeatureId],
@@ -523,7 +523,7 @@ pub(crate) fn build_frame_feature_contributions(
 }
 
 fn apply_surface_ui_contribution(
-    world: &ecs::World,
+    world: &runen_ecs::World,
     render_surface_id: crate::plugins::render::backend::RenderSurfaceId,
     contributions: &mut PreparedFrameContributions,
 ) {
@@ -539,7 +539,7 @@ fn apply_surface_ui_contribution(
 }
 
 fn collect_registered_feature_contributions(
-    world: &ecs::World,
+    world: &runen_ecs::World,
     scene_route: &PreparedSceneRouteContribution,
     contributions: &mut PreparedFrameContributions,
 ) {
@@ -615,7 +615,7 @@ fn collect_registered_feature_contributions(
 }
 
 fn feature_policy(
-    world: &ecs::World,
+    world: &runen_ecs::World,
     feature_id: RenderFeatureId,
     fallback: FeatureFallbackPolicy,
 ) -> FeatureFallbackPolicy {
@@ -653,7 +653,7 @@ fn collect_execution_feature_ids(
 }
 
 fn collect_flow_declared_state_resources<'a>(
-    world: &'a ecs::World,
+    world: &'a runen_ecs::World,
     compiled_flows: &[CompiledRenderFlowPlan],
 ) -> ExtractedRenderStateMap<'a> {
     let mut values = ExtractedRenderStateMap::new();
@@ -872,7 +872,7 @@ fn project_dispatch_for_pass(
 mod tests {
     use super::*;
 
-    #[derive(Debug, Clone, ecs::Component, ecs::Resource)]
+    #[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Resource)]
     struct TestContributionResource {
         value: String,
     }
@@ -914,8 +914,8 @@ mod tests {
         })
     }
 
-    fn world_with_test_feature() -> ecs::World {
-        let mut world = ecs::World::default();
+    fn world_with_test_feature() -> runen_ecs::World {
+        let mut world = runen_ecs::World::default();
         let mut feature_registry = RenderFeatureRegistryResource::default();
         feature_registry.upsert_descriptor(RenderFeatureDescriptor::new(
             test_feature_id(),
@@ -978,7 +978,7 @@ mod tests {
 
     #[test]
     fn render_feature_contributions_default_scene_route_uses_registered_collector() {
-        let world = ecs::World::default();
+        let world = runen_ecs::World::default();
 
         let contributions = build_frame_feature_contributions(
             &world,

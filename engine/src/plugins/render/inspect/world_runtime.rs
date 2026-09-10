@@ -1,4 +1,4 @@
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct WorldRuntimeInspectorSnapshot {
     pub chunk_dirty_count: usize,
     pub queued_interactive: usize,

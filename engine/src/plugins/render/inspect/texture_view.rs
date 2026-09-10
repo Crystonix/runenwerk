@@ -3,7 +3,7 @@ use crate::plugins::render::inspect::{CaptureStage, RenderCapturedTexture};
 use crate::plugins::render::{RenderFlow, RenderResourceDeclaration, RenderTargetAliasKind};
 use runen_gpu::GpuResourceLifetime;
 
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct RenderTextureInspectorState {
     pub selected_texture: Option<String>,
     pub hovered_texture: Option<String>,

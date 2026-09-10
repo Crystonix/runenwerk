@@ -1,4 +1,4 @@
-use ecs::Reflect;
+use runen_ecs::Reflect;
 
 trait Marker {}
 impl Marker for u32 {}

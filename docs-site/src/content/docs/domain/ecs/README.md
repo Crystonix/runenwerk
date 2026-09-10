@@ -1,42 +1,36 @@
 ---
-title: "ECS Crate"
-description: "Documentation for ECS crate."
+title: "RunenECS"
+description: "Documentation for the standalone RunenECS package."
 status: active
-owner: ecs
+owner: runen-ecs
 layer: domain
 canonical: true
 last_reviewed: 2026-09-10
 related_designs:
-  - ../../design/accepted/execution-fabric-and-product-jobs-design.md
-related_roadmaps:
-  - ../../workspace/sdf-first-execution-roadmap.md
+  - ../../design/accepted/runenecs-extraction-boundary-design.md
+  - ../../design/accepted/runenecs-boundary-repair-execution-plan.md
 ---
 
-# ECS Crate
+# RunenECS
 
-`ecs` is the ECS runtime foundation in the `domain` layer.
+The `runen-ecs` package is a deterministic, engine-agnostic entity-component-
+system framework. Its Rust crate name is `runen_ecs`; the derive macros are
+provided by the companion `runen-ecs-macros` package.
 
 ## Quick Overview
 
-- `World`: entities/components/resources and component indexes
-- Query runtime: `Query`, `QueryState`, `QueryOrphaned`
-- ECS scheduling: `Runtime`, `ScheduleLabel`, `SystemSet`, `in_set`, `before`, `after`
-- Schedule diagnostics: execution stages, cycle validation, access conflicts, parameter-slot metadata
-- Deferred visibility integration: `DeferredApplyBoundary`
-- System params: `Res`, `ResMut`, `ResView`, `Commands`
-- Deferred mutation primitives: `Commands`, `DeferredCommand`, `BatchCommands`
-- Stateful tracking: `StatefulComponent`, `component_state`, `mark_stateful_changed`
-
-## Minimal Getting Started
+- `World`: entities, components, resources, and optional component indexes
+- `Query`, `QueryState`, and ECS-native `Added`, `Changed`, and `RemovedQuery`
+- `Runtime`, schedule labels, system sets, explicit semantic ordering, and validation
+- `Res`, `ResMut`, built-in exclusive `WorldMut`, and derived `SystemParam`
+- deferred `Commands` and `BatchCommands` with ECS-owned visibility boundaries
+- optional standalone reflection APIs
 
 ```rust
-use ecs::prelude::*;
+use runen_ecs::prelude::*;
 
-#[derive(Debug, Copy, Clone, PartialEq, ecs::Component)]
-struct Position {
-    x: f32,
-    y: f32,
-}
+#[derive(Debug, Copy, Clone, PartialEq, runen_ecs::Component)]
+struct Position { x: f32, y: f32 }
 
 let mut world = World::new();
 let entity = world.spawn(Position { x: 1.0, y: 2.0 }).unwrap();
@@ -44,36 +38,22 @@ world.require_mut::<Position>(entity).unwrap().x += 1.0;
 assert_eq!(world.require::<Position>(entity).unwrap().x, 2.0);
 ```
 
+## Ownership boundary
+
+RunenECS owns live ECS state, generic schedule semantics, deterministic serial
+execution, ECS access facts, structured ECS runtime errors, and deferred-command
+visibility. Application lifecycle, rendering, networking, replay, product
+publication, and frame policy remain host concerns.
+
+The `ChangeCursor` returned by `World::current_change_tick` is an ECS-local
+monotonic observation position. It crosses the inner counter boundary through
+an explicit epoch and panics before the absolute two-word position is reused;
+it is not an application, network, or persistence revision.
+
 ## Documentation
 
-- Docs hub: [00-overview.md](./00-overview.md)
-- Usage guide: [usage-guide.md](./usage-guide.md)
-- Advanced guide: [advanced-guide.md](./advanced-guide.md)
-- Architecture (internals): [architecture.md](./architecture.md)
-- Feature map: [features.md](./features.md)
-
-## SDF-First Execution Ownership
-
-For the SDF-first open-world substrate, RunenECS owns live ECS state, system
-interfaces, deterministic system identity, generic schedule labels and system
-sets, explicit semantic ordering, ECS access facts, schedule validation,
-deterministic serial reference execution, and deferred-command visibility.
-Access incompatibility is diagnostic information and does not itself create
-semantic `before`/`after` order.
-
-Deferred commands become visible at ECS-owned deferred-apply boundaries. `Runtime`
-can expose each such point as an ECS-neutral `DeferredApplyBoundary` after the
-flush succeeds. The boundary carries generic schedule identity plus a boundary
-sequence index, not planner-stage identity. Runenwerk Engine may use that fact to
-apply application policy, but product publication, query-snapshot publication,
-rendering, replay/network capture, and host lifecycle meaning are not RunenECS
-concepts.
-
-Current `ExecutionStage`/plan-report stage data remains ECS planning and diagnostic
-shape. Consumers must not reinterpret a planner stage index as application
-lifecycle or publication identity.
-
-ECS also exposes `query_snapshot_source_generation` plus explicit `QueryAccess`
-builder methods for component/resource access sets. These helpers compute
-deterministic source generations from existing component and resource change
-tracking while keeping `domain/ecs` product-agnostic.
+- [Overview](./00-overview.md)
+- [Usage guide](./usage-guide.md)
+- [Advanced guide](./advanced-guide.md)
+- [Architecture](./architecture.md)
+- [Feature map](./features.md)

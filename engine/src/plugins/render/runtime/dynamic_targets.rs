@@ -56,7 +56,7 @@ impl From<RenderDynamicTextureTargetDescriptorError>
     }
 }
 
-#[derive(Debug, Default, Clone, ecs::Component, ecs::Resource)]
+#[derive(Debug, Default, Clone, runen_ecs::Component, runen_ecs::Resource)]
 pub struct RenderDynamicTextureTargetRequestRegistryResource {
     contributions: BTreeMap<
         RenderFrameProducerId,

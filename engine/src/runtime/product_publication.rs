@@ -6,7 +6,7 @@ use product::{
     ratify_product_publication,
 };
 
-use ecs::World;
+use runen_ecs::World;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProductPublicationJournalEntry {
@@ -19,7 +19,7 @@ pub struct ProductPublicationJournalEntry {
     pub output_products: Vec<ProductIdentity>,
 }
 
-#[derive(Debug, Clone, Default, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Resource)]
 pub struct ProductPublicationRuntimeResource {
     staged: Vec<ProductPublicationOutcome>,
     journal: Vec<ProductPublicationJournalEntry>,

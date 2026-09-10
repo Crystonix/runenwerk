@@ -66,7 +66,7 @@ pub(crate) struct TerrainComposeParams {
     pub colors_d: [f32; 4],
 }
 
-#[derive(Debug, Clone, ecs::Resource)]
+#[derive(Debug, Clone, runen_ecs::Resource)]
 pub(crate) struct ProceduralSkyTerrainState {
     time_seconds: f32,
     camera_position: [f32; 3],

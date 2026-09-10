@@ -1,4 +1,4 @@
-// Owner: ecs World Component - Reflection Registration APIs
+// Owner: RunenECS World Component - Reflection Registration APIs
 use crate::reflect::Reflect;
 use crate::world::World;
 use std::any::TypeId;

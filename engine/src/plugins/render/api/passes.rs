@@ -58,7 +58,7 @@ impl ComputePassBuilder {
         projection: F,
     ) -> Result<Self, RenderFlowAuthoringError>
     where
-        S: ecs::Resource + Send + Sync + 'static,
+        S: runen_ecs::Resource + Send + Sync + 'static,
         U: GpuParams + Send + Sync + 'static,
         F: Fn(&S) -> U + Send + Sync + 'static,
     {
@@ -74,7 +74,7 @@ impl ComputePassBuilder {
         projection: F,
     ) -> Self
     where
-        S: ecs::Resource + Send + Sync + 'static,
+        S: runen_ecs::Resource + Send + Sync + 'static,
         U: GpuParams + Send + Sync + 'static,
         F: Fn(&S) -> U + Send + Sync + 'static,
     {
@@ -150,7 +150,7 @@ impl ComputePassBuilder {
 
     pub fn dispatch_from_state<S>(mut self, projection: fn(&S) -> [u32; 3]) -> Self
     where
-        S: ecs::Resource + Send + Sync + 'static,
+        S: runen_ecs::Resource + Send + Sync + 'static,
     {
         self.pass.compute_dispatch = Some(ComputeDispatchDescriptor::State(
             ComputeDispatchBinding::state(projection),
@@ -236,7 +236,7 @@ impl FullscreenPassBuilder {
         projection: F,
     ) -> Result<Self, RenderFlowAuthoringError>
     where
-        S: ecs::Resource + Send + Sync + 'static,
+        S: runen_ecs::Resource + Send + Sync + 'static,
         U: GpuParams + Send + Sync + 'static,
         F: Fn(&S) -> U + Send + Sync + 'static,
     {
@@ -251,7 +251,7 @@ impl FullscreenPassBuilder {
         projection: F,
     ) -> Result<Self, RenderFlowAuthoringError>
     where
-        S: ecs::Resource + Send + Sync + 'static,
+        S: runen_ecs::Resource + Send + Sync + 'static,
         U: GpuParams + Send + Sync + 'static,
         F: Fn(&S, (u32, u32)) -> U + Send + Sync + 'static,
     {
@@ -272,7 +272,7 @@ impl FullscreenPassBuilder {
         projection: F,
     ) -> Self
     where
-        S: ecs::Resource + Send + Sync + 'static,
+        S: runen_ecs::Resource + Send + Sync + 'static,
         U: GpuParams + Send + Sync + 'static,
         F: Fn(&S) -> U + Send + Sync + 'static,
     {
@@ -292,7 +292,7 @@ impl FullscreenPassBuilder {
         projection: F,
     ) -> Self
     where
-        S: ecs::Resource + Send + Sync + 'static,
+        S: runen_ecs::Resource + Send + Sync + 'static,
         U: GpuParams + Send + Sync + 'static,
         F: Fn(&S, (u32, u32)) -> U + Send + Sync + 'static,
     {
@@ -464,7 +464,7 @@ impl GraphicsPassBuilder {
         projection: F,
     ) -> Result<Self, RenderFlowAuthoringError>
     where
-        S: ecs::Resource + Send + Sync + 'static,
+        S: runen_ecs::Resource + Send + Sync + 'static,
         U: GpuParams + Send + Sync + 'static,
         F: Fn(&S) -> U + Send + Sync + 'static,
     {
@@ -479,7 +479,7 @@ impl GraphicsPassBuilder {
         projection: F,
     ) -> Result<Self, RenderFlowAuthoringError>
     where
-        S: ecs::Resource + Send + Sync + 'static,
+        S: runen_ecs::Resource + Send + Sync + 'static,
         U: GpuParams + Send + Sync + 'static,
         F: Fn(&S, (u32, u32)) -> U + Send + Sync + 'static,
     {
@@ -500,7 +500,7 @@ impl GraphicsPassBuilder {
         projection: F,
     ) -> Self
     where
-        S: ecs::Resource + Send + Sync + 'static,
+        S: runen_ecs::Resource + Send + Sync + 'static,
         U: GpuParams + Send + Sync + 'static,
         F: Fn(&S) -> U + Send + Sync + 'static,
     {
@@ -520,7 +520,7 @@ impl GraphicsPassBuilder {
         projection: F,
     ) -> Self
     where
-        S: ecs::Resource + Send + Sync + 'static,
+        S: runen_ecs::Resource + Send + Sync + 'static,
         U: GpuParams + Send + Sync + 'static,
         F: Fn(&S, (u32, u32)) -> U + Send + Sync + 'static,
     {
@@ -994,7 +994,7 @@ fn add_uniform_state_binding<S, U, F>(
     uniform_id: GpuWorkResourceId,
     projection: F,
 ) where
-    S: ecs::Resource + Send + Sync + 'static,
+    S: runen_ecs::Resource + Send + Sync + 'static,
     U: GpuParams + Send + Sync + 'static,
     F: Fn(&S) -> U + Send + Sync + 'static,
 {
@@ -1013,7 +1013,7 @@ fn add_uniform_state_with_surface_binding<S, U, F>(
     uniform_id: GpuWorkResourceId,
     projection: F,
 ) where
-    S: ecs::Resource + Send + Sync + 'static,
+    S: runen_ecs::Resource + Send + Sync + 'static,
     U: GpuParams + Send + Sync + 'static,
     F: Fn(&S, (u32, u32)) -> U + Send + Sync + 'static,
 {

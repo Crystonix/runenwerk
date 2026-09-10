@@ -1,4 +1,4 @@
-// Owner: ecs World Component - Introspection APIs
+// Owner: RunenECS World Component - Introspection APIs
 use crate::entity::Entity;
 use crate::reflect::{ReflectValueMut, ReflectValueRef, TypeInfo};
 use crate::world::World;

@@ -31,7 +31,7 @@ impl FramePacingMode {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 pub struct FramePacingPolicyResource {
     pub mode: FramePacingMode,
 }
@@ -62,7 +62,7 @@ impl FramePacingPolicyResource {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, PartialEq, runen_ecs::Component, runen_ecs::Resource)]
 pub struct FramePacingRuntimeStateResource {
     pub mode: FramePacingMode,
     pub last_frame_interval_ms: f32,

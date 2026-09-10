@@ -120,7 +120,7 @@ fn hold_trigger_name(slot: SceneTemplateButtonSlot) -> &'static str {
 }
 
 fn hit_test_button_slot(
-    world: &ecs::World,
+    world: &runen_ecs::World,
     ui: &ConsoleUiRuntimeState,
     pointer: (f32, f32),
 ) -> Option<SceneTemplateButtonSlot> {
@@ -133,7 +133,11 @@ fn hit_test_button_slot(
     None
 }
 
-fn contains_point(world: &ecs::World, entity: ecs::Entity, pointer: (f32, f32)) -> bool {
+fn contains_point(
+    world: &runen_ecs::World,
+    entity: runen_ecs::Entity,
+    pointer: (f32, f32),
+) -> bool {
     let Some(node) = world.get::<SceneUiNode>(entity) else {
         return false;
     };
@@ -150,7 +154,7 @@ fn contains_point(world: &ecs::World, entity: ecs::Entity, pointer: (f32, f32)) 
 }
 
 fn apply_scene_template_visuals(
-    world: &mut ecs::World,
+    world: &mut runen_ecs::World,
     ui: &mut ConsoleUiRuntimeState,
     scene: &SceneTemplateSceneSpec,
 ) {
@@ -181,8 +185,8 @@ fn apply_scene_template_visuals(
 }
 
 fn apply_template_button(
-    world: &mut ecs::World,
-    entity: ecs::Entity,
+    world: &mut runen_ecs::World,
+    entity: runen_ecs::Entity,
     button: Option<&SceneTemplateButtonSpec>,
 ) {
     if let Ok(mut entity_ref) = world.entity_mut(entity) {
@@ -202,7 +206,7 @@ fn apply_template_button(
     }
 }
 
-fn apply_runtime_layout(world: &mut ecs::World, ui: &mut ConsoleUiRuntimeState) {
+fn apply_runtime_layout(world: &mut runen_ecs::World, ui: &mut ConsoleUiRuntimeState) {
     if !ui.layout_dirty {
         return;
     }
@@ -286,7 +290,7 @@ fn apply_runtime_layout(world: &mut ecs::World, ui: &mut ConsoleUiRuntimeState) 
     ui.layout_dirty = false;
 }
 
-fn set_transform(world: &mut ecs::World, entity: ecs::Entity, transform: UiTransform) {
+fn set_transform(world: &mut runen_ecs::World, entity: runen_ecs::Entity, transform: UiTransform) {
     if let Ok(mut entity_ref) = world.entity_mut(entity)
         && let Some(mut current) = entity_ref.get_mut::<UiTransform>()
     {
@@ -294,7 +298,7 @@ fn set_transform(world: &mut ecs::World, entity: ecs::Entity, transform: UiTrans
     }
 }
 
-fn sync_runtime_text(world: &mut ecs::World, ui: &mut ConsoleUiRuntimeState) {
+fn sync_runtime_text(world: &mut runen_ecs::World, ui: &mut ConsoleUiRuntimeState) {
     if ui.log_lines.is_empty() {
         ui.log_lines.push("[world] scene overlay ready".to_string());
     }
@@ -334,7 +338,7 @@ fn sync_runtime_text(world: &mut ecs::World, ui: &mut ConsoleUiRuntimeState) {
 }
 
 fn build_overlay_frame_via_substrate(
-    world: &ecs::World,
+    world: &runen_ecs::World,
     ui: &ConsoleUiRuntimeState,
     template_mode: bool,
 ) -> ui_render_data::UiFrame {
@@ -419,8 +423,8 @@ fn build_overlay_frame_via_substrate(
 
 #[allow(clippy::too_many_arguments)]
 fn append_text_panel_node(
-    world: &ecs::World,
-    entity: ecs::Entity,
+    world: &runen_ecs::World,
+    entity: runen_ecs::Entity,
     panel_id: WidgetId,
     clip_text: bool,
     center_text: bool,

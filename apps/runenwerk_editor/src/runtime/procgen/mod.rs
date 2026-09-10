@@ -4,7 +4,6 @@
 use std::collections::BTreeSet;
 
 use anyhow::Result;
-use ecs::World;
 use editor_viewport::ExpressionProductId;
 use engine::runtime::{
     ProductPublicationRuntimeResource, PublicationBoundary, QuerySnapshotRuntimeResource, Res,
@@ -34,6 +33,7 @@ use product::{
     ProductPublicationOutcome, ProductPublicationReport, ProductQueryPolicy, ProductResidency,
     QuerySnapshotProductDescriptor, QuerySnapshotPublicationReport, QuerySnapshotPublicationStatus,
 };
+use runen_ecs::World;
 use runen_spatial::{ChunkCoord3, ChunkId, RegionCoord3, RegionId, WorldId};
 use world_ops::{QuantizedAabb, QuantizedVec3, WorldRevision};
 use world_sdf::{FieldPreviewPayload, FieldPreviewProduct, FieldProductId};

@@ -15,7 +15,7 @@ pub struct PendingStreamingSnapshot {
     pub full_resync_payload: bool,
 }
 
-#[derive(Debug, Clone, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Resource)]
 pub struct ConnectionStreamingState {
     pub relevant_chunks: BTreeSet<ChunkId>,
     pub gameplay_locked_chunks: BTreeSet<ChunkId>,
@@ -44,7 +44,7 @@ impl Default for ConnectionStreamingState {
     }
 }
 
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct NetStreamingStateResource {
     pub per_connection: HashMap<ConnectionHandle, ConnectionStreamingState>,
 }

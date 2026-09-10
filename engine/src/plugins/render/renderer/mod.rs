@@ -829,7 +829,7 @@ pub struct Renderer {
     pending_gpu_observation_output: render_flow::RendererGpuObservationOutput,
 }
 
-#[derive(Debug, ecs::Component, ecs::Resource)]
+#[derive(Debug, runen_ecs::Component, runen_ecs::Resource)]
 pub struct Gfx {
     ctx: WgpuCtx,
     pub renderer: Renderer,

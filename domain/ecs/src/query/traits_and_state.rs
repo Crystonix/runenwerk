@@ -1,17 +1,15 @@
-// Owner: Grotto Quest ecs - Query Runtime
+// Owner: RunenECS - Query Runtime
 use super::access_and_filters::{QueryAccess, QueryFilter, push_unique_type};
 use crate::component::Component;
 use crate::entity::{Entity, WorldScopeId};
 use crate::errors::QueryError;
 use crate::storage::ArchetypeExecutionBinding;
-use crate::telemetry;
-use crate::world::{QueryCapability, World};
+use crate::world::{ChangeCursor, QueryCapability, World};
 use std::any::TypeId;
 use std::cell::{Cell, RefCell};
 use std::marker::PhantomData;
 use std::ptr::NonNull;
 use std::rc::Rc;
-use std::time::Instant;
 
 pub trait QueryData {
     type Item<'w>;
@@ -248,7 +246,7 @@ pub struct QueryState<Q, F = ()> {
     required_present: Vec<TypeId>,
     excluded: Vec<TypeId>,
     access: QueryAccess,
-    last_run_tick: Cell<u64>,
+    last_run_tick: Cell<ChangeCursor>,
     scratch_pool: Rc<RefCell<Vec<Vec<Entity>>>>,
     archetype_row_scratch_pool: Rc<RefCell<Vec<Vec<QueryArchetypeRow>>>>,
     fast_fetch_enabled: bool,
@@ -317,7 +315,6 @@ impl<Q: QuerySpec, F: QueryFilter> QueryState<Q, F> {
     where
         Q: 'w,
     {
-        let start = Instant::now();
         self.rebind_world_scope(world.world_scope());
         let since_tick = self.last_run_tick.get();
         let (use_fast_fetch, mut fast_cache) = self.prepare_fast_fetch(world);
@@ -335,7 +332,6 @@ impl<Q: QuerySpec, F: QueryFilter> QueryState<Q, F> {
                     rows.retain(|row| F::matches_entity(world, row.entity, since_tick));
                 }
                 self.last_run_tick.set(world.current_change_tick());
-                telemetry::record_query_iter(start.elapsed().as_nanos() as u64);
                 return QueryIter {
                     world,
                     entities: None,
@@ -355,7 +351,6 @@ impl<Q: QuerySpec, F: QueryFilter> QueryState<Q, F> {
         // Fallback path for query forms that do not support archetype-row execution.
         self.matching_entities_into(world, &mut entities);
         self.last_run_tick.set(world.current_change_tick());
-        telemetry::record_query_iter(start.elapsed().as_nanos() as u64);
         QueryIter {
             world,
             entities: Some(entities),
@@ -373,39 +368,32 @@ impl<Q: QuerySpec, F: QueryFilter> QueryState<Q, F> {
     where
         Q: 'w,
     {
-        let start = Instant::now();
         self.rebind_world_scope(world.world_scope());
         let matches = self.matches_entity(world, entity);
         self.last_run_tick.set(world.current_change_tick());
         if !matches {
-            telemetry::record_query_get(start.elapsed().as_nanos() as u64);
             return None;
         }
         Q::mark_changed(world, entity);
         // Safety: query borrow conflicts were rejected when this QueryState was created.
-        let item = unsafe { Q::fetch(world, entity) };
-        telemetry::record_query_get(start.elapsed().as_nanos() as u64);
-        item
+        unsafe { Q::fetch(world, entity) }
     }
 
     fn single_capability<'w>(&self, world: QueryCapability<'w>) -> Result<Q::Item<'w>, QueryError>
     where
         Q: 'w,
     {
-        let start = Instant::now();
         self.rebind_world_scope(world.world_scope());
         let mut entities = self.acquire_scratch_vec();
         self.matching_entities_into(world, &mut entities);
         self.last_run_tick.set(world.current_change_tick());
         if entities.is_empty() {
             self.release_scratch_vec(entities);
-            telemetry::record_query_single(start.elapsed().as_nanos() as u64);
             return Err(QueryError::NoResults);
         }
         if entities.len() > 1 {
             let count = entities.len();
             self.release_scratch_vec(entities);
-            telemetry::record_query_single(start.elapsed().as_nanos() as u64);
             return Err(QueryError::MultipleResults { count });
         }
         Q::mark_changed(world, entities[0]);
@@ -413,7 +401,6 @@ impl<Q: QuerySpec, F: QueryFilter> QueryState<Q, F> {
         // were rejected when this QueryState was created.
         let result = unsafe { Q::fetch(world, entities[0]) }.ok_or(QueryError::NoResults);
         self.release_scratch_vec(entities);
-        telemetry::record_query_single(start.elapsed().as_nanos() as u64);
         result
     }
 
@@ -441,7 +428,7 @@ impl<Q: QuerySpec, F: QueryFilter> QueryState<Q, F> {
             required_present,
             excluded,
             access,
-            last_run_tick: Cell::new(0),
+            last_run_tick: Cell::new(ChangeCursor::default()),
             scratch_pool: Rc::new(RefCell::new(Vec::new())),
             archetype_row_scratch_pool: Rc::new(RefCell::new(Vec::new())),
             fast_fetch_enabled: Q::supports_fast_path(),
@@ -457,7 +444,7 @@ impl<Q: QuerySpec, F: QueryFilter> QueryState<Q, F> {
         }
 
         self.world_scope.set(actual);
-        self.last_run_tick.set(0);
+        self.last_run_tick.set(ChangeCursor::default());
         *self.fast_cache.borrow_mut() = QueryFastCache::default();
     }
 

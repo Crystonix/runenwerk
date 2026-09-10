@@ -4,7 +4,7 @@ use runen_spatial::ChunkId;
 use std::collections::BTreeMap;
 use world_ops::{BuildGeneration, ChunkGeneration, ChunkRevision, DirtyReasonSet};
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 pub enum ChunkLifecycleState {
     Unloaded,
     Loading,
@@ -14,7 +14,7 @@ pub enum ChunkLifecycleState {
     Resident,
 }
 
-#[derive(Debug, Clone, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Resource)]
 pub struct WorldChunkRuntimeRecord {
     pub chunk_id: ChunkId,
     pub lifecycle: ChunkLifecycleState,
@@ -41,7 +41,7 @@ impl WorldChunkRuntimeRecord {
     }
 }
 
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct WorldChunkRuntimeMapResource {
     pub by_chunk_id: BTreeMap<ChunkId, WorldChunkRuntimeRecord>,
 }

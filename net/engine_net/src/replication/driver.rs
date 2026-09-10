@@ -1,5 +1,5 @@
-use ecs::World;
 use engine_sim::SimulationTick;
+use runen_ecs::World;
 use runen_net::identity::ConnectionHandle;
 
 pub trait ReplicationDriver {

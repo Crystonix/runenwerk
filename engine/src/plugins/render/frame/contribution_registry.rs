@@ -56,7 +56,7 @@ pub struct RenderFeatureContributionResourceRequirement {
 }
 
 impl RenderFeatureContributionResourceRequirement {
-    pub fn resource<R: ecs::Resource>() -> Self {
+    pub fn resource<R: runen_ecs::Resource>() -> Self {
         Self {
             type_id: TypeId::of::<R>(),
             type_name: type_name::<R>(),
@@ -96,7 +96,7 @@ impl RenderFeatureContributionCollectorDescriptor {
         }
     }
 
-    pub fn require_resource<R: ecs::Resource>(mut self) -> Self {
+    pub fn require_resource<R: runen_ecs::Resource>(mut self) -> Self {
         self.required_resources
             .push(RenderFeatureContributionResourceRequirement::resource::<R>());
         self
@@ -191,7 +191,7 @@ impl PreparedRegisteredFeaturePayloadValue for StaticRegisteredFeaturePayload {
 }
 
 pub struct RenderFeatureContributionContext<'a> {
-    world: &'a ecs::World,
+    world: &'a runen_ecs::World,
     descriptor: &'a RenderFeatureContributionCollectorDescriptor,
     fallback_policy: FeatureFallbackPolicy,
     scene_route: Option<&'a PreparedSceneRouteContribution>,
@@ -199,7 +199,7 @@ pub struct RenderFeatureContributionContext<'a> {
 
 impl<'a> RenderFeatureContributionContext<'a> {
     pub fn new(
-        world: &'a ecs::World,
+        world: &'a runen_ecs::World,
         descriptor: &'a RenderFeatureContributionCollectorDescriptor,
         fallback_policy: FeatureFallbackPolicy,
         scene_route: Option<&'a PreparedSceneRouteContribution>,
@@ -224,7 +224,7 @@ impl<'a> RenderFeatureContributionContext<'a> {
         self.scene_route
     }
 
-    pub fn resource<R: ecs::Resource>(&self) -> Option<&R> {
+    pub fn resource<R: runen_ecs::Resource>(&self) -> Option<&R> {
         let required_type_id = TypeId::of::<R>();
         if self
             .descriptor
@@ -270,7 +270,7 @@ impl RenderFeatureContributionCollector {
     }
 }
 
-#[derive(Debug, Clone, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Resource)]
 pub struct RenderFeatureContributionCollectorRegistryResource {
     collectors: BTreeMap<RenderFeatureContributionCollectorId, RenderFeatureContributionCollector>,
     diagnostics: Vec<PreparedFeatureContributionDiagnostic>,
@@ -341,7 +341,7 @@ impl RenderFeatureContributionCollectorRegistryResource {
 }
 
 pub fn validate_collector_resources(
-    world: &ecs::World,
+    world: &runen_ecs::World,
     descriptor: &RenderFeatureContributionCollectorDescriptor,
 ) -> Result<(), PreparedFeatureContributionDiagnostic> {
     let mut seen = BTreeSet::<TypeId>::new();

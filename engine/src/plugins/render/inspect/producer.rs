@@ -109,7 +109,7 @@ struct RenderTextureDiffAttachmentMetadata {
 }
 
 pub fn submit_render_frame_report_to_diagnostics(
-    world: &mut ecs::World,
+    world: &mut runen_ecs::World,
     report: &RenderDebugFrameReport,
     simulation_tick: u64,
 ) -> anyhow::Result<()> {
@@ -450,7 +450,7 @@ mod tests {
 
     #[test]
     fn delayed_render_submission_uses_original_tick_not_current_world_tick() {
-        let mut world = ecs::World::new();
+        let mut world = runen_ecs::World::new();
         world.insert_resource(DiagnosticsConfigResource::default());
         world.insert_resource(ResolvedDiagnosticsPlan::default());
         world.insert_resource(DiagnosticsPendingReportsResource::default());

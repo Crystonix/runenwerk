@@ -708,28 +708,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ecs"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "criterion",
- "ecs_macros",
- "glam 0.31.1",
- "thiserror 2.0.18",
- "trybuild",
-]
-
-[[package]]
-name = "ecs_macros"
-version = "0.1.0"
-dependencies = [
- "proc-macro-crate",
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "editor_core"
 version = "0.1.0"
 
@@ -747,8 +725,8 @@ dependencies = [
 name = "editor_inspector"
 version = "0.1.0"
 dependencies = [
- "ecs",
  "editor_core",
+ "runen-ecs",
  "schema",
 ]
 
@@ -856,7 +834,6 @@ dependencies = [
  "criterion",
  "crossbeam-channel",
  "crossbeam-deque",
- "ecs",
  "engine_net",
  "engine_render_macros",
  "engine_replay",
@@ -874,6 +851,7 @@ dependencies = [
  "product",
  "resource_ref",
  "ron",
+ "runen-ecs",
  "runen-gpu",
  "runen-net",
  "runen-spatial",
@@ -913,10 +891,10 @@ dependencies = [
 name = "engine_net"
 version = "0.1.0"
 dependencies = [
- "ecs",
  "engine_net_macros",
  "engine_sim",
  "postcard",
+ "runen-ecs",
  "runen-net",
  "serde",
 ]
@@ -957,8 +935,8 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "blake3",
- "ecs",
  "postcard",
+ "runen-ecs",
  "serde",
 ]
 
@@ -1621,8 +1599,8 @@ name = "native_tablet_input"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "ecs",
  "engine",
+ "runen-ecs",
  "ui_input",
  "windows-sys 0.61.2",
  "winit",
@@ -2608,6 +2586,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "runen-ecs"
+version = "0.1.0"
+dependencies = [
+ "criterion",
+ "glam 0.31.1",
+ "runen-ecs-macros",
+ "thiserror 2.0.18",
+ "trybuild",
+]
+
+[[package]]
+name = "runen-ecs-conformance"
+version = "0.1.0"
+dependencies = [
+ "runen-ecs",
+ "trybuild",
+]
+
+[[package]]
+name = "runen-ecs-macros"
+version = "0.1.0"
+dependencies = [
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "runen-gpu"
 version = "0.1.0"
 source = "git+https://github.com/dornglut/runen-gpu?rev=77c7c8d5ad6922b6f46c6b25e31b1a224c1314a4#77c7c8d5ad6922b6f46c6b25e31b1a224c1314a4"
@@ -2649,12 +2656,12 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "drawing",
- "ecs",
  "engine",
  "graph",
  "native_tablet_input",
  "product",
  "ron",
+ "runen-ecs",
  "runen-gpu",
  "serde",
  "tracing",
@@ -2673,7 +2680,6 @@ dependencies = [
  "asset",
  "blake3",
  "bytemuck",
- "ecs",
  "editor_core",
  "editor_definition",
  "editor_inspector",
@@ -2692,6 +2698,7 @@ dependencies = [
  "product",
  "resource_ref",
  "ron",
+ "runen-ecs",
  "runen-gpu",
  "runen-net",
  "runen-net-quic",
@@ -2864,8 +2871,8 @@ dependencies = [
 name = "scene"
 version = "0.1.0"
 dependencies = [
- "ecs",
  "glam 0.32.1",
+ "runen-ecs",
  "schema",
 ]
 
@@ -3506,7 +3513,7 @@ dependencies = [
 name = "ui_app_integration"
 version = "0.1.0"
 dependencies = [
- "ecs",
+ "runen-ecs",
  "serde",
  "ui_artifacts",
  "ui_binding",

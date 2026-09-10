@@ -1,6 +1,5 @@
 pub use crate::{
-    Added, BatchCommands, Bundle, Changed, Commands, Component, ComponentState, DeferredCommand,
-    Entity, IntoSystem, IntoSystemConfigs, IntoSystemSetKey, Orphaned, Query, QueryOrphaned, Res,
-    ResMut, ResView, Resource, Runtime, ScheduleLabel, StatefulComponent, SystemConfigExt,
-    SystemSet, With, Without, World,
+    Added, BatchCommands, Bundle, Changed, Commands, Component, Entity, IntoSystem,
+    IntoSystemConfigs, IntoSystemSetKey, Query, Removed, RemovedQuery, Res, ResMut, Resource,
+    Runtime, ScheduleLabel, SystemConfigExt, SystemSet, With, Without, World,
 };

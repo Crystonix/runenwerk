@@ -19,7 +19,7 @@ use crate::shell::EditorWindowPresentationBinding;
 
 const EDITOR_DESKTOP_TARGET_PROFILE: &str = "runenwerk.editor.desktop";
 
-#[derive(Debug, ecs::Resource, Default)]
+#[derive(Debug, runen_ecs::Resource, Default)]
 pub struct EditorCompositionTransitionRuntimeResource {
     queued: VecDeque<EditorDockingIntent>,
     pending_close_targets: VecDeque<PresentationTargetId>,
