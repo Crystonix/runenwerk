@@ -167,6 +167,10 @@ fn entity_mut_bundle_insert_and_remove_work() {
 fn resources_and_change_ticks_work() {
     let mut world = World::new();
     let start = world.current_change_tick();
+    assert!(world.resource_mut::<Velocity>().is_err());
+    assert_eq!(world.current_change_tick(), start);
+    assert!(!world.resource_changed_since::<Velocity>(start));
+
     world.insert_resource(Frame(1));
     assert!(world.resource_changed_since::<Frame>(start));
 

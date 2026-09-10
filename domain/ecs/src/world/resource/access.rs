@@ -42,11 +42,16 @@ impl World {
             .resources
             .get_mut(&type_id)
             .and_then(|res| res.downcast_mut::<R>())
+            .map(|value| value as *mut R)
             .ok_or(ResourceError::Missing {
                 resource: type_name::<R>(),
             })?;
 
-        Ok(value)
+        self.record_resource_change(type_id);
+
+        // Safety: the pointer came from the successful unique lookup above;
+        // recording the change does not move the boxed resource allocation.
+        Ok(unsafe { &mut *value })
     }
 
     pub fn remove_resource<R: Resource>(&mut self) -> Option<R> {
