@@ -104,8 +104,8 @@ fn retained_spatial_transform_survives_same_object_non_spatial_changes() {
         .expect("material assignment is outside the transform dependency");
     assert_eq!(retained.compiled(), expected);
 
-    let emitter = RenderDirectionalEmitter::new([0.0, 1.0, 0.0], 550e-9, 2.0)
-        .expect("proof emitter");
+    let emitter =
+        RenderDirectionalEmitter::new([0.0, 1.0, 0.0], 550e-9, 2.0).expect("proof emitter");
     let with_emitter =
         RenderObjectParticipation::new(vec![representation], Some(material), Some(emitter))
             .expect("emitter participation");

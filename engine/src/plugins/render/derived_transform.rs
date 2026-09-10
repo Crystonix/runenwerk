@@ -7,8 +7,8 @@
 
 use super::derived_state::{RenderDerivedSceneDependencies, RenderDerivedSceneDependency};
 use super::scene::{
-    RenderObjectId, RenderSceneCommit, RenderSceneContinuity, RenderSceneResync, RenderSceneRevision,
-    RenderSceneSnapshot,
+    RenderObjectId, RenderSceneCommit, RenderSceneContinuity, RenderSceneResync,
+    RenderSceneRevision, RenderSceneSnapshot,
 };
 use super::space_time::RenderObjectSpatialState;
 
@@ -448,8 +448,9 @@ mod tests {
             Err(RenderRetainedObjectTransformError::SceneInvalidated)
         ));
 
-        let rebuilt = RenderRetainedObjectTransform::from_snapshot(spatial_commit.snapshot(), target)
-            .expect("clean rebuild after spatial change");
+        let rebuilt =
+            RenderRetainedObjectTransform::from_snapshot(spatial_commit.snapshot(), target)
+                .expect("clean rebuild after spatial change");
         assert_eq!(rebuilt.compiled().translation_scene(), [5.0, 2.0, 3.0]);
         assert_eq!(rebuilt.validated_revision(), spatial_commit.revision());
 
