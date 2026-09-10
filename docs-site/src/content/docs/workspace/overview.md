@@ -15,8 +15,6 @@ This page is a short orientation map.
 ## Current workspace navigation
 
 - [Start Here](start-here.md)
-- [Engineering Workflow](engineering-workflow.md)
-- [Authority Model](authority-model.md)
 - [Documentation Structure](documentation-structure.md)
 - [Planning Records](planning/README.md)
 
