@@ -12,8 +12,8 @@ related_docs:
 
 # Operating Model
 
-This document is superseded by [Engineering Workflow](engineering-workflow.md).
+This document was superseded by the then-current `workspace/engineering-workflow.md` authority.
 
-Historical links remain valid, but this path does not define active process.
+That workflow page has since been retired in favor of central Engineering governance plus Runenwerk-local root entrypoints. This record remains historical and does not define active process.
 
 Runenwerk work remains repository-readable and usable through local checkout, GitHub connector, manual inspection, or patch-based tooling. Commands provide executable evidence when available; accepted docs, issues, code, tests, review, and CI provide authority.
