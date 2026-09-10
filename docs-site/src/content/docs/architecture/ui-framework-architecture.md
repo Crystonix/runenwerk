@@ -5,7 +5,7 @@ status: active
 owner: ui
 layer: architecture
 canonical: true
-last_reviewed: 2026-07-06
+last_reviewed: 2026-09-10
 related_docs:
   - ../domain/ui/README.md
   - ../domain/ui/architecture.md
@@ -15,7 +15,7 @@ related_docs:
   - ../design/active/ui-program-architecture-owner-map.md
   - ../design/active/runenwerk-ui-story-driven-golden-workflow-design.md
   - ../design/active/ui-runtime-rendering-pipeline-roadmap.md
-  - ../design/active/game-runtime-ui-projection-and-hud-platform-design.md
+  - ../design/deferred/game-runtime-ui-projection-and-hud-platform-design.md
   - ../design/deferred/ui-model-multiple-execution-strategies-design.md
   - domain-authoring-platform-overview.md
   - ../adr/accepted/0009-ui-interaction-formation-v2.md
@@ -404,6 +404,6 @@ Diagram source:
 - [UI Program Architecture Owner Map](../design/active/ui-program-architecture-owner-map.md)
 - [Runenwerk UI Story Driven Golden Workflow Design](../design/active/runenwerk-ui-story-driven-golden-workflow-design.md)
 - [UI Runtime Rendering Pipeline Roadmap](../design/active/ui-runtime-rendering-pipeline-roadmap.md)
-- [Game Runtime UI Projection And HUD Platform](../design/active/game-runtime-ui-projection-and-hud-platform-design.md)
+- [Game Runtime UI Projection And HUD Platform](../design/deferred/game-runtime-ui-projection-and-hud-platform-design.md)
 - [UI Model Multiple Execution Strategies Design](../design/deferred/ui-model-multiple-execution-strategies-design.md)
 - [ADR 0009: UI Interaction Formation V2](../adr/accepted/0009-ui-interaction-formation-v2.md)
