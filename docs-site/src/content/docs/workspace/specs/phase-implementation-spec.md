@@ -14,5 +14,6 @@ related_docs:
 # Phase Implementation Specification
 
 This machine-oriented phase template was retired under issue `#122`.
-Significant work uses one issue, accepted design or ADR, and a bounded pull
-request as defined by [Engineering Workflow](../engineering-workflow.md).
+Significant work used one issue, accepted design or ADR, and a bounded pull request as defined by the then-current `workspace/engineering-workflow.md` authority.
+
+That workflow page has since been retired; this page remains a superseded compatibility record and does not define current process.

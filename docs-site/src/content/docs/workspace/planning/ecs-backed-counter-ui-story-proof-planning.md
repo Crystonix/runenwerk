@@ -7,8 +7,6 @@ layer: workspace
 canonical: false
 last_reviewed: 2026-08-04
 related_docs:
-  - ../engineering-workflow.md
-  - ../authority-model.md
   - ../../design/active/ui-framework-app-integration-direction-review.md
   - ../../design/active/runenwerk-ui-story-driven-golden-workflow-design.md
   - ../../design/active/ui-runtime-rendering-pipeline-roadmap.md
@@ -25,7 +23,7 @@ related_docs:
 
 Planning status: active.
 
-Implementation authorization: conditional on an owning issue and pull request following [Engineering Workflow](../engineering-workflow.md).
+Implementation authorization: conditional on an owning GitHub issue and pull request under the repository executor contract in [`AGENTS.md`](../../../../../../AGENTS.md).
 
 This document is the implementation-planning contract for the first real Runenwerk UI framework proof. It supports a later implementation branch only if the owning issue and pull request accept this scope and the implementation stays within the exact files, dependencies, tests, and stop conditions below.
 

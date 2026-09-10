@@ -5,10 +5,8 @@ status: active
 owner: workspace
 layer: workspace
 canonical: true
-last_reviewed: 2026-08-13
+last_reviewed: 2026-09-10
 related_docs:
-  - ../engineering-workflow.md
-  - ../authority-model.md
   - ../documentation-structure.md
   - ./roadmap.md
   - ./decision-register.md
@@ -90,8 +88,7 @@ state.
 ## Review and validation
 
 Planning changes are reviewed against the owning issue, accepted architecture, current
-code where behavior claims are made, and the repository authority model.
+code where behavior claims are made, and the authority owners named in [Workspace Start Here](../start-here.md).
 
-Run the documentation checks required by [Engineering Workflow](../engineering-workflow.md)
-and [TESTING.md](../../../../../../TESTING.md). Report inspection as inspection and
-executable validation as validation.
+Run the documentation checks required by [TESTING.md](../../../../../../TESTING.md).
+Report inspection as inspection and executable validation as validation.

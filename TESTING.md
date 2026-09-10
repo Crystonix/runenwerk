@@ -51,4 +51,4 @@ Report focused checks, `cargo validate`, exact-head CI, and anything not run. Do
 
 The accepted base, reviewed feature head, synthetic merge result, squash commit, and accepted-main push result are separate evidence objects.
 
-Long-form workflow authority lives in [`docs-site/src/content/docs/workspace/engineering-workflow.md`](docs-site/src/content/docs/workspace/engineering-workflow.md).
+This file owns Runenwerk-local validation semantics. Organization-wide GitHub, review, and validation-evidence rules are owned by [`dornglut/engineering`](https://github.com/dornglut/engineering).

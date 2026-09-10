@@ -5,9 +5,8 @@ status: active
 owner: workspace
 layer: workspace
 canonical: true
-last_reviewed: 2026-08-04
+last_reviewed: 2026-09-10
 related:
-  - ./engineering-workflow.md
   - ./planning-methods.md
   - ./planning-and-implementation-workflow.md
   - ./diagrams/design-intake-roadmap-automation.puml
@@ -154,7 +153,7 @@ This improves the current planning system without replacing the existing Runenwe
 
 ## Workflow Use
 
-Apply these governance lenses through [Engineering Workflow](./engineering-workflow.md). Architectural or extraction work must inspect current code and accepted authority, compare alternatives, define ownership and migration, record durable decisions in the owning ADR or design, and validate the reviewed head before merge.
+Apply these governance lenses under the repository executor contract in [`AGENTS.md`](../../../../../AGENTS.md). Architectural or extraction work must inspect current code and accepted authority, compare alternatives, define ownership and migration, record durable decisions in the owning ADR or design, and validate the reviewed head before merge.
 
 Do not create a separate routine, generated prompt, checklist database, or lifecycle state machine for architecture governance. The owning issue, accepted design or ADR, pull request, code, tests, and repository validation remain authoritative.
 

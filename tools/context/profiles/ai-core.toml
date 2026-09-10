@@ -10,7 +10,6 @@ include = [
   "TESTING.md",
   "GLOSSARY.md",
   "docs-site/src/content/docs/workspace/start-here.md",
-  "docs-site/src/content/docs/workspace/authority-model.md",
   "docs-site/src/content/docs/guidelines/programming-principles.md",
   "docs-site/src/content/docs/workspace/planning/roadmap.md",
 ]

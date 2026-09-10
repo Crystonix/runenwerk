@@ -5,10 +5,8 @@ status: active
 owner: workspace
 layer: workspace
 canonical: true
-last_reviewed: 2026-08-12
+last_reviewed: 2026-09-10
 related_docs:
-  - ../authority-model.md
-  - ../engineering-workflow.md
   - ../operating-model.md
   - ./phase-implementation-spec.md
   - ../../design/active/runengpu-g4b-contracts-g4c-delivery-design.md
@@ -82,7 +80,7 @@ certificate, or track manager merely because several historical specs share fiel
 No dedicated spec lifecycle validator is required. A future validator may check local
 schema or deterministic constraints, but it must remain subordinate to accepted
 Markdown, the owning GitHub issue, and the repository validation commands defined by
-[Engineering Workflow](../engineering-workflow.md).
+[TESTING.md](../../../../../../TESTING.md).
 
 In particular, tooling must not update RON lifecycle fields to mirror GitHub state or
 reject a current issue because an older retained spec records an earlier planning
