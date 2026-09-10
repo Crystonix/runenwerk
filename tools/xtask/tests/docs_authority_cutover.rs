@@ -31,6 +31,8 @@ const RETIRED_AUTHORITY_MARKERS: &[&str] = &[
     "roadmap-update-task.md",
     "track-manager-task.md",
     "prompt-templates/implementation-batch.md",
+    "authority-model.md",
+    "engineering-workflow.md",
 ];
 
 const TEXT_EXTENSIONS: &[&str] = &[
@@ -85,8 +87,12 @@ fn inspect_tree(
         let Ok(text) = fs::read_to_string(&path) else {
             continue;
         };
+        if is_retained_historical_authority(repository_root, &path, &text) {
+            continue;
+        }
+        let operational_text = without_markdown_frontmatter(&path, &text);
         for marker in RETIRED_AUTHORITY_MARKERS {
-            if text.contains(marker) {
+            if operational_text.contains(marker) {
                 let relative = path.strip_prefix(repository_root).unwrap_or(&path);
                 violations.push(format!("{}: {marker}", relative.display()));
             }
@@ -107,6 +113,50 @@ fn should_skip_directory(repository_root: &Path, directory: &Path) -> bool {
         || normalized.starts_with("docs-site/src/content/docs/design/archived")
         || normalized.starts_with("docs-site/src/content/docs/design/rejected")
         || normalized.starts_with("docs-site/src/content/docs/design/superseded")
+}
+
+fn is_retained_historical_authority(repository_root: &Path, path: &Path, text: &str) -> bool {
+    let relative = path.strip_prefix(repository_root).unwrap_or(path);
+    let normalized = relative.to_string_lossy().replace('\\', "/");
+
+    if normalized.starts_with("docs-site/src/content/docs/workspace/specs/")
+        && path.extension().and_then(|extension| extension.to_str()) == Some("ron")
+    {
+        let name = path.file_name().and_then(|name| name.to_str()).unwrap_or_default();
+        if name.starts_with("pt-")
+            || normalized
+                == "docs-site/src/content/docs/workspace/specs/templates/phase-implementation-spec.ron"
+        {
+            return true;
+        }
+    }
+
+    matches!(
+        markdown_frontmatter_status(text),
+        Some("superseded" | "archived" | "rejected")
+    )
+}
+
+fn without_markdown_frontmatter<'a>(path: &Path, text: &'a str) -> &'a str {
+    if !matches!(
+        path.extension().and_then(|extension| extension.to_str()),
+        Some("md" | "mdx")
+    ) {
+        return text;
+    }
+
+    text.strip_prefix("---\n")
+        .and_then(|rest| rest.split_once("\n---\n"))
+        .map_or(text, |(_, body)| body)
+}
+
+fn markdown_frontmatter_status(text: &str) -> Option<&str> {
+    let frontmatter = text.strip_prefix("---\n")?.split_once("\n---\n")?.0;
+    frontmatter.lines().find_map(|line| {
+        line.strip_prefix("status:")
+            .map(str::trim)
+            .filter(|status| !status.is_empty())
+    })
 }
 
 fn is_text_authority(path: &Path) -> bool {
