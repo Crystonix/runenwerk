@@ -10,7 +10,7 @@ last_reviewed: 2026-09-11
 
 # Crate Documentation Status
 
-This page tracks whether each workspace crate has current, discoverable documentation. Use [`crate-inventory.md`](./crate-inventory.md) for the canonical human-readable current workspace inventory; root `CRATES.md` is navigation only.
+This page tracks whether each workspace crate has current, discoverable documentation. Use [`crate-inventory.md`](./crate-inventory.md) for the canonical human-readable current workspace inventory.
 
 Status labels:
 
