@@ -53,13 +53,7 @@ active design contains older conflicting target language.
 
 ### Engine Runtime
 
-- [ECS Parallel System Execution Design](ecs-parallel-system-execution-design.md)
 - [Game Runtime, Editor, ECS, Scripting, and Hot Reload Design](engine-game-runtime-editor-ecs-scripting-hot-reload-design.md)
-- [Game Runtime UI Projection And HUD Platform](game-runtime-ui-projection-and-hud-platform-design.md)
-- [Renderer Procedural Population Hardening Platform](renderer-procedural-population-hardening-platform-design.md)
-- [Renderer Procedural Population Platform](renderer-procedural-population-platform-design.md)
-- [Renderer Production Audit And Perfectionist Verification Platform](renderer-production-audit-and-perfectionist-verification-design.md)
-- [Sparse SDF Terrain Runtime Integration](sparse-sdf-terrain-runtime-integration-design.md)
 
 ### Gameplay
 
