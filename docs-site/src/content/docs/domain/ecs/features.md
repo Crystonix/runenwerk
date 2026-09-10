@@ -53,11 +53,10 @@ Current ECS priorities are core runtime correctness, deterministic scheduling/de
 
 Generic event/channel transport, editor-facing reflection policy, network replication derives, and history/undo primitives are not part of the current RunenECS public contract.
 
-## Related Runtime Audit
+## Related Current Authority
 
-For the current ECS + multiplayer runtime capability audit and prioritized sequencing,
-see:
+- [Accepted RunenECS extraction boundary](../../design/accepted/runenecs-extraction-boundary-design.md)
+- [Accepted RunenECS boundary repair plan](../../design/accepted/runenecs-boundary-repair-execution-plan.md)
+- [Current multiplayer replication implementation roadmap](../../net/multiplayer-replication-implementation-roadmap.md)
 
-- [../../net/ecs-runtime-feature-inventory.md](../../net/ecs-runtime-feature-inventory.md)
-- [../../net/ecs-runtime-gap-summary.md](../../net/ecs-runtime-gap-summary.md)
-- [../../net/ecs-runtime-prioritized-roadmap.md](../../net/ecs-runtime-prioritized-roadmap.md)
+The older ECS/runtime feature inventory, gap summary, and convergence roadmap are superseded historical snapshots and are not current RunenECS authority.

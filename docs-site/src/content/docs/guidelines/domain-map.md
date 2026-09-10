@@ -5,7 +5,7 @@ status: active
 owner: workspace
 layer: workspace
 canonical: true
-last_reviewed: 2026-07-24
+last_reviewed: 2026-09-10
 ---
 
 # Domain Map
@@ -21,9 +21,8 @@ This map tracks crate ownership and allowed dependency direction for the active 
 - `foundation/schema`: portable schema identity, version, path, value, shape, field, constraint, metadata, and descriptor vocabulary
 - `foundation/commands`: portable command contract identity, schema reference, descriptor, proposal, metadata, hint, issue, and optional diagnostics-bridge vocabulary
 - `foundation/resource_ref`: portable external resource references with canonical identity encoding and no catalog/runtime lookup ownership
-- `domain/ecs`: entity/component/resource storage, reflection, and typed world/query APIs
+- `domain/ecs`: entity/component/resource storage and queries, explicit reflection, ECS-local change tracking, system identity and parameters, generic schedule labels/system sets, explicit semantic ordering, access facts and validation, deterministic serial reference execution, and deferred structural-command visibility
 - `domain/ecs_macros`: derive macros for ECS component/resource/bundle/reflection contracts
-- `domain/scheduler`: schedule/stage/runtime execution graph utilities
 - `domain/scene`: scene-domain data contracts
 - `domain/asset`: engine-agnostic asset identity, source/artifact descriptors, deterministic import planning, dependency graph, diagnostics, and ratification contracts
 - `domain/product`: shared formed-product descriptors, product jobs, query snapshots, render product selection, diagnostics, policies, and ratification contracts
@@ -39,6 +38,8 @@ This map tracks crate ownership and allowed dependency direction for the active 
 - `domain/drawing`: drawing document, stroke, brush, paper, layer/composition graph, command, ratification, diagnostic, deterministic ink tile formation, product helper, and tile-lineage contracts
 - `domain/ui/*`: UI geometry, input, layout, text, theme, render-data, surface, graph-editor, definition, tree, runtime, and widget contracts
 - `domain/editor/*`: editor-facing domain logic (inspector, scene editing, viewport)
+
+There is no active standalone `domain/scheduler` crate. RunenECS owns reusable ECS scheduling semantics; Engine owns application/frame/fixed/render lifecycle and publication policy.
 
 ## Engine Layer
 

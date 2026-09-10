@@ -5,7 +5,7 @@ status: active
 owner: domain
 layer: domain
 canonical: true
-last_reviewed: 2026-08-30
+last_reviewed: 2026-09-10
 ---
 
 # Domain Layer Overview
@@ -33,7 +33,6 @@ Domain crates must not depend on:
 | Area | Crates | Primary docs |
 | --- | --- | --- |
 | ECS | `domain/ecs`, `domain/ecs_macros` | [`ecs/00-overview.md`](./ecs/00-overview.md), [`ecs/README.md`](./ecs/README.md), [`ecs-macros/README.md`](./ecs-macros/README.md) |
-| Scheduler | `domain/scheduler` | [`scheduler/README.md`](./scheduler/README.md), [`scheduler/design-goals.md`](./scheduler/design-goals.md) |
 | Scene | `domain/scene` | [`scene/README.md`](./scene/README.md) |
 | Asset and product contracts | `domain/asset`, `domain/product` | Workspace-level current-state contract summaries live in [`../workspace/sdf-first-execution-roadmap.md`](../workspace/sdf-first-execution-roadmap.md), [`../design/accepted/field-product-contracts-diagnostics-and-residency-design.md`](../design/accepted/field-product-contracts-diagnostics-and-residency-design.md), and [`../design/accepted/sdf-first-production-capability-map.md`](../design/accepted/sdf-first-production-capability-map.md) until deeper crate guides are written. |
 | Geometry | `domain/geometry` | [`geometry/README.md`](./geometry/README.md), [`geometry/ownership-boundary.md`](./geometry/ownership-boundary.md), [`geometry/api-notes.md`](./geometry/api-notes.md) |
@@ -43,6 +42,8 @@ Domain crates must not depend on:
 | Spatial / world data | `domain/world_ops`, `domain/world_sdf` | Standalone [RunenSpatial](https://github.com/dornglut/runen-spatial) owns reusable spatial mechanics; Runenwerk retains [`world-ops/README.md`](./world-ops/README.md) and [`world-sdf/README.md`](./world-sdf/README.md) integration/domain policy. |
 | UI substrate and definitions | `domain/ui/*`, including `domain/ui/ui_definition` | [`ui/README.md`](./ui/README.md), [`ui/architecture.md`](./ui/architecture.md), [`ui/roadmap.md`](./ui/roadmap.md) |
 | Editor domains and definitions | `domain/editor/*`, including `domain/editor/editor_definition` | [`editor/README.md`](./editor/README.md) |
+
+Generic ECS schedule identity, system sets, semantic ordering, access facts, validation, deterministic serial reference execution, and deferred-command visibility are part of `domain/ecs`. There is no active standalone `domain/scheduler` crate after RunenECS C8.
 
 ## Planned Domain Areas
 
@@ -88,7 +89,6 @@ Start here when working in the domain layer:
 - ECS: [`ecs/00-overview.md`](./ecs/00-overview.md)
 - ECS usage: [`ecs/usage-guide.md`](./ecs/usage-guide.md)
 - ECS advanced guide: [`ecs/advanced-guide.md`](./ecs/advanced-guide.md)
-- Scheduler: [`scheduler/README.md`](./scheduler/README.md)
 - Geometry: [`geometry/README.md`](./geometry/README.md)
 - Asset/product contracts: [`../design/accepted/field-product-contracts-diagnostics-and-residency-design.md`](../design/accepted/field-product-contracts-diagnostics-and-residency-design.md)
 - Spatial mechanics: standalone [RunenSpatial](https://github.com/dornglut/runen-spatial); Runenwerk retains world-operation, SDF, and runtime integration policy.

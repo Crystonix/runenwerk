@@ -1,60 +1,27 @@
 ---
-title: "Scheduler Crate"
-description: "Documentation for Scheduler Crate."
-status: active
-owner: scheduler
+title: "Scheduler Crate (Retired)"
+description: "Historical navigation for the scheduler crate retired by RunenECS C8."
+status: superseded
+owner: ecs
 layer: domain
-canonical: true
-last_reviewed: 2026-05-13
-related_designs:
-  - ../../design/accepted/execution-fabric-and-product-jobs-design.md
-related_roadmaps:
-  - ../../workspace/sdf-first-execution-roadmap.md
+canonical: false
+last_reviewed: 2026-09-10
+replaced_by: ../ecs/README.md
 ---
 
-# Scheduler Crate
+# Scheduler Crate (Retired)
 
-## Purpose
+The standalone `domain/scheduler` crate was retired by RunenECS C8.
 
-Provides dependency-aware scheduling and node execution ordering.
+Its reusable ECS-owned semantics now live in `domain/ecs`: generic schedule labels, system sets, explicit semantic ordering, ECS access facts, validation, deterministic serial reference execution, and deferred-command/deferred-apply boundaries.
 
-## Usage
+Application lifecycle and publication policy remain owned by Runenwerk Engine. The retired scheduler's phases, waves, product/query publication barriers, generic DAG/demo/DOT/filesystem utilities, and scheduler-global telemetry are not current authority and are not compatibility contracts.
 
-- Crate: `scheduler`
-- Legacy DAG path: register `Node`s and dependency edges, then build a `Scheduler`.
-- Typed path: register `RegisteredSystem`s in an `ExecutionScheduler` and run them by `ScheduleLabel`.
+Use current authority instead:
 
-## Ownership Boundaries
+- [RunenECS overview](../ecs/00-overview.md)
+- [RunenECS architecture](../ecs/architecture.md)
+- [Accepted RunenECS extraction boundary](../../design/accepted/runenecs-extraction-boundary-design.md)
+- [Accepted RunenECS boundary repair plan](../../design/accepted/runenecs-boundary-repair-execution-plan.md)
 
-- Owns graph validation, deterministic planning, execution waves, barriers, and
-  plan diagnostics.
-- Does not own runtime worker implementation, product truth, domain-specific
-  plugin/system logic, or renderer/backend behavior.
-
-## Extension Points
-
-- Add scheduling diagnostics and execution controls.
-- Extend ordering/validation behavior while preserving deterministic execution.
-- Use `SystemAccess` and `ExecutionPlan` to prepare for future parallel execution.
-
-## Accepted Direction
-
-The accepted SDF-first execution fabric keeps the scheduler as the owner of
-deterministic planning, not domain behavior or runtime worker implementation.
-
-Near-term scheduler work should evolve the current typed path toward:
-
-- phases and waves that remain serial-compatible;
-- explicit barriers for deferred apply, product publication, and query snapshot
-  publication after each serial wave, with render submit, generation
-  finalization, and replay/network capture deferred to later phases;
-- diagnostics for access conflicts, cycles, blocked parallelism, missing
-  barriers, and invalid authority classes;
-- product-job planning inputs without making the scheduler own product truth.
-
-Serial fallback is mandatory. Future parallel execution must preserve the same
-authoritative result as serial execution.
-
-The SDF-first open-world substrate roadmap sequences scheduler work before
-procgen code: product publication barriers and query snapshot publication must
-be deterministic plan concepts before product-domain work relies on them.
+Historical implementation details remain available through repository history and historical reports; they must not be used to reconstruct a standalone scheduler owner.

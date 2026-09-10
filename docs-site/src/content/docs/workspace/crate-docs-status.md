@@ -5,7 +5,7 @@ status: active
 owner: workspace
 layer: workspace
 canonical: true
-last_reviewed: 2026-08-31
+last_reviewed: 2026-09-10
 ---
 
 # Crate Documentation Status
@@ -42,7 +42,6 @@ Status labels:
 | `product` | `domain/product` | thin | [`../domain/00-overview.md`](../domain/00-overview.md) |
 | `world_ops` | `domain/world_ops` | thin | [`../domain/world-ops/README.md`](../domain/world-ops/README.md) |
 | `world_sdf` | `domain/world_sdf` | thin | [`../domain/world-sdf/README.md`](../domain/world-sdf/README.md) |
-| `scheduler` | `domain/scheduler` | thin | [`../domain/scheduler/README.md`](../domain/scheduler/README.md) |
 | `graph` | `domain/graph` | current | [`../domain/graph/README.md`](../domain/graph/README.md) |
 | `texture` | `domain/texture` | thin | [`../domain/texture/README.md`](../domain/texture/README.md) |
 | `material_graph` | `domain/material_graph` | thin | [`../domain/material-graph/README.md`](../domain/material-graph/README.md) |
@@ -51,6 +50,8 @@ Status labels:
 | `scene` | `domain/scene` | thin | [`../domain/scene/README.md`](../domain/scene/README.md) |
 | `domain/ui/*` | `domain/ui` | current | [`../domain/ui/architecture.md`](../domain/ui/architecture.md) |
 | `domain/editor/*` | `domain/editor` | thin | [`../domain/editor/README.md`](../domain/editor/README.md) |
+
+The former `domain/scheduler` crate was retired by RunenECS C8. Its retained documentation pages are superseded historical navigation, not active crate documentation.
 
 ## Engine And Net
 
