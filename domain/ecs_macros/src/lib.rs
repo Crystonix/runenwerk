@@ -7,13 +7,13 @@ use syn::{
 };
 
 fn ecs_crate_path() -> proc_macro2::TokenStream {
-    match crate_name("ecs") {
+    match crate_name("runen-ecs") {
         Ok(FoundCrate::Itself) => quote!(crate),
         Ok(FoundCrate::Name(name)) => {
             let ident = format_ident!("{}", name);
             quote!(::#ident)
         }
-        Err(_) => quote!(::ecs),
+        Err(_) => quote!(::runen_ecs),
     }
 }
 
@@ -27,19 +27,6 @@ pub fn component_derive(input: TokenStream) -> TokenStream {
 
     TokenStream::from(quote! {
         impl #impl_generics #ecs::Component for #name #ty_generics #where_clause {}
-    })
-}
-
-#[proc_macro_derive(StatefulComponent)]
-pub fn stateful_component_derive(input: TokenStream) -> TokenStream {
-    let ecs = ecs_crate_path();
-    let input = parse_macro_input!(input as DeriveInput);
-    let name = input.ident;
-    let generics = input.generics;
-    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
-
-    TokenStream::from(quote! {
-        impl #impl_generics #ecs::StatefulComponent for #name #ty_generics #where_clause {}
     })
 }
 

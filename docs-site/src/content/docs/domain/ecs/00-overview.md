@@ -1,6 +1,6 @@
 ---
 title: Overview
-description: Engine-agnostic documentation for the ecs domain module.
+description: Engine-agnostic documentation for the standalone RunenECS package.
 status: active
 owner: ecs
 layer: domain
@@ -25,10 +25,10 @@ The ECS foundation currently includes:
 - typed queries with `Added<T>` / `Changed<T>`
 - ECS-native system registration, schedule labels, system sets, explicit ordering, access validation, and deterministic serial reference execution
 - deferred structural commands and ECS-owned deferred-apply boundaries
-- current removed-component observation through `QueryOrphaned<T>`
-- resource parameters through `Res<T>` / `ResMut<T>` (`ResView<T>` is currently an alias of `Res<T>`)
-- explicit reflection and ECS-local change tracking
-- optional typed secondary indexes and feature-gated ECS telemetry
+- current removed-component observation through `RemovedQuery<T>`
+- resource parameters through `Res<T>` / `ResMut<T>` and built-in exclusive `WorldMut`
+- explicit reflection and lightweight ECS-local change observation
+- optional typed secondary indexes
 
 RunenECS currently exposes no generic event/channel transport API. Application, network, replay, render, product-publication, frame, fixed-step, startup, and shutdown policy remain outside RunenECS.
 
@@ -41,7 +41,6 @@ RunenECS currently exposes no generic event/channel transport API. Application, 
 - **Query**: typed access to matching component sets, with filters.
 - **Command**: deferred structural mutation made visible at an ECS deferred-apply boundary.
 - **Schedule / System Set**: generic ECS identity and explicit semantic-ordering structure.
-- **Execution Stage**: current planning/diagnostic grouping derived from semantic ordering; not an Engine lifecycle or publication identity.
 - **Secondary Index**: optional typed ECS lookup acceleration.
 
 ## Module Boundary Summary
@@ -57,8 +56,9 @@ RunenECS currently exposes no generic event/channel transport API. Application, 
 - Structural mutations are deferred during runtime-managed system execution and become visible only after an ECS deferred-apply boundary.
 - Explicit `before` / `after` relations define semantic precedence; access incompatibility does not invent semantic order.
 - Failed schedule runs do not replay discarded deferred command queues in later runs.
-- Query filter semantics (`Added` / `Changed`) are independent from reporting change logs.
-- Planner stages are implementation/planning facts and do not define application frame, render, network, replay, or product-publication semantics.
+- Query filter semantics (`Added` / `Changed`) use ECS-local ticks and query-local observation state.
+- `ChangeCursor` is an ordered ECS observation position with explicit inner-boundary epochs and fail-stop absolute exhaustion.
+- Runtime-owned failures retain structured ECS categories; user failures remain boxed causes.
 
 ## References
 

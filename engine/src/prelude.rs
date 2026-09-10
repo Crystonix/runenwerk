@@ -19,6 +19,6 @@ pub use crate::plugins::ui::AppUiExt;
 pub use crate::plugins::{default_plugins, default_plugins_with_diagnostics};
 pub use crate::runtime::*;
 pub use crate::state::*;
-pub use ecs::{Bundle, Component, Entity, Resource, SystemSet, World};
 pub use engine_replay::*;
 pub use engine_sim::*;
+pub use runen_ecs::{Bundle, Component, Entity, Resource, SystemSet, World};

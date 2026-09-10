@@ -19,7 +19,7 @@ use crate::plugins::render::features::{
 pub const WORLD_VISUAL_PAYLOAD_KIND: &str = "world.visual.prepared";
 pub const WORLD_VISUAL_COLLECTOR_ID: &str = "world.visual.collector";
 
-#[derive(Debug, Clone, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Resource)]
 pub struct PreparedWorldVisualFeatureResource {
     pub status: FeatureContributionStatus,
     pub fallback_policy: FeatureFallbackPolicy,
@@ -428,7 +428,7 @@ mod tests {
         resource: Option<PreparedWorldVisualFeatureResource>,
         fallback_policy: FeatureFallbackPolicy,
     ) -> Result<PreparedFeatureContribution, PreparedFeatureContributionDiagnostic> {
-        let mut world = ecs::World::default();
+        let mut world = runen_ecs::World::default();
         if let Some(resource) = resource {
             world.insert_resource(resource);
         }

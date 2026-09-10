@@ -27,7 +27,7 @@ const fn ui_runtime_frame_producer_id(raw: u64) -> RenderFrameProducerId {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ecs::Resource)]
+#[derive(Debug, Clone, PartialEq, Eq, runen_ecs::Resource)]
 pub struct UiRuntimeFramePublicationTarget {
     producer_id: RenderFrameProducerId,
     render_surface_id: RenderSurfaceId,

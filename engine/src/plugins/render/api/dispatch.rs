@@ -23,7 +23,7 @@ impl std::fmt::Debug for ComputeDispatchBinding {
 impl ComputeDispatchBinding {
     pub fn state<S>(build: fn(&S) -> [u32; 3]) -> Self
     where
-        S: ecs::Resource + Send + Sync + 'static,
+        S: runen_ecs::Resource + Send + Sync + 'static,
     {
         Self {
             projection: Arc::new(ComputeDispatchStateProjection { build }),
@@ -51,14 +51,14 @@ pub enum ComputeDispatchDescriptor {
 
 struct ComputeDispatchStateProjection<S>
 where
-    S: ecs::Resource + 'static,
+    S: runen_ecs::Resource + 'static,
 {
     build: fn(&S) -> [u32; 3],
 }
 
 impl<S> ComputeDispatchProjection for ComputeDispatchStateProjection<S>
 where
-    S: ecs::Resource + Send + Sync + 'static,
+    S: runen_ecs::Resource + Send + Sync + 'static,
 {
     fn state_type_id(&self) -> TypeId {
         TypeId::of::<S>()

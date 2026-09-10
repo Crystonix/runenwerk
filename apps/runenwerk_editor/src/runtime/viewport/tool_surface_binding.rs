@@ -105,7 +105,7 @@ impl std::fmt::Display for ToolSurfaceRuntimeBindingResolveError {
 
 impl std::error::Error for ToolSurfaceRuntimeBindingResolveError {}
 
-#[derive(Debug, Clone, ecs::Component, ecs::Resource, Default)]
+#[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Resource, Default)]
 pub struct ToolSurfaceRuntimeBindingRegistryResource {
     generation: u64,
     bindings_by_tool_surface: BTreeMap<ToolSurfaceInstanceId, ToolSurfaceRuntimeBindingRecord>,

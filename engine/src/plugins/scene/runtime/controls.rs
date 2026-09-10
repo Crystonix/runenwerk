@@ -6,7 +6,7 @@ use anyhow::{Result, anyhow};
 
 // Owner: Engine Scene Plugin - Runtime Controls
 fn with_scene_manager_mut<T>(
-    world: &mut ecs::World,
+    world: &mut runen_ecs::World,
     f: impl FnOnce(&mut SceneManager) -> Result<T>,
 ) -> Result<T> {
     if !world.has_resource::<SceneResource>() {
@@ -27,7 +27,7 @@ fn with_scene_manager_mut<T>(
     f(manager)
 }
 
-pub fn switch_scene_by_id(world: &mut ecs::World, scene_id: &str) -> Result<bool> {
+pub fn switch_scene_by_id(world: &mut runen_ecs::World, scene_id: &str) -> Result<bool> {
     let normalized = normalize_scene_label_alias(scene_id);
     let Some(scene) = SceneId::from_label(&normalized) else {
         return Ok(false);
@@ -47,7 +47,7 @@ pub fn switch_scene_by_id(world: &mut ecs::World, scene_id: &str) -> Result<bool
     })
 }
 
-pub fn set_world_by_id(world: &mut ecs::World, scene_id: &str) -> Result<bool> {
+pub fn set_world_by_id(world: &mut runen_ecs::World, scene_id: &str) -> Result<bool> {
     let normalized = normalize_scene_label_alias(scene_id);
     let Some(scene) = SceneId::from_label(&normalized) else {
         return Ok(false);
@@ -62,7 +62,7 @@ pub fn set_world_by_id(world: &mut ecs::World, scene_id: &str) -> Result<bool> {
     })
 }
 
-pub fn push_overlay_by_id(world: &mut ecs::World, scene_id: &str) -> Result<bool> {
+pub fn push_overlay_by_id(world: &mut runen_ecs::World, scene_id: &str) -> Result<bool> {
     let normalized = normalize_scene_label_alias(scene_id);
     let Some(scene) = SceneId::from_label(&normalized) else {
         return Ok(false);
@@ -77,7 +77,7 @@ pub fn push_overlay_by_id(world: &mut ecs::World, scene_id: &str) -> Result<bool
     })
 }
 
-pub fn pop_overlay(world: &mut ecs::World) -> Result<()> {
+pub fn pop_overlay(world: &mut runen_ecs::World) -> Result<()> {
     with_scene_manager_mut(world, |manager| {
         manager.queue(SceneCommand::PopOverlay);
         manager.queue(SceneCommand::PauseWorld(false));
@@ -85,14 +85,14 @@ pub fn pop_overlay(world: &mut ecs::World) -> Result<()> {
     })
 }
 
-pub fn set_world_paused(world: &mut ecs::World, paused: bool) -> Result<()> {
+pub fn set_world_paused(world: &mut runen_ecs::World, paused: bool) -> Result<()> {
     with_scene_manager_mut(world, |manager| {
         manager.queue(SceneCommand::PauseWorld(paused));
         Ok(())
     })
 }
 
-pub fn toggle_world_pause(world: &mut ecs::World) -> Result<()> {
+pub fn toggle_world_pause(world: &mut runen_ecs::World) -> Result<()> {
     with_scene_manager_mut(world, |manager| {
         manager.queue(SceneCommand::PauseWorld(!manager.world.paused));
         Ok(())

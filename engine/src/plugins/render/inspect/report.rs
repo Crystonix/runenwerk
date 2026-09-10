@@ -67,7 +67,7 @@ pub struct RenderTextureDiffResult {
     pub message: Option<RenderCaptureTerminalReason>,
 }
 
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct RenderDebugFrameReportState {
     pub latest: Option<RenderDebugFrameReport>,
 }

@@ -834,7 +834,7 @@ mod tests {
     use crate::runtime::schedules::{FixedUpdate, PreUpdate};
     use crate::runtime::{Res, ResMut};
 
-    #[derive(Debug, Default, ecs::Component, ecs::Resource)]
+    #[derive(Debug, Default, runen_ecs::Component, runen_ecs::Resource)]
     struct FixedTickLog(Vec<u64>);
 
     fn configure_probe(app: &mut App) {

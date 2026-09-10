@@ -28,7 +28,15 @@ pub enum DeterminismLevel {
 }
 
 #[derive(
-    Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize, ecs::Component, ecs::Resource,
+    Debug,
+    Copy,
+    Clone,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+    runen_ecs::Component,
+    runen_ecs::Resource,
 )]
 pub struct SimulationProfileConfig {
     pub profile: SimulationProfile,

@@ -44,7 +44,7 @@ impl Default for ClientCommandEnvelope {
     }
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, PartialEq, Component, runen_ecs::Resource)]
 struct PlayerCommandBuffer {
     commands: Vec<ClientCommandEnvelope>,
 }
@@ -63,7 +63,7 @@ impl PlayerCommandBuffer {
     }
 }
 
-#[derive(Debug, Clone, Default, PartialEq, ecs::Resource)]
+#[derive(Debug, Clone, Default, PartialEq, runen_ecs::Resource)]
 struct AppliedInputLog {
     inputs: Vec<ClientCommandEnvelope>,
 }

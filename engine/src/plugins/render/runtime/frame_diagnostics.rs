@@ -14,7 +14,7 @@ const MAX_PENDING_DIAGNOSTIC_TRANSACTIONS: usize = 8;
 const MAX_RETAINED_DIAGNOSTIC_CAPTURE_BYTES: usize = 64 * 1024 * 1024;
 const CAPTURE_BYTE_CAPACITY_REASON: &str = "diagnostics_capture_byte_capacity_exceeded";
 
-#[derive(Debug, ecs::Component, ecs::Resource)]
+#[derive(Debug, runen_ecs::Component, runen_ecs::Resource)]
 pub(crate) struct RenderFrameDiagnosticsTransactionState {
     pending: BTreeMap<u64, RenderFrameDiagnosticsTransaction>,
     max_pending_transactions: usize,

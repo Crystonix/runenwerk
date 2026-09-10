@@ -118,7 +118,7 @@ pub struct ShaderStatus {
     pub last_error: Option<String>,
 }
 
-#[derive(ecs::Component, ecs::Resource)]
+#[derive(runen_ecs::Component, runen_ecs::Resource)]
 pub struct ShaderRegistryResource {
     pub(super) assets: Vec<ShaderAssetComponent>,
     pub(super) by_id: HashMap<String, usize>,

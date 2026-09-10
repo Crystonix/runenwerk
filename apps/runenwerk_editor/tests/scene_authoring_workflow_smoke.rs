@@ -13,13 +13,13 @@ use runenwerk_editor::editor_features::{
 use runenwerk_editor::editor_panels::OutlinerPanelCommand;
 use runenwerk_editor::shell::dispatch_shell_command;
 
-#[derive(Debug, Clone, Default, ecs::Reflect)]
+#[derive(Debug, Clone, Default, runen_ecs::Reflect)]
 struct Vec2 {
     x: f32,
     y: f32,
 }
 
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Reflect)]
+#[derive(Debug, Clone, Default, runen_ecs::Component, runen_ecs::Reflect)]
 struct Position {
     value: Vec2,
     speed: f32,

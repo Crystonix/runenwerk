@@ -8,7 +8,7 @@ use anyhow::{Result, anyhow};
 use engine_replay::{ReplayJournalFrame, ReplayValidationReport};
 
 pub(crate) fn validate_scene_replay(
-    world: &mut ecs::World,
+    world: &mut runen_ecs::World,
     archive: &SceneReplayArchive,
     target_tick: SimulationTick,
 ) -> Result<ReplayValidationReport> {

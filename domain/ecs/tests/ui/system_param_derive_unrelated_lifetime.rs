@@ -1,9 +1,9 @@
-#[derive(ecs::Resource)]
+#[derive(runen_ecs::Resource)]
 struct Counter;
 
-#[derive(ecs::SystemParam)]
+#[derive(runen_ecs::SystemParam)]
 struct Unrelated<'a> {
-    value: ecs::Res<'a, Counter>,
+    value: runen_ecs::Res<'a, Counter>,
 }
 
 fn main() {}

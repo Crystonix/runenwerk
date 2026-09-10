@@ -12,7 +12,7 @@ use std::collections::VecDeque;
 use world_ops::{BuildGeneration, ChunkGeneration, ChunkRevision};
 use world_sdf::{RegionSdfSummary, SdfChunkPayload};
 
-#[derive(Debug, Clone, ecs::Resource)]
+#[derive(Debug, Clone, runen_ecs::Resource)]
 pub struct WorldCompletedBuildOutput {
     pub chunk_id: ChunkId,
     pub target_chunk_revision: ChunkRevision,
@@ -22,7 +22,7 @@ pub struct WorldCompletedBuildOutput {
     pub region_summary: RegionSdfSummary,
 }
 
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct WorldCompletedBuildQueueResource {
     pub outputs: VecDeque<WorldCompletedBuildOutput>,
 }

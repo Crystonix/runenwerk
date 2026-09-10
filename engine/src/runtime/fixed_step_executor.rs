@@ -3,7 +3,7 @@ use crate::runtime::fixed_time::{CatchupBudget, FixedTimeConfig, FixedTimeState,
 use crate::runtime::publication::run_schedule_with_publication;
 use crate::runtime::schedules::FixedUpdate;
 use anyhow::Result;
-use ecs::{Runtime, World};
+use runen_ecs::{Runtime, World};
 
 const MIN_FIXED_STEP_SECONDS: f32 = 1.0 / 240.0;
 const MAX_FIXED_STEP_SECONDS: f32 = 1.0 / 15.0;

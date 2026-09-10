@@ -5,4 +5,3 @@ mod queue;
 
 pub use batch::BatchCommands;
 pub use command_buffer::Commands;
-pub use deferred::DeferredCommand;

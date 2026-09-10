@@ -51,7 +51,7 @@ pub struct RenderFragmentReloadOutcome {
     pub diagnostics: Vec<RenderFragmentDiagnostic>,
 }
 
-#[derive(Debug, Default, ecs::Resource)]
+#[derive(Debug, Default, runen_ecs::Resource)]
 pub struct RenderFragmentRegistryResource {
     packages: BTreeMap<RenderFragmentPackageId, RenderFragmentPackageRecord>,
     revision: u64,

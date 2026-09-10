@@ -3,7 +3,7 @@ use crate::plugins::render::{
     RenderFragmentMergeReport, compile_flow_plan,
 };
 
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct RenderDebugGraphDumpState {
     pub revision: u64,
     pub lines: Vec<String>,

@@ -82,7 +82,7 @@ impl ViewportSurfaceSet {
     }
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 pub struct ViewportSurfaceSetResource {
     sets: BTreeMap<ViewportId, ViewportSurfaceSet>,
 }

@@ -19,21 +19,21 @@ use world_sdf::{
     SdfPageCoord3, SdfPageRecord,
 };
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, runen_ecs::Resource)]
 pub enum WorldBuildStaleness {
     Current,
     Superseded,
     InvalidBase,
 }
 
-#[derive(Debug, Clone, ecs::Resource)]
+#[derive(Debug, Clone, runen_ecs::Resource)]
 pub struct WorldBuildJob {
     pub chunk_id: ChunkId,
     pub target_chunk_revision: ChunkRevision,
     pub target_build_generation: BuildGeneration,
 }
 
-#[derive(Debug, Clone, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Resource)]
 pub struct WorldBuildJobRuntimeResource {
     pub max_jobs_per_update: usize,
     pub enqueued_jobs: u64,

@@ -7,7 +7,6 @@ on:
     paths:
       - 'domain/ecs/**'
       - 'domain/ecs_macros/**'
-      - 'domain/scheduler/**'
       - 'Cargo.toml'
       - 'Cargo.lock'
       - 'tools/miri/run_ecs_c3.sh'
@@ -18,7 +17,6 @@ on:
     paths:
       - 'domain/ecs/**'
       - 'domain/ecs_macros/**'
-      - 'domain/scheduler/**'
       - 'Cargo.toml'
       - 'Cargo.lock'
       - 'tools/miri/run_ecs_c3.sh'

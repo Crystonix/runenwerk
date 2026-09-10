@@ -1,4 +1,4 @@
-use ecs::ReflectResource;
+use runen_ecs::ReflectResource;
 
 #[derive(ReflectResource)]
 struct RemovedRole {

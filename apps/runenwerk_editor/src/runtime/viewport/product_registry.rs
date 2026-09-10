@@ -252,7 +252,7 @@ pub fn material_preview_descriptor_with_lineage(
     )
 }
 
-#[derive(Debug, Clone, ecs::Component, ecs::Resource, Default)]
+#[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Resource, Default)]
 pub struct ViewportProductRegistryResource {
     descriptors_by_viewport: BTreeMap<ViewportId, Vec<ExpressionProductDescriptor>>,
 }
@@ -290,7 +290,7 @@ impl ViewportProductRegistryResource {
     }
 }
 
-#[derive(Debug, Clone, ecs::Component, ecs::Resource, Default)]
+#[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Resource, Default)]
 pub struct ViewportPresentationStateResource {
     states_by_viewport: BTreeMap<ViewportId, ViewportPresentationState>,
 }
@@ -329,7 +329,7 @@ impl ViewportPresentationStateResource {
     }
 }
 
-#[derive(Debug, Clone, ecs::Component, ecs::Resource, Default)]
+#[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Resource, Default)]
 pub struct ViewportArtifactObservationResource {
     frames_by_viewport: BTreeMap<ViewportId, ArtifactObservationFrame>,
     generation: u64,

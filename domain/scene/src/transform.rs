@@ -1,4 +1,4 @@
-#[derive(Debug, Copy, Clone, PartialEq, Default, ecs::Reflect)]
+#[derive(Debug, Copy, Clone, PartialEq, Default, runen_ecs::Reflect)]
 pub struct Vec3Value {
     pub x: f32,
     pub y: f32,
@@ -34,7 +34,7 @@ impl Vec3Value {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, ecs::Reflect)]
+#[derive(Debug, Copy, Clone, PartialEq, runen_ecs::Reflect)]
 pub struct QuatValue {
     pub x: f32,
     pub y: f32,
@@ -66,7 +66,7 @@ impl Default for QuatValue {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, ecs::Component, ecs::Reflect)]
+#[derive(Debug, Copy, Clone, PartialEq, runen_ecs::Component, runen_ecs::Reflect)]
 pub struct LocalTransform {
     pub translation: Vec3Value,
     pub rotation: QuatValue,
@@ -105,7 +105,7 @@ impl Default for LocalTransform {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, ecs::Component, ecs::Reflect)]
+#[derive(Debug, Copy, Clone, PartialEq, runen_ecs::Component, runen_ecs::Reflect)]
 pub struct WorldTransform {
     pub translation: Vec3Value,
     pub rotation: QuatValue,

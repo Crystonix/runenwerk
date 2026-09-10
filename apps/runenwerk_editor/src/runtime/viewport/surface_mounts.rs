@@ -10,7 +10,7 @@ use ui_surface::{
     SurfaceDefinitionRegistry, SurfaceInstanceId,
 };
 
-#[derive(Debug, Clone, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Resource)]
 pub struct SurfaceDefinitionRegistryResource {
     registry: SurfaceDefinitionRegistry,
 }
@@ -39,7 +39,7 @@ impl SurfaceDefinitionRegistryResource {
     }
 }
 
-#[derive(Debug, Clone, ecs::Component, ecs::Resource, Default)]
+#[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Resource, Default)]
 pub struct MountedSurfaceRegistryResource {
     registry: MountedSurfaceRegistry,
 }

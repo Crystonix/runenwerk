@@ -9,8 +9,8 @@ type RemovedComponentStore = HashMap<RemovedComponentKey, Box<dyn RemovedCompone
 trait RemovedComponentValue {
     fn restore(
         self: Box<Self>,
-        world: &mut ecs::World,
-        entity: ecs::Entity,
+        world: &mut runen_ecs::World,
+        entity: runen_ecs::Entity,
     ) -> Result<(), EditorMutationError>;
 }
 
@@ -20,12 +20,12 @@ struct RemovedComponent<T> {
 
 impl<T> RemovedComponentValue for RemovedComponent<T>
 where
-    T: ecs::Component + 'static,
+    T: runen_ecs::Component + 'static,
 {
     fn restore(
         self: Box<Self>,
-        world: &mut ecs::World,
-        entity: ecs::Entity,
+        world: &mut runen_ecs::World,
+        entity: runen_ecs::Entity,
     ) -> Result<(), EditorMutationError> {
         world.insert(entity, self.value).map_err(|_| {
             EditorMutationError::runtime_rejected("failed to restore removed component")
@@ -34,16 +34,16 @@ where
 }
 
 struct SceneEntityRecord {
-    ecs_entity: ecs::Entity,
+    ecs_entity: runen_ecs::Entity,
 }
 
 struct ComponentRegistration {
     rust_type_id: TypeId,
     display_name: String,
-    insert_default: fn(&mut ecs::World, ecs::Entity) -> Result<(), EditorMutationError>,
+    insert_default: fn(&mut runen_ecs::World, runen_ecs::Entity) -> Result<(), EditorMutationError>,
     remove_and_capture: fn(
-        &mut ecs::World,
-        ecs::Entity,
+        &mut runen_ecs::World,
+        runen_ecs::Entity,
         &mut RemovedComponentStore,
         RemovedComponentKey,
     ) -> Result<(), EditorMutationError>,
@@ -72,19 +72,19 @@ impl EditorRuntimeIdRegistry {
         id
     }
 
-    pub fn register_entity(&mut self, editor_id: EntityId, ecs_entity: ecs::Entity) {
+    pub fn register_entity(&mut self, editor_id: EntityId, ecs_entity: runen_ecs::Entity) {
         self.next_entity_id = self.next_entity_id.max(editor_id.0.saturating_add(1));
         self.entities
             .insert(editor_id, SceneEntityRecord { ecs_entity });
     }
 
-    pub fn unregister_entity(&mut self, editor_id: EntityId) -> Option<ecs::Entity> {
+    pub fn unregister_entity(&mut self, editor_id: EntityId) -> Option<runen_ecs::Entity> {
         self.entities
             .remove(&editor_id)
             .map(|record| record.ecs_entity)
     }
 
-    pub fn resolve_entity(&self, entity_id: EntityId) -> Option<ecs::Entity> {
+    pub fn resolve_entity(&self, entity_id: EntityId) -> Option<runen_ecs::Entity> {
         self.entities
             .get(&entity_id)
             .map(|record| record.ecs_entity)
@@ -106,7 +106,7 @@ impl EditorRuntimeIdRegistry {
 
     pub fn register_component_type<T>(&mut self, editor_id: ComponentTypeId)
     where
-        T: ecs::Component + ecs::Reflect + Default + 'static,
+        T: runen_ecs::Component + runen_ecs::Reflect + Default + 'static,
     {
         self.component_types.insert(
             editor_id,
@@ -140,8 +140,8 @@ impl EditorRuntimeIdRegistry {
 
     pub fn add_default_component(
         &self,
-        world: &mut ecs::World,
-        entity: ecs::Entity,
+        world: &mut runen_ecs::World,
+        entity: runen_ecs::Entity,
         component_type: ComponentTypeId,
     ) -> Result<(), EditorMutationError> {
         let registration = self.component_types.get(&component_type).ok_or(
@@ -155,9 +155,9 @@ impl EditorRuntimeIdRegistry {
 
     pub fn remove_component_and_capture(
         &mut self,
-        world: &mut ecs::World,
+        world: &mut runen_ecs::World,
         editor_entity: EntityId,
-        ecs_entity: ecs::Entity,
+        ecs_entity: runen_ecs::Entity,
         component_type: ComponentTypeId,
     ) -> Result<(), EditorMutationError> {
         let registration = self.component_types.get(&component_type).ok_or(
@@ -176,9 +176,9 @@ impl EditorRuntimeIdRegistry {
 
     pub fn restore_removed_component(
         &mut self,
-        world: &mut ecs::World,
+        world: &mut runen_ecs::World,
         editor_entity: EntityId,
-        ecs_entity: ecs::Entity,
+        ecs_entity: runen_ecs::Entity,
         component_type: ComponentTypeId,
     ) -> Result<(), EditorMutationError> {
         let key = (editor_entity, component_type);
@@ -209,11 +209,11 @@ fn short_type_name<T>() -> String {
 }
 
 fn insert_default_component<T>(
-    world: &mut ecs::World,
-    entity: ecs::Entity,
+    world: &mut runen_ecs::World,
+    entity: runen_ecs::Entity,
 ) -> Result<(), EditorMutationError>
 where
-    T: ecs::Component + Default + 'static,
+    T: runen_ecs::Component + Default + 'static,
 {
     world
         .insert(entity, T::default())
@@ -221,13 +221,13 @@ where
 }
 
 fn remove_and_capture_component<T>(
-    world: &mut ecs::World,
-    entity: ecs::Entity,
+    world: &mut runen_ecs::World,
+    entity: runen_ecs::Entity,
     store: &mut HashMap<RemovedComponentKey, Box<dyn RemovedComponentValue>>,
     key: RemovedComponentKey,
 ) -> Result<(), EditorMutationError>
 where
-    T: ecs::Component + 'static,
+    T: runen_ecs::Component + 'static,
 {
     let value = world
         .remove::<T>(entity)

@@ -1,47 +1,48 @@
-use ecs::prelude::*;
-use ecs::{ComponentChangeKind, QueryTypeAccess, ResourceChangeKind, SystemParam};
+use runen_ecs::EntityError;
+use runen_ecs::prelude::*;
+use runen_ecs::{QueryTypeAccess, SystemParam};
 use std::any::TypeId;
 
-#[derive(Debug, Copy, Clone, PartialEq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, runen_ecs::Component, runen_ecs::Resource)]
 struct Position {
     x: f32,
     y: f32,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, runen_ecs::Component, runen_ecs::Resource)]
 struct Velocity {
     x: f32,
     y: f32,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, runen_ecs::Component, runen_ecs::Resource)]
 struct Player;
 
-#[derive(Debug, Copy, Clone, PartialEq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, runen_ecs::Component, runen_ecs::Resource)]
 struct Disabled;
 
-#[derive(Debug, Copy, Clone, PartialEq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, runen_ecs::Component, runen_ecs::Resource)]
 struct Health(i32);
 
-#[derive(Debug, Clone, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 struct Name(String);
 
-#[derive(Debug, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 struct Frame(u64);
 
-#[derive(Debug, PartialEq, ecs::Bundle)]
+#[derive(Debug, PartialEq, runen_ecs::Bundle)]
 struct CombatBundle {
     health: Health,
     name: Name,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 struct A(i32);
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 struct B(i32);
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 struct C(i32);
 
 #[derive(Copy, Clone)]
@@ -71,10 +72,10 @@ impl SystemSet for ObserveStage {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 struct SpawnGate(bool);
 
-#[derive(Debug, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 struct AddedHealthCounts(Vec<usize>);
 
 #[test]
@@ -166,6 +167,10 @@ fn entity_mut_bundle_insert_and_remove_work() {
 fn resources_and_change_ticks_work() {
     let mut world = World::new();
     let start = world.current_change_tick();
+    assert!(world.resource_mut::<Velocity>().is_err());
+    assert_eq!(world.current_change_tick(), start);
+    assert!(!world.resource_changed_since::<Velocity>(start));
+
     world.insert_resource(Frame(1));
     assert!(world.resource_changed_since::<Frame>(start));
 
@@ -178,7 +183,7 @@ fn resources_and_change_ticks_work() {
 }
 
 #[test]
-fn resource_lifecycle_and_change_logs_work() {
+fn resource_lifecycle_and_change_ticks_work() {
     let mut world = World::new();
     assert!(!world.has_resource::<Frame>());
 
@@ -193,21 +198,8 @@ fn resource_lifecycle_and_change_logs_work() {
     assert_eq!(removed, Some(Frame(15)));
     assert!(!world.has_resource::<Frame>());
 
-    let changes = world.resource_changes_since(start);
-    let kinds: Vec<_> = changes.iter().map(|change| change.kind).collect();
-    assert_eq!(
-        kinds,
-        vec![
-            ResourceChangeKind::Inserted,
-            ResourceChangeKind::Modified,
-            ResourceChangeKind::Removed,
-        ]
-    );
-    assert!(
-        changes
-            .iter()
-            .all(|change| change.resource_name.ends_with("Frame"))
-    );
+    assert!(world.current_change_tick() > start);
+    assert!(world.resource_changed_since::<Frame>(start));
 }
 
 #[test]
@@ -292,7 +284,7 @@ fn secondary_index_reads_support_shared_world_reference() {
 }
 
 #[test]
-fn secondary_index_helpers_and_component_change_logs_work() {
+fn secondary_index_helpers_and_component_change_ticks_work() {
     let mut world = World::new();
     world.ensure_component_index::<Name, String>(|name| name.0.clone());
     world.ensure_component_index_named::<Name, char>("initial", |name| {
@@ -322,22 +314,8 @@ fn secondary_index_helpers_and_component_change_logs_work() {
     world.require_mut::<Name>(hero).unwrap().0 = "hunter".to_string();
     world.despawn(villain).unwrap();
 
-    let changes = world.component_changes_since(start);
-    assert!(changes.iter().any(|change| {
-        change.entity == hero
-            && change.component_name.ends_with("Name")
-            && change.kind == ComponentChangeKind::Modified
-    }));
-    assert!(changes.iter().any(|change| {
-        change.entity == villain
-            && change.component_name.ends_with("Name")
-            && change.kind == ComponentChangeKind::Removed
-    }));
-    assert!(changes.iter().any(|change| {
-        change.entity == villain
-            && change.component_name.ends_with("Health")
-            && change.kind == ComponentChangeKind::Removed
-    }));
+    assert!(world.component_changed_since::<Name>(start));
+    assert!(world.component_changed_since::<Health>(start));
 }
 
 #[test]
@@ -733,7 +711,25 @@ fn get_mut_and_require_mut_update_changed_tracking_semantics() {
 }
 
 #[test]
-fn insert_remove_and_despawn_keep_change_logs_in_sync() {
+fn failed_mutable_component_lookup_does_not_create_mutation_facts() {
+    let mut world = World::new();
+    let entity = world.spawn(Player).expect("spawn should succeed");
+    let changed = world.query_state::<(Entity, &Health), Changed<Health>>();
+    let before = world.current_change_tick();
+
+    assert!(world.get_mut::<Health>(entity).is_none());
+    assert!(matches!(
+        world.require_mut::<Health>(entity),
+        Err(EntityError::MissingComponent { .. })
+    ));
+
+    assert_eq!(world.current_change_tick(), before);
+    assert!(!world.component_changed_since::<Health>(before));
+    assert!(changed.iter(&world).next().is_none());
+}
+
+#[test]
+fn insert_remove_and_despawn_keep_change_ticks_in_sync() {
     let mut world = World::new();
     let start = world.current_change_tick();
     let entity = world.spawn(Player).expect("spawn should succeed");
@@ -743,21 +739,7 @@ fn insert_remove_and_despawn_keep_change_logs_in_sync() {
     world.insert(entity, Health(20)).unwrap();
     world.despawn(entity).unwrap();
 
-    let health_change_kinds: Vec<_> = world
-        .component_changes_since(start)
-        .into_iter()
-        .filter(|change| change.entity == entity && change.component_name.ends_with("Health"))
-        .map(|change| change.kind)
-        .collect();
-    assert_eq!(
-        health_change_kinds,
-        vec![
-            ComponentChangeKind::Added,
-            ComponentChangeKind::Removed,
-            ComponentChangeKind::Added,
-            ComponentChangeKind::Removed,
-        ]
-    );
+    assert!(world.component_changed_since::<Health>(start));
 }
 
 #[test]
@@ -877,9 +859,9 @@ fn world_for_param_access_checks() {
         TypeId::of::<Frame>()
     ));
 
-    let res_view_access = <ResView<'static, Frame> as SystemParam>::access(&());
+    let res_access = <Res<'static, Frame> as SystemParam>::access(&());
     assert!(contains_type(
-        res_view_access.resource_reads(),
+        res_access.resource_reads(),
         TypeId::of::<Frame>()
     ));
 

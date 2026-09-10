@@ -13,7 +13,7 @@ use runen_gpu::GpuWorkResourceId;
 use std::collections::{BTreeMap, BTreeSet};
 use ui_render_data::ViewportSurfaceBindingRegistry;
 
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct PreparedRenderFrameResource {
     frames: BTreeMap<RenderSurfaceId, PreparedRenderFrame>,
     next_frame_index: u64,
@@ -444,7 +444,7 @@ impl PreparedRenderFrameRequestError {
     }
 }
 
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct PreparedRenderFrameRequestResource {
     contributions: BTreeMap<RenderFrameProducerId, PreparedRenderFrameRequestContribution>,
     diagnostics: Vec<PreparedRenderFrameRequestDiagnostic>,

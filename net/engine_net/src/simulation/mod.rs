@@ -19,13 +19,13 @@ pub struct ClientClock {
 
 pub type NetworkEntityId = NetEntityId;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct Authoritative;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct Predicted;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct Interpolated;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]

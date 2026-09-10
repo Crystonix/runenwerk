@@ -44,7 +44,7 @@ impl RenderSdfResidencyBudgetStatus {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 pub struct RenderSdfResidencyBudgetResource {
     pub max_resident_pages: usize,
     pub max_resident_bricks: usize,
@@ -92,7 +92,7 @@ impl RenderSdfResidencySourceProduct {
     }
 }
 
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct RenderSdfResidencySourceResource {
     products: BTreeMap<ProductIdentity, RenderSdfResidencySourceProduct>,
 }
@@ -209,7 +209,7 @@ pub struct RenderSdfChunkResidencyEntry {
     pub diagnostics: Vec<FieldProductDiagnostic>,
 }
 
-#[derive(Debug, Clone, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Resource)]
 pub struct RenderSdfResidencyResource {
     entries: BTreeMap<ProductIdentity, RenderSdfChunkResidencyEntry>,
     clipmap_windows: Vec<RenderSdfClipmapWindowRecord>,

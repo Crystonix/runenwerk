@@ -1,38 +1,38 @@
 #![allow(non_camel_case_types)]
 
-#[derive(ecs::Component, ecs::Resource)]
+#[derive(runen_ecs::Component, runen_ecs::Resource)]
 struct Counter;
 
-#[derive(ecs::Resource)]
+#[derive(runen_ecs::Resource)]
 struct Marker<const N: usize>;
 
-#[derive(ecs::SystemParam)]
+#[derive(runen_ecs::SystemParam)]
 struct WorldGroup<'w> {
-    counter: ecs::Res<'w, Counter>,
+    counter: runen_ecs::Res<'w, Counter>,
 }
 
-#[derive(ecs::SystemParam)]
+#[derive(runen_ecs::SystemParam)]
 struct QueryGroup<'w, 's> {
-    query: ecs::Query<'w, 's, &'static Counter>,
+    query: runen_ecs::Query<'w, 's, &'static Counter>,
 }
 
-#[derive(ecs::SystemParam)]
+#[derive(runen_ecs::SystemParam)]
 struct NestedQueryGroup<'w, 's> {
     inner: QueryGroup<'w, 's>,
 }
 
-#[derive(ecs::SystemParam)]
-struct GenericConstGroup<'w, T: ecs::Resource, const N: usize> {
-    value: ecs::Res<'w, T>,
-    marker: ecs::Res<'w, Marker<N>>,
+#[derive(runen_ecs::SystemParam)]
+struct GenericConstGroup<'w, T: runen_ecs::Resource, const N: usize> {
+    value: runen_ecs::Res<'w, T>,
+    marker: runen_ecs::Res<'w, Marker<N>>,
 }
 
-#[derive(ecs::SystemParam)]
-struct GeneratedNameCollision<'w, world: ecs::Resource> {
-    value: ecs::Res<'w, world>,
+#[derive(runen_ecs::SystemParam)]
+struct GeneratedNameCollision<'w, world: runen_ecs::Resource> {
+    value: runen_ecs::Res<'w, world>,
 }
 
-fn assert_param<P: ecs::SystemParam>() {}
+fn assert_param<P: runen_ecs::SystemParam>() {}
 
 fn main() {
     assert_param::<WorldGroup<'static>>();

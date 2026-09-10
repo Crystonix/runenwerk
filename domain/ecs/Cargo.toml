@@ -1,17 +1,18 @@
 [package]
-name = "ecs"
+name = "runen-ecs"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.93"
 publish = false
 license.workspace = true
+description = "A standalone entity-component-system framework with deterministic scheduling."
+readme = "README.md"
 
 [features]
 default = []
-telemetry = []
 
 [dependencies]
-anyhow = "1.0.100"
-ecs_macros = { path = "../ecs_macros" }
+runen_ecs_macros = { package = "runen-ecs-macros", path = "../ecs_macros" }
 thiserror = "2.0.18"
 
 [dev-dependencies]
@@ -20,17 +21,5 @@ glam = "0.31.0"
 trybuild = "1.0.114"
 
 [[bench]]
-name = "phase35"
-harness = false
-
-[[bench]]
-name = "phase4"
-harness = false
-
-[[bench]]
-name = "phase5b"
-harness = false
-
-[[bench]]
-name = "phase6"
+name = "semantic_baseline"
 harness = false

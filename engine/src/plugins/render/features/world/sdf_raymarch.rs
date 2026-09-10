@@ -137,7 +137,7 @@ impl RenderSdfRaymarchAccelerationReport {
     }
 }
 
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct RenderSdfRaymarchAccelerationResource {
     last_report: RenderSdfRaymarchAccelerationReport,
 }

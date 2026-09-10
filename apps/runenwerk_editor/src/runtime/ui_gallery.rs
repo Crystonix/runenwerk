@@ -46,7 +46,7 @@ impl Plugin for UiGalleryPlugin {
     }
 }
 
-#[derive(Clone, Debug, ecs::Component, ecs::Resource)]
+#[derive(Clone, Debug, runen_ecs::Component, runen_ecs::Resource)]
 pub struct UiGalleryResource {
     button_report: ButtonRuntimeViewReport,
     story_reports: Vec<UiStoryWorkflowReportV2>,

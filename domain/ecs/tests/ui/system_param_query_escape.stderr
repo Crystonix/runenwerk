@@ -1,7 +1,7 @@
 error: lifetime may not live long enough
   --> tests/ui/system_param_query_escape.rs:11:5
    |
- 9 |     query: ecs::Query<'_, '_, &'static mut Position>,
+ 9 |     query: runen_ecs::Query<'_, '_, &'static mut Position>,
    |     ----- has type `Query<'1, '_, &mut Position>`
 10 | ) {
 11 |     destination.0 = Some(query);
@@ -10,7 +10,7 @@ error: lifetime may not live long enough
 error: lifetime may not live long enough
   --> tests/ui/system_param_query_escape.rs:11:5
    |
- 9 |     query: ecs::Query<'_, '_, &'static mut Position>,
+ 9 |     query: runen_ecs::Query<'_, '_, &'static mut Position>,
    |     ----- has type `Query<'_, '2, &mut Position>`
 10 | ) {
 11 |     destination.0 = Some(query);

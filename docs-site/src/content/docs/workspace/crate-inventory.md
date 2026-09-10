@@ -32,6 +32,7 @@ This document records active workspace crates and their intended layer. Update i
 | `id` | `foundation/id` | foundation | Typed identity primitives and allocators. | evolving |
 | `ecs` | `domain/ecs` | domain | Entity/component/resource world, queries, reflection/change tracking, ECS system/schedule/access semantics, deterministic serial execution, and deferred structural commands. | evolving |
 | `ecs_macros` | `domain/ecs_macros` | domain | Derive macros for ECS component/resource/bundle/reflection contracts. | evolving |
+| `runen-ecs-conformance` | `domain/ecs_conformance` | domain | Downstream extraction-boundary fixture covering renamed dependency-key macro resolution, derives, WorldMut, runtime execution, and sealed compile-fail APIs. | test fixture |
 | `id_macros` | `foundation/id_macros` | foundation | Attribute macro support for typed ID wrappers. | evolving |
 | `diagnostics` | `foundation/diagnostics` | foundation | Structured diagnostic reporting vocabulary. | evolving |
 | `ratification` | `foundation/ratification` | foundation | Shared ratification report vocabulary. | evolving |

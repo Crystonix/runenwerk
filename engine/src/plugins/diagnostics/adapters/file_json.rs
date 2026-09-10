@@ -8,7 +8,7 @@ use std::fs;
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-#[derive(Debug, Clone, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Resource)]
 pub struct DiagnosticsFileAdapterStateResource {
     pub run_id: String,
     pub persisted_report_ids: BTreeSet<String>,

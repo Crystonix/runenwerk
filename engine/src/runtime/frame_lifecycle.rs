@@ -5,7 +5,7 @@ use crate::runtime::schedules::{
 };
 use crate::runtime::window::WindowState;
 use anyhow::Result;
-use ecs::{Runtime, World};
+use runen_ecs::{Runtime, World};
 
 /// Applies builtin runtime run-state before startup/frame execution.
 ///

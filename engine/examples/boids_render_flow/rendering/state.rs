@@ -43,7 +43,7 @@ pub(crate) struct BoidsDrawParams {
     pub sprite: [f32; 4],
 }
 
-#[derive(Debug, Clone, ecs::Resource)]
+#[derive(Debug, Clone, runen_ecs::Resource)]
 pub(crate) struct BoidsRenderState {
     tick: u32,
     boid_count: u32,

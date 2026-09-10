@@ -15,7 +15,7 @@ pub struct ViewportLayoutEntry {
     pub bounds: UiRect,
 }
 
-#[derive(Debug, Clone, ecs::Component, ecs::Resource, Default)]
+#[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Resource, Default)]
 pub struct ViewportLayoutMapResource {
     entries_by_viewport: BTreeMap<ViewportId, ViewportLayoutEntry>,
     entries_by_structural_context: BTreeMap<StructuralWidgetRoutingContext, ViewportLayoutEntry>,

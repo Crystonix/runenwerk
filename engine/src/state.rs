@@ -1,5 +1,5 @@
 use crate::plugins::render::renderer::GfxFrameTimings;
-use ecs::Component;
+use runen_ecs::Component;
 use std::collections::HashMap;
 use std::path::Path;
 use ui_render_data::UiFrame;
@@ -77,7 +77,7 @@ pub struct RegisteredScene {
     pub template_path: String,
 }
 
-#[derive(Debug, Clone, Default, Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, Component, runen_ecs::Resource)]
 pub struct SceneCatalog {
     scenes: Vec<RegisteredScene>,
     by_id: HashMap<String, SceneHandle>,
@@ -141,7 +141,7 @@ pub enum StartupPhase {
     Ready,
 }
 
-#[derive(Debug, Copy, Clone, Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, Component, runen_ecs::Resource)]
 pub struct StartupState {
     pub phase: StartupPhase,
     pub stable_frames: u32,
@@ -209,7 +209,7 @@ impl StartupState {
     }
 }
 
-#[derive(Debug, Clone, Copy, Component, ecs::Resource)]
+#[derive(Debug, Clone, Copy, Component, runen_ecs::Resource)]
 pub struct DebugMetricsState {
     pub visible: bool,
     pub fps_ema: f32,
@@ -247,7 +247,7 @@ impl DebugMetricsState {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Component, runen_ecs::Resource)]
 pub struct GameplayRuntimeConfig {
     pub chunk_size: f32,
     pub chunk_load_radius: u32,
@@ -264,7 +264,7 @@ impl Default for GameplayRuntimeConfig {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Component, ecs::Resource)]
+#[derive(Debug, Clone, PartialEq, Component, runen_ecs::Resource)]
 pub struct SceneRuntimeState {
     pub world_scene_label: String,
     pub overlay_scene_label: String,
@@ -287,7 +287,7 @@ impl Default for SceneRuntimeState {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Component, ecs::Resource)]
+#[derive(Debug, Clone, PartialEq, Component, runen_ecs::Resource)]
 pub struct UiOverlayState {
     pub screen_size: (f32, f32),
     pub scale: f32,

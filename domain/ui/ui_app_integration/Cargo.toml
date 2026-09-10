@@ -7,7 +7,7 @@ license.workspace = true
 
 [dependencies]
 serde = { version = "1.0.228", features = ["derive"] }
-ecs.workspace = true
+runen_ecs.workspace = true
 ui_binding.workspace = true
 ui_controls.workspace = true
 ui_definition.workspace = true

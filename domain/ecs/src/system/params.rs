@@ -3,7 +3,7 @@ use crate::Commands;
 use crate::World;
 use crate::component::{Component, Resource};
 use crate::query::{
-    Query, QueryAccess, QueryFilter, QueryOrphaned, QueryOrphanedState, QuerySpec, QueryState,
+    Query, QueryAccess, QueryFilter, QuerySpec, QueryState, RemovedQuery, RemovedState,
 };
 use crate::scheduler::system::ParamSlotDescriptor;
 use crate::world::{ResourceCapability, ResourceMutationCapability};
@@ -11,11 +11,64 @@ use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 use std::ptr::NonNull;
 
+/// Exclusive access to the complete world for systems that must coordinate
+/// multiple ECS domains atomically. The runtime rejects all sibling immediate
+/// borrows before this parameter is extracted.
+pub struct WorldMut<'world> {
+    world: NonNull<World>,
+    _marker: PhantomData<&'world mut World>,
+}
+
+impl<'world> Deref for WorldMut<'world> {
+    type Target = World;
+
+    fn deref(&self) -> &World {
+        // Safety: the runtime creates this value only after validating
+        // exclusive-world access for the invocation.
+        unsafe { self.world.as_ref() }
+    }
+}
+
+impl<'world> DerefMut for WorldMut<'world> {
+    fn deref_mut(&mut self) -> &mut World {
+        // Safety: the runtime creates this value only after validating
+        // exclusive-world access for the invocation.
+        unsafe { self.world.as_mut() }
+    }
+}
+
+unsafe impl<'param> SystemParam for WorldMut<'param> {
+    type State = ();
+    type Item<'world, 'state> = WorldMut<'world>;
+
+    fn init_state(_: &mut World) -> Result<Self::State, SystemParamError> {
+        Ok(())
+    }
+
+    fn access(_: &Self::State) -> QueryAccess {
+        QueryAccess::exclusive_world()
+    }
+
+    fn slot_descriptor() -> ParamSlotDescriptor {
+        ParamSlotDescriptor::leaf("world_mut", "WorldMut", std::any::type_name::<Self>())
+    }
+
+    unsafe fn extract<'world, 'state>(
+        _: &'state mut Self::State,
+        context: SystemParamContext<'world>,
+    ) -> Result<Self::Item<'world, 'state>, SystemParamError> {
+        let world = unsafe { context.world_mut() };
+        Ok(WorldMut {
+            world: NonNull::from(world),
+            _marker: PhantomData,
+        })
+    }
+}
+
 pub struct Res<'world, T: Resource> {
     value: NonNull<T>,
     _marker: PhantomData<&'world T>,
 }
-pub type ResView<'world, T> = Res<'world, T>;
 impl<'world, T: Resource> Res<'world, T> {
     pub(crate) fn new(capability: ResourceCapability<'world, T>) -> Self {
         Self {
@@ -85,20 +138,20 @@ where
 }
 
 unsafe impl<'param, 'cached, T: Component + 'static> SystemParam
-    for QueryOrphaned<'param, 'cached, T>
+    for RemovedQuery<'param, 'cached, T>
 {
-    type State = QueryOrphanedState<T>;
-    type Item<'world, 'state> = QueryOrphaned<'world, 'state, T>;
+    type State = RemovedState<T>;
+    type Item<'world, 'state> = RemovedQuery<'world, 'state, T>;
     fn init_state(world: &mut World) -> Result<Self::State, SystemParamError> {
-        Ok(QueryOrphanedState::new(world))
+        Ok(RemovedState::new(world))
     }
     fn access(state: &Self::State) -> QueryAccess {
         state.access().clone()
     }
     fn slot_descriptor() -> ParamSlotDescriptor {
         ParamSlotDescriptor::leaf(
-            "query_orphaned",
-            "QueryOrphaned",
+            "query_removed",
+            "RemovedQuery",
             std::any::type_name::<Self>(),
         )
     }
@@ -106,7 +159,7 @@ unsafe impl<'param, 'cached, T: Component + 'static> SystemParam
         state: &'state mut Self::State,
         context: SystemParamContext<'world>,
     ) -> Result<Self::Item<'world, 'state>, SystemParamError> {
-        Ok(QueryOrphaned::new(context.query(), state))
+        Ok(RemovedQuery::new(context.query(), state))
     }
 }
 

@@ -4,14 +4,14 @@ use crate::plugins::diagnostics::core::store::DiagnosticsReportStoreResource;
 use crate::plugins::scene::SceneResource;
 use crate::runtime::WorldMut;
 
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct DiagnosticsConsoleAdapterStateResource {
     pub last_report_id: Option<String>,
     pub last_info_frame_index: Option<u64>,
     pub last_fingerprint: Option<u64>,
 }
 
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct DiagnosticsConsoleFeedResource {
     pub lines: Vec<String>,
 }

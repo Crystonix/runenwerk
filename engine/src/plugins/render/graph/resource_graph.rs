@@ -9,7 +9,7 @@ pub struct StateResourceDeclaration {
 }
 
 impl StateResourceDeclaration {
-    pub fn of<T: ecs::Resource + 'static>() -> Self {
+    pub fn of<T: runen_ecs::Resource + 'static>() -> Self {
         Self {
             type_id: TypeId::of::<T>(),
             type_name: type_name::<T>(),
@@ -26,7 +26,7 @@ pub struct ResourceGraph {
 impl ResourceGraph {
     pub fn add_state_resource<T>(&mut self)
     where
-        T: ecs::Resource + 'static,
+        T: runen_ecs::Resource + 'static,
     {
         self.state_resources
             .push(StateResourceDeclaration::of::<T>());

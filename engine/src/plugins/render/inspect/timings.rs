@@ -205,7 +205,7 @@ impl RenderPassTimingEvidence {
     }
 }
 
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct RenderDebugTimingsState {
     pub workload_ms: f32,
     pub total_ms: f32,

@@ -1,5 +1,5 @@
-use ecs::prelude::*;
-use ecs::{QueryAccess, SystemParam, SystemParamError};
+use runen_ecs::prelude::*;
+use runen_ecs::{QueryAccess, SystemParam, SystemParamError};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 #[derive(Copy, Clone)]
@@ -11,37 +11,37 @@ impl ScheduleLabel for Update {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, runen_ecs::Component, runen_ecs::Resource)]
 struct Position(f32);
 
-#[derive(Debug, Copy, Clone, PartialEq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, runen_ecs::Component, runen_ecs::Resource)]
 struct Velocity(f32);
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 struct Frame(u64);
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 struct Score(u64);
 
-#[derive(Debug, Copy, Clone, PartialEq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, runen_ecs::Component, runen_ecs::Resource)]
 struct DeltaTime(f32);
 
-#[derive(Debug, Copy, Clone, PartialEq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, runen_ecs::Component, runen_ecs::Resource)]
 struct Bonus(f32);
 
-#[derive(Debug, Copy, Clone, PartialEq, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, runen_ecs::Resource)]
 struct Scale(f32);
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, runen_ecs::Resource)]
 struct ExtraScore(u64);
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 struct Marker;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 struct SeenCount(u32);
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 struct MissingRes;
 
 #[test]
@@ -125,7 +125,7 @@ unsafe impl SystemParam for CachedCounter {
 
     unsafe fn extract<'world, 'state>(
         state: &'state mut Self::State,
-        _context: ecs::SystemParamContext<'world>,
+        _context: runen_ecs::SystemParamContext<'world>,
     ) -> Result<Self::Item<'world, 'state>, SystemParamError> {
         *state += 1;
         EXTRACT_CALLS.fetch_add(1, Ordering::SeqCst);
@@ -178,63 +178,8 @@ fn runtime_reports_extraction_errors_cleanly() {
 }
 
 #[test]
-fn access_conflict_model_keeps_diagnostics_separate_from_semantic_ordering() {
-    fn read_frame_a(_frame: Res<Frame>) {}
-    fn read_frame_b(_frame: Res<Frame>) {}
-    fn read_frame_view(_frame: ResView<Frame>) {}
-    fn write_frame(_frame: ResMut<Frame>) {}
-
-    let mut world = World::new();
-    world.insert_resource(Frame(0));
-
-    let mut read_runtime = Runtime::new();
-    read_runtime.add_systems::<Update, _, _>(&mut world, (read_frame_a, read_frame_b));
-    let read_plan = read_runtime
-        .plan_for::<Update>()
-        .unwrap()
-        .expect("registered update schedule should have a plan")
-        .clone();
-    assert!(read_plan.conflicts.is_empty());
-    assert_eq!(read_plan.stages.len(), 1);
-    assert_eq!(read_plan.stages[0].system_indices.len(), 2);
-
-    let mut read_alias_runtime = Runtime::new();
-    read_alias_runtime.add_systems::<Update, _, _>(&mut world, (read_frame_a, read_frame_view));
-    let read_alias_plan = read_alias_runtime
-        .plan_for::<Update>()
-        .unwrap()
-        .expect("registered update schedule should have a plan")
-        .clone();
-    assert!(read_alias_plan.conflicts.is_empty());
-    assert_eq!(read_alias_plan.stages.len(), 1);
-    assert_eq!(read_alias_plan.stages[0].system_indices.len(), 2);
-
-    let mut read_write_runtime = Runtime::new();
-    read_write_runtime.add_systems::<Update, _, _>(&mut world, (read_frame_a, write_frame));
-    let read_write_plan = read_write_runtime
-        .plan_for::<Update>()
-        .unwrap()
-        .expect("registered update schedule should have a plan")
-        .clone();
-    assert_eq!(read_write_plan.conflicts.len(), 1);
-    assert_eq!(read_write_plan.stages.len(), 1);
-    assert_eq!(read_write_plan.stages[0].system_indices.len(), 2);
-
-    let mut read_view_write_runtime = Runtime::new();
-    read_view_write_runtime.add_systems::<Update, _, _>(&mut world, (read_frame_view, write_frame));
-    let read_view_write_plan = read_view_write_runtime
-        .plan_for::<Update>()
-        .unwrap()
-        .expect("registered update schedule should have a plan")
-        .clone();
-    assert_eq!(read_view_write_plan.conflicts.len(), 1);
-    assert_eq!(read_view_write_plan.stages.len(), 1);
-    assert_eq!(read_view_write_plan.stages[0].system_indices.len(), 2);
-}
-
-#[test]
-fn res_view_provides_read_only_resource_access() {
-    fn mirror_frame_into_score(frame: ResView<Frame>, mut score: ResMut<Score>) {
+fn res_provides_read_only_resource_access() {
+    fn mirror_frame_into_score(frame: Res<Frame>, mut score: ResMut<Score>) {
         score.0 = frame.0;
     }
 
@@ -264,14 +209,6 @@ fn commands_flush_at_stage_end_not_between_systems_in_same_stage() {
 
     let mut runtime = Runtime::new();
     runtime.add_systems::<Update, _, _>(&mut world, (enqueue_spawn, observe_marker_count));
-    let plan = runtime
-        .plan_for::<Update>()
-        .unwrap()
-        .expect("registered update schedule should have a plan")
-        .clone();
-    assert_eq!(plan.stages.len(), 1);
-    assert_eq!(plan.stages[0].system_indices.len(), 2);
-
     runtime.run_schedule::<Update>(&mut world).unwrap();
 
     assert_eq!(world.resource::<SeenCount>().unwrap().0, 0);

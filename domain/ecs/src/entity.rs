@@ -10,12 +10,18 @@ pub(crate) struct WorldScopeId(u64);
 
 impl WorldScopeId {
     fn allocate_process_local() -> Self {
-        NEXT_WORLD_SCOPE
-            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
-                current.checked_add(1)
-            })
-            .map(Self)
-            .unwrap_or_else(|_| panic!("{WORLD_SCOPE_EXHAUSTED_MESSAGE}"))
+        loop {
+            let current = NEXT_WORLD_SCOPE.load(Ordering::Relaxed);
+            let Some(next) = current.checked_add(1) else {
+                panic!("{WORLD_SCOPE_EXHAUSTED_MESSAGE}");
+            };
+            if NEXT_WORLD_SCOPE
+                .compare_exchange_weak(current, next, Ordering::Relaxed, Ordering::Relaxed)
+                .is_ok()
+            {
+                return Self(current);
+            }
+        }
     }
 
     #[cfg(test)]
@@ -32,12 +38,12 @@ impl WorldScopeId {
 /// persistence, replay, editor, product, or network identities.
 ///
 /// ```compile_fail
-/// use ecs::Entity;
+/// use runen_ecs::Entity;
 /// let _ = Entity::default();
 /// ```
 ///
 /// ```compile_fail
-/// use ecs::Entity;
+/// use runen_ecs::Entity;
 /// let _ = Entity { id: 0, generation: 0 };
 /// ```
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]

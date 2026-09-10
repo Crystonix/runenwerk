@@ -1,9 +1,8 @@
-// Owner: ecs World Entity - Lifecycle APIs
+// Owner: RunenECS World Entity - Lifecycle APIs
 use crate::bundle::{Bundle, prepare_bundle};
 use crate::entity::Entity;
 use crate::errors::{EntityAllocationError, EntityError};
 use crate::world::World;
-use crate::world::change_tracking::ComponentChangeKind;
 
 impl World {
     pub fn contains(&self, entity: Entity) -> bool {
@@ -42,18 +41,7 @@ impl World {
         self.allocator.free(entity)?;
 
         for type_id in removed_types {
-            let component_name = self
-                .component_type_registry
-                .get(&type_id)
-                .map(|meta| meta.name)
-                .unwrap_or("unknown_component");
-
-            self.record_component_change(
-                entity,
-                type_id,
-                component_name,
-                ComponentChangeKind::Removed,
-            );
+            self.record_component_change(entity, type_id, true);
         }
 
         Ok(())
@@ -99,14 +87,14 @@ mod tests {
         let mut world = World::new();
         world.allocator.exhaust_index_space_for_test();
         let alive_before = world.alive_entities.len();
-        let changes_before = world.component_change_log.len();
+        let changes_before = world.component_change_ticks.len();
 
         assert_eq!(
             world.spawn(NeverRegistered),
             Err(EntityAllocationError::IndexExhausted)
         );
         assert_eq!(world.alive_entities.len(), alive_before);
-        assert_eq!(world.component_change_log.len(), changes_before);
+        assert_eq!(world.component_change_ticks.len(), changes_before);
         assert!(!world.has_component_type(TypeId::of::<NeverRegistered>()));
         assert!(world.entity_locations.is_empty());
     }

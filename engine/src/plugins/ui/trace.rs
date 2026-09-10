@@ -345,7 +345,7 @@ impl UiRuntimeTraceEvent {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Default, ecs::Resource)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, runen_ecs::Resource)]
 pub struct UiRuntimeTraceResource {
     events: Vec<UiRuntimeTraceEvent>,
 }

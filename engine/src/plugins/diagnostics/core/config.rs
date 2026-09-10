@@ -1,13 +1,13 @@
 use std::path::PathBuf;
 
-#[derive(Debug, Clone, ecs::Component, ecs::Resource, Default)]
+#[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Resource, Default)]
 pub struct DiagnosticsAdapterConfig {
     pub stdout_enabled: bool,
     pub file_json_enabled: bool,
     pub console_enabled: bool,
 }
 
-#[derive(Debug, Clone, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Resource)]
 pub struct DiagnosticsProducerConfig {
     pub render_enabled: bool,
     pub scheduler_enabled: bool,
@@ -30,7 +30,7 @@ impl Default for DiagnosticsProducerConfig {
     }
 }
 
-#[derive(Debug, Clone, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Resource)]
 pub struct DiagnosticsConfigResource {
     pub enabled: bool,
     pub retention_max_reports: usize,

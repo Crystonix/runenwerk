@@ -1,4 +1,4 @@
-// Owner: ecs Storage - Entity to Archetype Location Map
+// Owner: RunenECS Storage - Entity to Archetype Location Map
 use super::ArchetypeId;
 use crate::entity::Entity;
 use std::collections::HashMap;

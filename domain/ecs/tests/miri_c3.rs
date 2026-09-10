@@ -1,4 +1,4 @@
-use ecs::{Component, Query, ResMut, Resource, Runtime, ScheduleLabel, World};
+use runen_ecs::{Component, Query, ResMut, Resource, Runtime, ScheduleLabel, World};
 
 #[derive(Debug, Copy, Clone, Component)]
 struct A(i32);

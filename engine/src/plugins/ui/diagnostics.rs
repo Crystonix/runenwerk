@@ -259,7 +259,7 @@ impl UiRuntimeDiagnostic {
 }
 
 /// Diagnostics collected by the UI runtime foundation.
-#[derive(Debug, Clone, PartialEq, Eq, Default, ecs::Resource)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, runen_ecs::Resource)]
 pub struct UiRuntimeDiagnosticsResource {
     entries: Vec<UiRuntimeDiagnostic>,
 }

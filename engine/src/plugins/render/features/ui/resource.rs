@@ -23,7 +23,7 @@ pub struct UiFontAtlasImage {
     pub pixels: Vec<u8>,
 }
 
-#[derive(Debug, Clone, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Resource)]
 pub struct UiFontAtlasResource {
     atlases: HashMap<FontId, MsdfFontAtlas>,
     images: HashMap<FontId, UiFontAtlasImage>,
@@ -205,7 +205,7 @@ fn default_editor_charset() -> Vec<char> {
     chars
 }
 
-#[derive(Debug, Clone, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Resource)]
 pub struct PreparedUiFrameResource {
     pub status: FeatureContributionStatus,
     pub fallback_policy: FeatureFallbackPolicy,
@@ -295,7 +295,7 @@ fn prepare_submissions(
     (status, payload)
 }
 
-#[derive(Debug, Clone, ecs::Component, ecs::Resource, Default)]
+#[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Resource, Default)]
 pub struct ViewportSurfaceBindingRegistryResource {
     registry: ViewportSurfaceBindingRegistry,
 }

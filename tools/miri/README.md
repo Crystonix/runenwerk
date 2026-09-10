@@ -1,6 +1,6 @@
 # RunenECS focused Miri validation
 
-The ECS package owns the retained unsafe query, capability, and extraction
+The RunenECS package owns the retained unsafe query, capability, and extraction
 proofs. Run the permanent focused path from the repository root with:
 
 ```text
@@ -14,4 +14,4 @@ of this nightly safety check.
 
 The focused test covers retained mutable query items, mutable tuples, disjoint
 query/resource extraction, stable resource payloads during mutation tracking,
-all three messaging map-growth paths, and queries after structural migration.
+and queries after structural migration.

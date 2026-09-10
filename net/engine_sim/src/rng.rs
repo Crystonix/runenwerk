@@ -2,7 +2,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::SimulationSeed;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ecs::Component, ecs::Resource)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, Serialize, Deserialize, runen_ecs::Component, runen_ecs::Resource,
+)]
 pub struct SimulationRng {
     state: u64,
     generated: u64,

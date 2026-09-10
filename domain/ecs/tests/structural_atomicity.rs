@@ -1,28 +1,28 @@
-use ecs::{BatchCommands, CommandError, Commands, EntityError, World};
+use runen_ecs::{BatchCommands, CommandError, Commands, EntityError, World};
 use std::any::TypeId;
 
-#[derive(Debug, PartialEq, Eq, ecs::Component)]
+#[derive(Debug, PartialEq, Eq, runen_ecs::Component)]
 struct A(u32);
 
-#[derive(Debug, PartialEq, Eq, ecs::Component)]
+#[derive(Debug, PartialEq, Eq, runen_ecs::Component)]
 struct B(u32);
 
-#[derive(Debug, PartialEq, Eq, ecs::Component)]
+#[derive(Debug, PartialEq, Eq, runen_ecs::Component)]
 struct C(u32);
 
-#[derive(Debug, PartialEq, Eq, ecs::Component)]
+#[derive(Debug, PartialEq, Eq, runen_ecs::Component)]
 struct D(u32);
 
-#[derive(Debug, PartialEq, Eq, ecs::Component)]
+#[derive(Debug, PartialEq, Eq, runen_ecs::Component)]
 struct NeverInsertedA;
 
-#[derive(Debug, PartialEq, Eq, ecs::Component)]
+#[derive(Debug, PartialEq, Eq, runen_ecs::Component)]
 struct NeverInsertedB;
 
-#[derive(ecs::Bundle)]
+#[derive(runen_ecs::Bundle)]
 struct EmptyDerivedBundle {}
 
-#[derive(ecs::Bundle)]
+#[derive(runen_ecs::Bundle)]
 struct DerivedPair {
     a: A,
     b: B,
@@ -37,14 +37,13 @@ fn empty_derived_bundle_spawns_and_preserves_empty_archetype() {
 
     assert!(world.contains(entity));
     assert_eq!(world.__entity_archetype_component_count(entity), Some(0));
-    assert!(world.component_changes_since(0).is_empty());
 }
 
 #[test]
 fn failed_multi_component_removal_preserves_all_components_and_observations() {
     let mut world = World::new();
     let entity = world.spawn(A(7)).expect("spawn should succeed");
-    let changes_before = world.component_changes_since(0);
+    let changes_before = world.current_change_tick();
     let location_before = world
         .__entity_archetype_location(entity)
         .expect("entity should have an archetype location");
@@ -58,7 +57,7 @@ fn failed_multi_component_removal_preserves_all_components_and_observations() {
     ));
     assert_eq!(world.require::<A>(entity).expect("A must remain").0, 7);
     assert!(world.get::<B>(entity).is_none());
-    assert_eq!(world.component_changes_since(0), changes_before);
+    assert_eq!(world.current_change_tick(), changes_before);
     assert_eq!(
         world.__entity_archetype_location(entity),
         Some(location_before)
@@ -69,7 +68,7 @@ fn failed_multi_component_removal_preserves_all_components_and_observations() {
 fn duplicate_type_removal_keeps_existing_failure_semantics_without_partial_mutation() {
     let mut world = World::new();
     let entity = world.spawn(A(11)).expect("spawn should succeed");
-    let changes_before = world.component_changes_since(0);
+    let changes_before = world.current_change_tick();
 
     let result = world.remove::<(A, A)>(entity);
 
@@ -79,7 +78,7 @@ fn duplicate_type_removal_keeps_existing_failure_semantics_without_partial_mutat
             if component == std::any::type_name::<A>()
     ));
     assert_eq!(world.require::<A>(entity).expect("A must remain").0, 11);
-    assert_eq!(world.component_changes_since(0), changes_before);
+    assert_eq!(world.current_change_tick(), changes_before);
 }
 
 #[test]
@@ -91,7 +90,7 @@ fn rejected_foreign_insert_preserves_colliding_local_structure_registration_and_
     let local_location_before = first
         .__entity_archetype_location(local)
         .expect("local entity should have a location");
-    let changes_before = first.component_changes_since(0);
+    let changes_before = first.current_change_tick();
 
     let mut second = World::new();
     let foreign = second.spawn(A(1)).expect("foreign spawn should succeed");
@@ -110,7 +109,7 @@ fn rejected_foreign_insert_preserves_colliding_local_structure_registration_and_
     assert_eq!(first.find_entity_by_index::<A, u32>(&1), None);
     assert!(!first.has_component_type(TypeId::of::<NeverInsertedA>()));
     assert!(!first.has_component_type(TypeId::of::<NeverInsertedB>()));
-    assert_eq!(first.component_changes_since(0), changes_before);
+    assert_eq!(first.current_change_tick(), changes_before);
 }
 
 #[test]
@@ -118,14 +117,14 @@ fn freed_and_stale_insertions_do_not_register_or_mutate_replacement_state() {
     let mut world = World::new();
     let original = world.spawn(A(4)).expect("spawn should succeed");
     world.despawn(original).expect("despawn should succeed");
-    let changes_after_despawn = world.component_changes_since(0);
+    let changes_after_despawn = world.current_change_tick();
 
     assert!(matches!(
         world.insert(original, NeverInsertedA),
         Err(EntityError::AlreadyFreed { .. })
     ));
     assert!(!world.has_component_type(TypeId::of::<NeverInsertedA>()));
-    assert_eq!(world.component_changes_since(0), changes_after_despawn);
+    assert_eq!(world.current_change_tick(), changes_after_despawn);
 
     let replacement = world.spawn(A(9)).expect("slot reuse should succeed");
     assert_eq!(original.index(), replacement.index());
@@ -133,7 +132,7 @@ fn freed_and_stale_insertions_do_not_register_or_mutate_replacement_state() {
     let replacement_location_before = world
         .__entity_archetype_location(replacement)
         .expect("replacement should have a location");
-    let changes_before_stale_insert = world.component_changes_since(0);
+    let changes_before_stale_insert = world.current_change_tick();
 
     assert!(matches!(
         world.insert(original, NeverInsertedB),
@@ -151,10 +150,7 @@ fn freed_and_stale_insertions_do_not_register_or_mutate_replacement_state() {
         Some(replacement_location_before)
     );
     assert!(!world.has_component_type(TypeId::of::<NeverInsertedB>()));
-    assert_eq!(
-        world.component_changes_since(0),
-        changes_before_stale_insert
-    );
+    assert_eq!(world.current_change_tick(), changes_before_stale_insert);
 }
 
 #[test]
@@ -188,26 +184,18 @@ fn supported_derived_and_tuple_bundles_commit_complete_structural_operations() {
 fn component_observation_tick_matches_committed_storage_tick() {
     let mut world = World::new();
     let entity = world.spawn(A(1)).expect("spawn should succeed");
-    let first_change = world
-        .component_changes_since(0)
-        .into_iter()
-        .last()
-        .expect("spawn should publish an added observation");
+    let first_change_tick = world.current_change_tick();
     let (_, first_storage_tick) = world
         .__entity_component_ticks::<A>(entity)
         .expect("A should have row metadata");
-    assert_eq!(first_storage_tick, first_change.tick);
+    assert_eq!(first_storage_tick, first_change_tick);
 
     world.insert(entity, A(2)).expect("update should succeed");
-    let latest_change = world
-        .component_changes_since(first_change.tick)
-        .into_iter()
-        .last()
-        .expect("update should publish a modified observation");
+    let latest_change_tick = world.current_change_tick();
     let (_, latest_storage_tick) = world
         .__entity_component_ticks::<A>(entity)
         .expect("A should keep row metadata");
-    assert_eq!(latest_storage_tick, latest_change.tick);
+    assert_eq!(latest_storage_tick, latest_change_tick);
     assert_eq!(world.require::<A>(entity).expect("A should exist").0, 2);
 }
 

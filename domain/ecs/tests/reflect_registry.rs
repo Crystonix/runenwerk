@@ -1,23 +1,23 @@
-use ecs::{Reflect, TypeInfo, TypeRegistry, World};
+use runen_ecs::{Reflect, TypeInfo, TypeRegistry, World};
 use std::any::TypeId;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-#[derive(ecs::Component, ecs::Reflect)]
+#[derive(runen_ecs::Component, runen_ecs::Reflect)]
 struct ComponentA {
     value: u32,
 }
 
-#[derive(ecs::Component, ecs::Reflect)]
+#[derive(runen_ecs::Component, runen_ecs::Reflect)]
 struct ComponentB {
     value: u32,
 }
 
-#[derive(ecs::Component, ecs::Resource, ecs::Reflect)]
+#[derive(runen_ecs::Component, runen_ecs::Resource, runen_ecs::Reflect)]
 struct Both {
     value: u32,
 }
 
-#[derive(ecs::Resource, ecs::Reflect)]
+#[derive(runen_ecs::Resource, runen_ecs::Reflect)]
 struct ResourceC {
     value: u32,
 }
@@ -27,17 +27,17 @@ struct SameNameB;
 
 impl Reflect for SameNameA {
     fn type_info() -> TypeInfo {
-        TypeInfo::new("SameNameA", "same", ecs::ReflectShape::Opaque)
+        TypeInfo::new("SameNameA", "same", runen_ecs::ReflectShape::Opaque)
     }
 }
 
 impl Reflect for SameNameB {
     fn type_info() -> TypeInfo {
-        TypeInfo::new("SameNameB", "same", ecs::ReflectShape::Opaque)
+        TypeInfo::new("SameNameB", "same", runen_ecs::ReflectShape::Opaque)
     }
 }
 
-#[derive(ecs::Component)]
+#[derive(runen_ecs::Component)]
 struct DescriptorProbe;
 
 static DESCRIPTOR_PROBE_CALLS: AtomicUsize = AtomicUsize::new(0);
@@ -52,12 +52,12 @@ impl Reflect for DescriptorProbe {
         TypeInfo::new(
             std::any::type_name::<Self>(),
             display_name,
-            ecs::ReflectShape::Opaque,
+            runen_ecs::ReflectShape::Opaque,
         )
     }
 }
 
-#[derive(ecs::Reflect)]
+#[derive(runen_ecs::Reflect)]
 struct Generic<T>
 where
     T: Reflect,
@@ -72,12 +72,12 @@ impl<const N: usize> Reflect for ConstField<N> {
         TypeInfo::new(
             std::any::type_name::<Self>(),
             "bytes",
-            ecs::ReflectShape::Opaque,
+            runen_ecs::ReflectShape::Opaque,
         )
     }
 }
 
-#[derive(ecs::Reflect)]
+#[derive(runen_ecs::Reflect)]
 struct ConstGeneric<const N: usize> {
     value: ConstField<N>,
 }

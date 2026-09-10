@@ -1,4 +1,4 @@
-// Owner: ecs World Component - Registration and Secondary Index APIs
+// Owner: RunenECS World Component - Registration and Secondary Index APIs
 use crate::bundle::BundleComponentDescriptor;
 use crate::component::Component;
 use crate::entity::Entity;
@@ -20,14 +20,7 @@ impl World {
         descriptor.register_storage(&mut self.archetype_registry);
         self.component_type_registry
             .entry(descriptor.component_type_id())
-            .or_insert_with(|| {
-                let id = self.next_component_id;
-                self.next_component_id = self.next_component_id.saturating_add(1);
-                crate::world::change_tracking::ComponentMeta {
-                    id: crate::world::change_tracking::ComponentTypeKey(id),
-                    name: descriptor.component_name(),
-                }
-            });
+            .or_insert_with(|| descriptor.component_name());
     }
 
     pub(crate) fn register_bundle_descriptors(

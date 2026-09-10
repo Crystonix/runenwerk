@@ -102,7 +102,7 @@ impl SurfaceFrameSubmission {
     }
 }
 
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct SurfaceFrameSubmissionRegistryResource {
     submissions: BTreeMap<(RenderFrameProducerId, Option<RenderSurfaceId>), SurfaceFrameSubmission>,
 }

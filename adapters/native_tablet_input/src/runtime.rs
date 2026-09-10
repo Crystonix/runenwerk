@@ -1,9 +1,9 @@
 //! Runtime plugin that bridges native tablet backends into UI input packets.
 
 use anyhow::Result;
-use ecs::World;
 use engine::prelude::{App, Plugin};
 use engine::runtime::{NativeWindowHook, NativeWindowHookRegistryResource};
+use runen_ecs::World;
 use winit::event::{DeviceEvent, WindowEvent};
 use winit::event_loop::EventLoopBuilder;
 use winit::window::Window;

@@ -7,7 +7,7 @@ license.workspace = true
 
 [dependencies]
 anyhow = "1.0.100"
-ecs.workspace = true
+runen_ecs.workspace = true
 engine = { path = "../../engine" }
 ui_input = { workspace = true }
 winit = "0.30.9"

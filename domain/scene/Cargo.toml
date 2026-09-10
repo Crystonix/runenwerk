@@ -6,6 +6,6 @@ publish = false
 license.workspace = true
 
 [dependencies]
-ecs.workspace = true
+runen_ecs.workspace = true
 glam.workspace = true
 schema.workspace = true

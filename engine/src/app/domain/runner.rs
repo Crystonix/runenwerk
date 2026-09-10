@@ -1,7 +1,7 @@
 use crate::prelude::Time;
 use crate::runtime::fixed_time::FixedTimeConfig;
-use ecs::World;
 use engine_sim::SimulationTick;
+use runen_ecs::World;
 
 // Owner: Engine Runtime - App Runner
 pub trait AppRunner: Send {

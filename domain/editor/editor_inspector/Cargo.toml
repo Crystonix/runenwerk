@@ -7,5 +7,5 @@ license.workspace = true
 
 [dependencies]
 editor_core.workspace = true
-ecs.workspace = true
+runen_ecs.workspace = true
 schema.workspace = true

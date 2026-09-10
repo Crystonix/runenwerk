@@ -503,8 +503,8 @@ mod tests {
         }
     }
 
-    fn test_world() -> ecs::World {
-        let mut world = ecs::World::default();
+    fn test_world() -> runen_ecs::World {
+        let mut world = runen_ecs::World::default();
         let mut registry = RenderFeatureRegistryResource::default();
         registry.sync_order();
         world.insert_resource(registry);

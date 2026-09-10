@@ -1,8 +1,9 @@
-// Owner: ecs Storage - Archetype Registry, Matching, and Typed Column Storage
+// Owner: RunenECS Storage - Archetype Registry, Matching, and Typed Column Storage
 use super::{EntityLocation, EntityLocationMap};
 use crate::component::Component;
 use crate::entity::Entity;
 use crate::storage::dense::{DenseColumn, DenseEntityColumn, DenseRowMetadata};
+use crate::world::ChangeCursor;
 use std::any::{Any, TypeId};
 use std::collections::HashMap;
 
@@ -55,10 +56,10 @@ struct ErasedDenseRow {
 }
 
 impl ErasedDenseRow {
-    fn new_added<T: Component>(value: T, tick: u64, state_generation: u64) -> Self {
+    fn new_added<T: Component>(value: T, tick: ChangeCursor) -> Self {
         Self {
             value: Box::new(Box::new(value)),
-            metadata: DenseRowMetadata::new(tick, tick, state_generation, 0),
+            metadata: DenseRowMetadata::new(tick, tick),
         }
     }
 
@@ -76,8 +77,7 @@ trait ArchetypeComponentColumn {
     fn get_ptr(&self, row: usize) -> Option<*const ()>;
     fn get_mut_ptr(&mut self, row: usize) -> Option<*mut ()>;
     fn metadata(&self, row: usize) -> Option<DenseRowMetadata>;
-    fn mark_changed(&mut self, row: usize, tick: u64) -> bool;
-    fn mark_stateful_changed(&mut self, row: usize, tick: u64) -> bool;
+    fn mark_changed(&mut self, row: usize, tick: ChangeCursor) -> bool;
     fn push_erased(&mut self, row: ErasedDenseRow);
     fn swap_remove_erased(&mut self, row: usize) -> Option<ErasedDenseRow>;
 }
@@ -111,12 +111,8 @@ impl<T: Component> ArchetypeComponentColumn for TypedArchetypeColumn<T> {
         self.dense.metadata(row)
     }
 
-    fn mark_changed(&mut self, row: usize, tick: u64) -> bool {
+    fn mark_changed(&mut self, row: usize, tick: ChangeCursor) -> bool {
         self.dense.mark_changed(row, tick)
-    }
-
-    fn mark_stateful_changed(&mut self, row: usize, tick: u64) -> bool {
-        self.dense.mark_stateful_changed(row, tick)
     }
 
     fn push_erased(&mut self, row: ErasedDenseRow) {
@@ -168,7 +164,6 @@ pub(crate) struct ArchetypeRegistry {
     archetypes: Vec<ArchetypeRecord>,
     key_to_id: HashMap<ArchetypeKey, ArchetypeId>,
     column_factories: HashMap<TypeId, ColumnFactory>,
-    component_state_generations: HashMap<(Entity, TypeId), u64>,
 }
 
 impl ArchetypeRegistry {
@@ -252,7 +247,7 @@ impl ArchetypeRegistry {
         &mut self,
         entity: Entity,
         component_type: TypeId,
-        tick: u64,
+        tick: ChangeCursor,
         locations: &EntityLocationMap,
     ) -> bool {
         let Some(location) = locations.get(entity) else {
@@ -270,33 +265,11 @@ impl ArchetypeRegistry {
             .is_some_and(|column| column.mark_changed(location.row, tick))
     }
 
-    pub(crate) fn mark_component_stateful_changed_by_id(
-        &mut self,
-        entity: Entity,
-        component_type: TypeId,
-        tick: u64,
-        locations: &EntityLocationMap,
-    ) -> bool {
-        let Some(location) = locations.get(entity) else {
-            return false;
-        };
-        let Some(archetype) = self.archetypes.get_mut(location.archetype_id.index()) else {
-            return false;
-        };
-        if !archetype.key.contains(component_type) {
-            return false;
-        }
-        archetype
-            .columns
-            .get_mut(&component_type)
-            .is_some_and(|column| column.mark_stateful_changed(location.row, tick))
-    }
-
     pub(crate) fn add_component<T: Component>(
         &mut self,
         entity: Entity,
         value: T,
-        tick: u64,
+        tick: ChangeCursor,
         locations: &mut EntityLocationMap,
     ) -> bool {
         let Some(current) = locations.get(entity) else {
@@ -315,11 +288,7 @@ impl ArchetypeRegistry {
         insert_sorted_type(&mut target_types, type_id);
         let target_id = self.find_or_create(&target_types);
         let mut moved_rows = self.extract_rows(current, &source_types, locations);
-        let state_generation = self.bump_component_state_generation(entity, type_id);
-        moved_rows.insert(
-            type_id,
-            ErasedDenseRow::new_added(value, tick, state_generation),
-        );
+        moved_rows.insert(type_id, ErasedDenseRow::new_added(value, tick));
         self.append_entity_row(entity, target_id, &target_types, moved_rows, locations);
         true
     }
@@ -328,7 +297,7 @@ impl ArchetypeRegistry {
         &mut self,
         entity: Entity,
         value: T,
-        tick: u64,
+        tick: ChangeCursor,
         locations: &EntityLocationMap,
     ) -> bool {
         let Some(location) = locations.get(entity) else {
@@ -444,27 +413,7 @@ impl ArchetypeRegistry {
             .unwrap_or_default();
         let _ = self.extract_rows(current, &source_types, locations);
         let _ = locations.remove(entity);
-        self.component_state_generations
-            .retain(|(tracked_entity, _), _| *tracked_entity != entity);
         true
-    }
-
-    pub(crate) fn component_state_by_id(
-        &self,
-        entity: Entity,
-        component_type: TypeId,
-        locations: &EntityLocationMap,
-    ) -> Option<(u64, u64)> {
-        let location = locations.get(entity)?;
-        let archetype = self.archetypes.get(location.archetype_id.index())?;
-        if !archetype.key.contains(component_type) {
-            return None;
-        }
-        let metadata = archetype
-            .columns
-            .get(&component_type)?
-            .metadata(location.row)?;
-        Some((metadata.state_generation, metadata.state_version))
     }
 
     pub(crate) fn collect_matching_entities(
@@ -597,18 +546,6 @@ impl ArchetypeRegistry {
             .unwrap_or_default();
         let _ = self.extract_rows(location, &source_types, locations);
     }
-
-    fn bump_component_state_generation(&mut self, entity: Entity, component_type: TypeId) -> u64 {
-        let generation = self
-            .component_state_generations
-            .get(&(entity, component_type))
-            .copied()
-            .unwrap_or(0)
-            .saturating_add(1);
-        self.component_state_generations
-            .insert((entity, component_type), generation);
-        generation
-    }
 }
 
 fn insert_sorted_type(component_types: &mut Vec<TypeId>, type_id: TypeId) {
@@ -664,37 +601,6 @@ mod tests {
                 archetype_id: ArchetypeId::new(1),
                 row: 0,
             }),
-        );
-    }
-
-    #[test]
-    fn remove_entity_clears_all_state_generation_entries_for_entity() {
-        #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-        struct StatefulTag;
-        impl Component for StatefulTag {}
-
-        let mut registry = ArchetypeRegistry::new();
-        registry.register_component_type::<StatefulTag>();
-        let mut locations = EntityLocationMap::default();
-        let entity = Entity::test_only(42, 1);
-
-        registry.set_entity_components(entity, &[], &mut locations);
-        assert!(registry.add_component(entity, StatefulTag, 1, &mut locations));
-        let _: StatefulTag = registry
-            .remove_component(entity, &mut locations)
-            .expect("component should be removable");
-
-        assert!(
-            registry
-                .component_state_generations
-                .contains_key(&(entity, TypeId::of::<StatefulTag>()))
-        );
-        assert!(registry.remove_entity(entity, &mut locations));
-        assert!(
-            !registry
-                .component_state_generations
-                .keys()
-                .any(|(tracked_entity, _)| *tracked_entity == entity)
         );
     }
 }

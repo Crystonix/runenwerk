@@ -19,7 +19,7 @@ use super::{
 pub const PARTICLE_VFX_PAYLOAD_KIND: &str = "particle.vfx.prepared";
 pub const PARTICLE_VFX_COLLECTOR_ID: &str = "particle.vfx.collector";
 
-#[derive(Debug, Clone, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Resource)]
 pub struct PreparedParticleVfxFeatureResource {
     pub status: FeatureContributionStatus,
     pub fallback_policy: FeatureFallbackPolicy,
@@ -394,7 +394,7 @@ mod tests {
         resource: Option<PreparedParticleVfxFeatureResource>,
         fallback_policy: FeatureFallbackPolicy,
     ) -> Result<PreparedFeatureContribution, PreparedFeatureContributionDiagnostic> {
-        let mut world = ecs::World::default();
+        let mut world = runen_ecs::World::default();
         if let Some(resource) = resource {
             world.insert_resource(resource);
         }

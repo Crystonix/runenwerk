@@ -27,7 +27,7 @@ impl Default for UiRuntimeReport {
 }
 
 /// Latest lightweight UI runtime status report.
-#[derive(Debug, Clone, PartialEq, Eq, Default, ecs::Resource)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, runen_ecs::Resource)]
 pub struct UiRuntimeReportResource {
     latest: UiRuntimeReport,
 }
@@ -154,7 +154,7 @@ impl UiActionDispatchReport {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Default, ecs::Resource)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, runen_ecs::Resource)]
 pub struct UiActionDispatchReportsResource {
     reports: Vec<UiActionDispatchReport>,
 }
@@ -572,7 +572,7 @@ impl UiRuntimeFramePublicationReport {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Default, ecs::Resource)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, runen_ecs::Resource)]
 pub struct UiRuntimeFramePublicationResource {
     reports: Vec<UiRuntimeFramePublicationReport>,
 }

@@ -12,7 +12,7 @@ const ACTION_CYCLE_VIEW_MODE: &str = "terrain.view.cycle";
 const ACTION_MOVE_UP: &str = "terrain.move_up";
 const ACTION_MOVE_DOWN: &str = "terrain.move_down";
 
-#[derive(Debug, Clone, Copy, ecs::Resource)]
+#[derive(Debug, Clone, Copy, runen_ecs::Resource)]
 struct FpsTracker {
     fps_ema: f32,
     frame_ms_ema: f32,

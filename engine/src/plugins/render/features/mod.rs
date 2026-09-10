@@ -64,7 +64,7 @@ pub enum FeatureFallbackPolicy {
     FailFrame,
 }
 
-#[derive(Debug, Clone, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Resource)]
 pub struct PreparedDrawFeatureResource {
     pub status: FeatureContributionStatus,
     pub fallback_policy: FeatureFallbackPolicy,
@@ -81,7 +81,7 @@ impl Default for PreparedDrawFeatureResource {
     }
 }
 
-#[derive(Debug, Clone, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Resource)]
 pub struct PreparedWorldFeatureResource {
     pub status: FeatureContributionStatus,
     pub fallback_policy: FeatureFallbackPolicy,
@@ -98,7 +98,7 @@ impl Default for PreparedWorldFeatureResource {
     }
 }
 
-#[derive(Debug, Clone, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Resource)]
 pub struct PreparedCaveFeatureResource {
     pub status: FeatureContributionStatus,
     pub fallback_policy: FeatureFallbackPolicy,
@@ -115,7 +115,7 @@ impl Default for PreparedCaveFeatureResource {
     }
 }
 
-#[derive(Debug, Clone, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Resource)]
 pub struct PreparedDetailFeatureResource {
     pub status: FeatureContributionStatus,
     pub fallback_policy: FeatureFallbackPolicy,
@@ -132,7 +132,7 @@ impl Default for PreparedDetailFeatureResource {
     }
 }
 
-#[derive(Debug, Clone, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Resource)]
 pub struct PreparedProceduralWorldFeatureResource {
     pub status: FeatureContributionStatus,
     pub fallback_policy: FeatureFallbackPolicy,
@@ -149,7 +149,7 @@ impl Default for PreparedProceduralWorldFeatureResource {
     }
 }
 
-#[derive(Debug, Clone, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Resource)]
 pub struct PreparedWindFieldFeatureResource {
     pub status: FeatureContributionStatus,
     pub fallback_policy: FeatureFallbackPolicy,
@@ -166,7 +166,7 @@ impl Default for PreparedWindFieldFeatureResource {
     }
 }
 
-#[derive(Debug, Clone, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Resource)]
 pub struct PreparedMaterialFeatureResource {
     pub status: FeatureContributionStatus,
     pub fallback_policy: FeatureFallbackPolicy,
@@ -183,7 +183,7 @@ impl Default for PreparedMaterialFeatureResource {
     }
 }
 
-#[derive(Debug, Clone, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Resource)]
 pub struct PreparedDeformationFeatureResource {
     pub status: FeatureContributionStatus,
     pub fallback_policy: FeatureFallbackPolicy,
@@ -236,7 +236,7 @@ impl RenderFeatureDescriptor {
     }
 }
 
-#[derive(Debug, Clone, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Resource)]
 pub struct RenderFeatureRegistryResource {
     descriptors: BTreeMap<RenderFeatureId, RenderFeatureDescriptor>,
     resolved_order: Vec<RenderFeatureId>,

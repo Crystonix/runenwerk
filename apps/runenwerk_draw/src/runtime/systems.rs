@@ -44,7 +44,7 @@ pub const DRAWING_UI_FRAME_PRODUCER_ID: RenderFrameProducerId = ui_frame_produce
 pub const DRAWING_RENDER_FRAME_PRODUCER_ID: RenderFrameProducerId = render_frame_producer_id(4_001);
 pub const NATIVE_CONTACT_FALLBACK_SUPPRESSION_IDLE_FRAME_LIMIT: u32 = 12;
 
-#[derive(ecs::SystemParam)]
+#[derive(runen_ecs::SystemParam)]
 pub struct DrawingFrameSubmissionResources<'w> {
     submissions: ResMut<'w, SurfaceFrameSubmissionRegistryResource>,
     dynamic_targets: ResMut<'w, RenderDynamicTextureTargetRequestRegistryResource>,

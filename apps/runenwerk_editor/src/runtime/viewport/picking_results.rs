@@ -25,7 +25,7 @@ impl Default for ViewportPickingResult {
     }
 }
 
-#[derive(Debug, Clone, ecs::Component, ecs::Resource, Default)]
+#[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Resource, Default)]
 pub struct ViewportPickingResultsResource {
     results_by_viewport: BTreeMap<ViewportId, ViewportPickingResult>,
     global_revision: u64,

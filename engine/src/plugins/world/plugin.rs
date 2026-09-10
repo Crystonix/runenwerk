@@ -3,8 +3,8 @@ use crate::plugin::Plugin;
 use crate::runtime::{
     CoreSet, FixedUpdate, IntoSystemSetKey, RenderPrepare, Res, ResMut, SystemConfigExt,
 };
-use ecs::SystemSetKey;
 use engine_sim::{AuthorityRole, SimulationProfileConfig};
+use runen_ecs::SystemSetKey;
 
 use super::build::integration::{
     integrate_completed_build_outputs_system, sync_world_runtime_debug_metrics_system,
@@ -31,14 +31,14 @@ use super::{
 };
 use world_ops::WorldRevision;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, ecs::Component, ecs::Resource, Default)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource, Default)]
 pub enum WorldRuntimeMode {
     Writable,
     #[default]
     ReadOnly,
 }
 
-#[derive(Debug, Clone, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Resource)]
 pub struct WorldRuntimeConfig {
     pub mode: WorldRuntimeMode,
 }
@@ -51,12 +51,12 @@ impl Default for WorldRuntimeConfig {
     }
 }
 
-#[derive(Debug, Copy, Clone, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct WorldAuthorityState {
     pub world_revision: WorldRevision,
 }
 
-#[derive(Debug, Copy, Clone, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct WorldRuntimeState {
     pub integrated_build_outputs: u64,
     pub dropped_stale_build_outputs: u64,

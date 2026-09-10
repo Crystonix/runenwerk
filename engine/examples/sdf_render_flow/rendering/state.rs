@@ -61,7 +61,7 @@ pub(crate) struct SdfComposeParams {
     pub color_b: [f32; 4],
 }
 
-#[derive(Debug, Clone, ecs::Resource)]
+#[derive(Debug, Clone, runen_ecs::Resource)]
 pub(crate) struct Sdf3dRenderState {
     time_seconds: f32,
     orbit_yaw_radians: f32,

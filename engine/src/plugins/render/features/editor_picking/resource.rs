@@ -50,7 +50,7 @@ impl Default for EditorPickingHit {
     }
 }
 
-#[derive(Debug, Clone, Copy, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Copy, runen_ecs::Component, runen_ecs::Resource)]
 pub struct EditorPickingResultResource {
     pub cursor_px: (f32, f32),
     pub viewport_bounds_px: (f32, f32, f32, f32),

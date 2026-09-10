@@ -5,17 +5,18 @@ use super::super::adapters::resources::{
 use super::super::chunks::lifecycle::WorldChunkRuntimeMapResource;
 use super::super::plugin::WorldAuthorityState;
 use crate::runtime::WorldMut;
+use runen_ecs::ChangeCursor;
 use world_ops::{
     ChunkContentDelta, ChunkHeaderDelta, ChunkResidencyHint, OpWindowDelta, OperationId,
     RegionInvalidationDelta,
 };
 
-#[derive(Debug, Copy, Clone, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct WorldReplicationExtractionCursor {
-    pub last_tick: u64,
+    pub last_tick: ChangeCursor,
 }
 
-fn world_replication_inputs_changed(world: &ecs::World, since_tick: u64) -> bool {
+fn world_replication_inputs_changed(world: &runen_ecs::World, since_tick: ChangeCursor) -> bool {
     world.resource_changed_since::<OperationLogResource>(since_tick)
         || world.resource_changed_since::<SdfChunkStoreResource>(since_tick)
         || world.resource_changed_since::<WorldChunkRuntimeMapResource>(since_tick)
@@ -171,14 +172,14 @@ pub fn rebuild_world_replication_state_system(mut world: WorldMut) {
 mod tests {
     use super::*;
 
-    #[derive(Debug, Copy, Clone, ecs::Component)]
+    #[derive(Debug, Copy, Clone, runen_ecs::Component)]
     struct UnrelatedComponent;
 
-    #[derive(Debug, Copy, Clone, Default, ecs::Resource)]
+    #[derive(Debug, Copy, Clone, Default, runen_ecs::Resource)]
     struct UnrelatedResource;
 
-    fn world_with_replication_inputs() -> ecs::World {
-        let mut world = ecs::World::new();
+    fn world_with_replication_inputs() -> runen_ecs::World {
+        let mut world = runen_ecs::World::new();
         world.insert_resource(OperationLogResource::default());
         world.insert_resource(SdfChunkStoreResource::default());
         world.insert_resource(WorldChunkRuntimeMapResource::default());

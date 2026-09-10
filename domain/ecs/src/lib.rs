@@ -1,5 +1,3 @@
-extern crate self as ecs;
-
 mod bundle;
 mod commands;
 mod component;
@@ -11,34 +9,29 @@ pub mod reflect;
 mod scheduler;
 mod storage;
 pub mod system;
-pub mod telemetry;
 mod world;
 pub use bundle::Bundle;
 #[doc(hidden)]
 pub use bundle::{BundleComponentDescriptor, BundleComponents};
-pub use commands::{BatchCommands, Commands, DeferredCommand};
-pub use component::{Component, ComponentState, Resource, StatefulComponent};
-pub use ecs_macros::{Bundle, Component, Reflect, Resource, StatefulComponent, SystemParam};
+pub use commands::{BatchCommands, Commands};
+pub use component::{Component, Resource};
 pub use entity::{Entity, EntityAllocator};
-pub use errors::{CommandError, EntityAllocationError, EntityError, QueryError, ResourceError};
+pub use errors::{
+    CommandError, EntityAllocationError, EntityError, QueryError, ResourceError, RuntimeError,
+};
 pub use query::{
-    Added, Changed, Orphaned, Query, QueryAccess, QueryOrphaned, QueryOrphanedState, QueryState,
-    QueryTypeAccess, With, Without, query_snapshot_source_generation,
+    Added, Changed, Query, QueryAccess, QueryState, QueryTypeAccess, Removed, RemovedQuery,
+    RemovedState, With, Without,
 };
 pub use reflect::{
     EnumInfo, EnumVariantInfo, FieldInfo, Reflect, ReflectShape, ReflectValueMut, ReflectValueRef,
     StructInfo, StructValueMut, StructValueRef, TypeInfo, TypeRegistry,
 };
+pub use runen_ecs_macros::{Bundle, Component, Reflect, Resource, SystemParam};
 pub use system::{
     AccessConflict, AccessDomain, AccessKey, ConfiguredSystem, ConflictKind, DeferredApplyBoundary,
-    ExecutionConflict, ExecutionPlan, ExecutionStage, IntoSystem, IntoSystemConfigs,
-    IntoSystemSetKey, ParamSlotDescriptor, ParamSlotId, ParamSlotMetadata, Res, ResMut, ResView,
-    Runtime, RuntimePlanConflictReport, RuntimePlanReport, RuntimePlanStageReport,
-    RuntimePlanSystemReport, ScheduleKey, ScheduleLabel, ScheduleValidationError, SystemAccess,
-    SystemConfigExt, SystemId, SystemParam, SystemParamContext, SystemParamError, SystemSet,
-    SystemSetKey,
+    IntoSystem, IntoSystemConfigs, IntoSystemSetKey, ParamSlotDescriptor, Res, ResMut, Runtime,
+    ScheduleKey, ScheduleLabel, ScheduleValidationError, SystemAccess, SystemConfigExt, SystemId,
+    SystemParam, SystemParamContext, SystemParamError, SystemSet, SystemSetKey, WorldMut,
 };
-pub use world::{
-    ComponentChangeKind, ComponentChangeRecord, ComponentTypeKey, EntityMut, EntityRef, Mut,
-    ResourceChangeKind, ResourceChangeRecord, ResourceTypeKey, World,
-};
+pub use world::{ChangeCursor, EntityMut, EntityRef, Mut, World};

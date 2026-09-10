@@ -1,24 +1,24 @@
-use ecs::prelude::*;
+use runen_ecs::prelude::*;
 
-#[derive(ecs::Component, ecs::Resource)]
+#[derive(runen_ecs::Component, runen_ecs::Resource)]
 struct Position {
     x: f32,
     y: f32,
 }
 
-#[derive(ecs::Component, ecs::Resource)]
+#[derive(runen_ecs::Component, runen_ecs::Resource)]
 struct Velocity {
     x: f32,
     y: f32,
 }
 
-#[derive(ecs::Component, ecs::Resource)]
+#[derive(runen_ecs::Component, runen_ecs::Resource)]
 struct Simulated;
 
-#[derive(ecs::Component, ecs::Resource)]
+#[derive(runen_ecs::Component, runen_ecs::Resource)]
 struct DeltaTime(pub f32);
 
-#[derive(ecs::Component, ecs::Resource)]
+#[derive(runen_ecs::Component, runen_ecs::Resource)]
 struct Frame(pub u64);
 
 fn tick(

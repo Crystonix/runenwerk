@@ -1,14 +1,14 @@
 use runen_spatial::ChunkId;
 use std::collections::BTreeMap;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, runen_ecs::Resource)]
 pub enum WorldLodBand {
     Far,
     Mid,
     Near,
 }
 
-#[derive(Debug, Clone, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Resource)]
 pub struct WorldLodPolicyResource {
     pub near_distance_meters: f32,
     pub mid_distance_meters: f32,
@@ -25,7 +25,7 @@ impl Default for WorldLodPolicyResource {
     }
 }
 
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct WorldLodSelectionResource {
     pub band_by_chunk: BTreeMap<ChunkId, WorldLodBand>,
 }

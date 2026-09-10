@@ -20,7 +20,7 @@ pub struct ViewportInstanceRecord {
     pub panel_instance_id: PanelInstanceId,
 }
 
-#[derive(Debug, Clone, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Resource)]
 pub struct ViewportInstanceRegistryResource {
     next_viewport_id: u64,
     records_by_mounted_unit: BTreeMap<MountedUnitId, ViewportInstanceRecord>,

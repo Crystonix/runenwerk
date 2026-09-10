@@ -4,7 +4,7 @@ pub use engine_sim::SimulationTick;
 ///
 /// Execution semantics are implemented in `runtime::fixed_step_executor`.
 
-#[derive(Debug, Copy, Clone, PartialEq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, runen_ecs::Component, runen_ecs::Resource)]
 pub struct FixedTimeConfig {
     pub step_seconds: f32,
 }
@@ -17,7 +17,7 @@ impl Default for FixedTimeConfig {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 pub struct CatchupBudget {
     pub max_steps_per_frame: u32,
 }
@@ -30,7 +30,7 @@ impl Default for CatchupBudget {
     }
 }
 
-#[derive(Debug, Copy, Clone, Default, PartialEq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, Default, PartialEq, runen_ecs::Component, runen_ecs::Resource)]
 pub struct FixedTimeState {
     pub accumulator_seconds: f32,
     pub steps_ran_last_frame: u32,

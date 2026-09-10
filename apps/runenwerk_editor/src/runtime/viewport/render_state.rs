@@ -19,7 +19,7 @@ pub struct ViewportRenderStateEntry {
     pub render_state: EditorViewportRenderState,
 }
 
-#[derive(Debug, Default, Clone, ecs::Component, ecs::Resource)]
+#[derive(Debug, Default, Clone, runen_ecs::Component, runen_ecs::Resource)]
 pub struct ViewportRenderStateResource {
     states_by_viewport: BTreeMap<ViewportId, ViewportRenderStateEntry>,
 }
@@ -59,7 +59,7 @@ pub enum ViewportRenderStateCommand {
     },
 }
 
-#[derive(Debug, Default, Clone, ecs::Component, ecs::Resource)]
+#[derive(Debug, Default, Clone, runen_ecs::Component, runen_ecs::Resource)]
 pub struct ViewportRenderStateCommandQueueResource {
     commands: Vec<ViewportRenderStateCommand>,
 }

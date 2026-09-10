@@ -1,7 +1,7 @@
-// Owner: Grotto Quest ecs - Query Runtime
+// Owner: RunenECS - Query Runtime
 use crate::component::{Component, Resource};
 use crate::entity::Entity;
-use crate::world::QueryCapability;
+use crate::world::{ChangeCursor, QueryCapability};
 use std::any::TypeId;
 use std::marker::PhantomData;
 
@@ -84,7 +84,7 @@ impl QueryBorrowConflict {
 #[derive(Debug, Clone, Default)]
 pub struct QueryAccess {
     component_reads: Vec<QueryTypeAccess>,
-    orphaned_component_reads: Vec<QueryTypeAccess>,
+    removed_component_reads: Vec<QueryTypeAccess>,
     component_writes: Vec<QueryTypeAccess>,
     resource_reads: Vec<QueryTypeAccess>,
     resource_writes: Vec<QueryTypeAccess>,
@@ -117,8 +117,8 @@ impl QueryAccess {
         &self.component_writes
     }
 
-    pub fn orphaned_component_reads(&self) -> &[QueryTypeAccess] {
-        &self.orphaned_component_reads
+    pub fn removed_component_reads(&self) -> &[QueryTypeAccess] {
+        &self.removed_component_reads
     }
 
     pub fn resource_reads(&self) -> &[QueryTypeAccess] {
@@ -139,8 +139,8 @@ impl QueryAccess {
         self
     }
 
-    pub fn with_orphaned_component_read<T: Component>(mut self) -> Self {
-        self.add_orphaned_component_read::<T>();
+    pub fn with_removed_component_read<T: Component>(mut self) -> Self {
+        self.add_removed_component_read::<T>();
         self
     }
 
@@ -180,9 +180,9 @@ impl QueryAccess {
         );
     }
 
-    pub(crate) fn add_orphaned_component_read<T: Component>(&mut self) {
+    pub(crate) fn add_removed_component_read<T: Component>(&mut self) {
         push_unique_access(
-            &mut self.orphaned_component_reads,
+            &mut self.removed_component_reads,
             QueryTypeAccess::of::<T>(T::component_name()),
         );
     }
@@ -230,7 +230,7 @@ impl QueryAccess {
 
     fn has_immediate_world_access(&self) -> bool {
         !self.component_reads.is_empty()
-            || !self.orphaned_component_reads.is_empty()
+            || !self.removed_component_reads.is_empty()
             || !self.component_writes.is_empty()
             || !self.resource_reads.is_empty()
             || !self.resource_writes.is_empty()
@@ -246,8 +246,8 @@ impl QueryAccess {
         for access in other.component_reads {
             push_unique_access(&mut self.component_reads, access);
         }
-        for access in other.orphaned_component_reads {
-            push_unique_access(&mut self.orphaned_component_reads, access);
+        for access in other.removed_component_reads {
+            push_unique_access(&mut self.removed_component_reads, access);
         }
         for access in other.component_writes {
             push_unique_access(&mut self.component_writes, access);
@@ -278,7 +278,11 @@ pub trait QueryFilter: sealed::QueryFilterSealed {
         false
     }
 
-    fn matches_entity(_world: QueryCapability<'_>, _entity: Entity, _since_tick: u64) -> bool {
+    fn matches_entity(
+        _world: QueryCapability<'_>,
+        _entity: Entity,
+        _since_tick: ChangeCursor,
+    ) -> bool {
         true
     }
 }
@@ -330,7 +334,11 @@ impl<T: Component> QueryFilter for Changed<T> {
         true
     }
 
-    fn matches_entity(world: QueryCapability<'_>, entity: Entity, since_tick: u64) -> bool {
+    fn matches_entity(
+        world: QueryCapability<'_>,
+        entity: Entity,
+        since_tick: ChangeCursor,
+    ) -> bool {
         world.component_changed_for_entity_since::<T>(entity, since_tick)
     }
 }
@@ -348,7 +356,11 @@ impl<T: Component> QueryFilter for Added<T> {
         true
     }
 
-    fn matches_entity(world: QueryCapability<'_>, entity: Entity, since_tick: u64) -> bool {
+    fn matches_entity(
+        world: QueryCapability<'_>,
+        entity: Entity,
+        since_tick: ChangeCursor,
+    ) -> bool {
         world.component_added_for_entity_since::<T>(entity, since_tick)
     }
 }
@@ -368,7 +380,11 @@ impl<A: QueryFilter, B: QueryFilter> QueryFilter for (A, B) {
         A::needs_tick_filter() || B::needs_tick_filter()
     }
 
-    fn matches_entity(world: QueryCapability<'_>, entity: Entity, since_tick: u64) -> bool {
+    fn matches_entity(
+        world: QueryCapability<'_>,
+        entity: Entity,
+        since_tick: ChangeCursor,
+    ) -> bool {
         A::matches_entity(world, entity, since_tick) && B::matches_entity(world, entity, since_tick)
     }
 }
@@ -393,7 +409,7 @@ macro_rules! impl_query_filter_tuple {
                     false $(|| $name::needs_tick_filter())+
                 }
 
-                fn matches_entity(world: QueryCapability<'_>, entity: Entity, since_tick: u64) -> bool {
+                fn matches_entity(world: QueryCapability<'_>, entity: Entity, since_tick: ChangeCursor) -> bool {
                     true $(
                         && $name::matches_entity(world, entity, since_tick)
                     )+

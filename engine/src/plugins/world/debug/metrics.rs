@@ -1,4 +1,4 @@
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct WorldDebugMetricsResource {
     pub interactive_queue_depth: usize,
     pub background_queue_depth: usize,

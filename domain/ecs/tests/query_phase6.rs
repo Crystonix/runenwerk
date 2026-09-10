@@ -1,15 +1,15 @@
-use ecs::prelude::*;
+use runen_ecs::prelude::*;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 struct A(i32);
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 struct B(i32);
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 struct C(i32);
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 struct Disabled;
 
 #[derive(Copy, Clone)]
@@ -39,10 +39,10 @@ impl SystemSet for ObserveSet {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 struct QuerySpawnGate(bool);
 
-#[derive(Debug, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 struct QueryAddedCounts(Vec<usize>);
 
 #[test]

@@ -16,7 +16,7 @@ impl Counter {
     }
 }
 
-impl ecs::Resource for Counter {}
+impl runen_ecs::Resource for Counter {}
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum CounterAction {
@@ -57,12 +57,12 @@ pub struct UiAppHostMutation {
 pub type UiAppHostMutationReport = UiAppHostMutation;
 
 pub struct CounterHost {
-    world: ecs::World,
+    world: runen_ecs::World,
 }
 
 impl CounterHost {
     pub fn new(count: u32) -> Self {
-        let mut world = ecs::World::new();
+        let mut world = runen_ecs::World::new();
         world.insert_resource(Counter::new(count));
         Self { world }
     }

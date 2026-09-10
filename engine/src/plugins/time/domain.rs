@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-#[derive(ecs::Component, ecs::Resource)]
+#[derive(runen_ecs::Component, runen_ecs::Resource)]
 pub struct Time {
     last_frame: Instant,
     pub delta_seconds: f32,

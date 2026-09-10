@@ -1,19 +1,18 @@
 use super::extract::{SystemParam, SystemParamContext, SystemParamError};
-use super::param_metadata::{ParamSlotMetadata, param_slot_metadata_for_descriptors};
-use super::plan_report::RuntimePlanReport;
+use crate::errors::RuntimeError;
 use crate::scheduler::access::{AccessKey, SystemAccess};
 use crate::scheduler::label::{ScheduleKey, ScheduleLabel, SystemSet, SystemSetKey};
-use crate::scheduler::plan::{ExecutionPlan, ScheduleRegistry, ScheduleValidationError};
-use crate::scheduler::system::{ParamSlotDescriptor, RegisteredSystem, SystemId};
-use anyhow::{Result, anyhow};
+use crate::scheduler::plan::ScheduleRegistry;
+use crate::scheduler::system::{ParamSlotDescriptor, RegisteredSystem};
 use std::cell::RefCell;
+use std::error::Error;
 use std::marker::PhantomData;
 use std::rc::Rc;
-use std::time::Instant;
 
 use crate::query::QueryAccess;
-use crate::telemetry;
 use crate::{Commands, World};
+
+type Result<T> = std::result::Result<T, RuntimeError>;
 
 type DeferredCommands = Rc<RefCell<Vec<Commands<'static>>>>;
 
@@ -34,20 +33,20 @@ impl DeferredApplyBoundary {
 }
 
 pub trait SystemOutput {
-    fn into_result(self) -> Result<()>;
+    fn into_result(self) -> std::result::Result<(), Box<dyn Error + Send + Sync>>;
 }
 
 impl SystemOutput for () {
-    fn into_result(self) -> Result<()> {
+    fn into_result(self) -> std::result::Result<(), Box<dyn Error + Send + Sync>> {
         Ok(())
     }
 }
 
-impl<E> SystemOutput for Result<(), E>
+impl<E> SystemOutput for std::result::Result<(), E>
 where
-    E: Into<anyhow::Error>,
+    E: Into<Box<dyn Error + Send + Sync>> + 'static,
 {
-    fn into_result(self) -> Result<()> {
+    fn into_result(self) -> std::result::Result<(), Box<dyn Error + Send + Sync>> {
         self.map_err(Into::into)
     }
 }
@@ -178,14 +177,14 @@ pub trait SystemConfigExt<Marker>: IntoSystem<Marker> + Sized {
 impl<S, Marker> SystemConfigExt<Marker> for S where S: IntoSystem<Marker> + Sized {}
 
 mod system_configs_sealed {
-    use super::{DeferredCommands, ScheduleLabel, ScheduleRegistry};
+    use super::{DeferredCommands, RuntimeError, ScheduleLabel, ScheduleRegistry};
     use crate::World;
 
     pub struct RegistrationContext<'a> {
         pub(super) world: &'a mut World,
         pub(super) scheduler: &'a mut ScheduleRegistry,
         pub(super) deferred_commands: DeferredCommands,
-        pub(super) build_errors: &'a mut Vec<anyhow::Error>,
+        pub(super) build_errors: &'a mut Vec<RuntimeError>,
     }
 
     impl<'a> RegistrationContext<'a> {
@@ -193,7 +192,7 @@ mod system_configs_sealed {
             world: &'a mut World,
             scheduler: &'a mut ScheduleRegistry,
             deferred_commands: DeferredCommands,
-            build_errors: &'a mut Vec<anyhow::Error>,
+            build_errors: &'a mut Vec<RuntimeError>,
         ) -> Self {
             Self {
                 world,
@@ -226,7 +225,9 @@ where
     ) {
         match self.into_registered_system::<L>(context.world, context.deferred_commands.clone()) {
             Ok(registered) => {
-                context.scheduler.add_system(registered);
+                if let Err(err) = context.scheduler.add_system(registered) {
+                    context.build_errors.push(err.into());
+                }
             }
             Err(err) => context.build_errors.push(err),
         }
@@ -476,12 +477,14 @@ fn validate_borrow_access(system_name: &str, access_parts: &[QueryAccess]) -> Re
         merged.extend(access.clone());
     }
     if let Some(conflict) = merged.borrow_conflict() {
-        return Err(anyhow!(
-            "system '{}' has conflicting param borrows: {} {}",
-            system_name,
-            conflict.domain(),
-            conflict.name()
-        ));
+        return Err(RuntimeError::Setup {
+            message: format!(
+                "system '{}' has conflicting param borrows: {} {}",
+                system_name,
+                conflict.domain(),
+                conflict.name()
+            ),
+        });
     }
     Ok(())
 }
@@ -500,11 +503,13 @@ fn merge_access(system_name: &str, access_parts: &[SystemAccess]) -> Result<Syst
         }
     }
     if let Err(conflict) = merged.validate_internal() {
-        return Err(anyhow!(
-            "system '{}' has conflicting param access: {}",
-            system_name,
-            conflict.diagnostic_message()
-        ));
+        return Err(RuntimeError::Setup {
+            message: format!(
+                "system '{}' has conflicting param access: {}",
+                system_name,
+                conflict.diagnostic_message()
+            ),
+        });
     }
     Ok(merged)
 }
@@ -547,6 +552,7 @@ macro_rules! impl_into_system {
                 ];
                 let mut func = self;
                 let deferred_commands_ref = deferred_commands.clone();
+                let system_name_for_run = system_name.clone();
 
                 let mut registered = RegisteredSystem::new::<Sched>(system_name, access, move |world| {
                     let mut commands = Commands::new_external_owner();
@@ -554,7 +560,12 @@ macro_rules! impl_into_system {
                     $(
                         let $param = unsafe { <$param as SystemParamState>::extract(&mut states.$index, context)? };
                     )*
-                    let result = func($($param),*).into_result();
+                    let result = func($($param),*)
+                        .into_result()
+                        .map_err(|source| RuntimeError::System {
+                            system: system_name_for_run.clone(),
+                            source,
+                        });
                     let staged_commands = commands.finalize_external_owner();
                     if result.is_ok() {
                         deferred_commands_ref.borrow_mut().push(staged_commands);
@@ -706,7 +717,7 @@ impl_into_system!(
 pub struct Runtime {
     scheduler: ScheduleRegistry,
     deferred_commands: DeferredCommands,
-    build_errors: Vec<anyhow::Error>,
+    build_errors: Vec<RuntimeError>,
 }
 
 impl Default for Runtime {
@@ -739,59 +750,30 @@ impl Runtime {
         self
     }
 
-    pub fn plan_for<L: ScheduleLabel>(
-        &mut self,
-    ) -> std::result::Result<Option<&ExecutionPlan>, ScheduleValidationError> {
-        self.scheduler.plan_for::<L>()
-    }
-
-    pub fn plan_report_for<L: ScheduleLabel>(
-        &mut self,
-    ) -> std::result::Result<Option<RuntimePlanReport>, ScheduleValidationError> {
-        let Some(plan) = self.scheduler.plan_for::<L>()?.cloned() else {
-            return Ok(None);
-        };
-        Ok(Some(RuntimePlanReport::from_plan(
-            &plan,
-            self.scheduler.systems(),
-        )))
-    }
-
-    pub fn param_slots_for_system(&self, system_id: SystemId) -> Option<Vec<ParamSlotMetadata>> {
-        let system = self
-            .scheduler
-            .systems()
-            .iter()
-            .find(|system| system.id() == system_id)?;
-        Some(param_slot_metadata_for_descriptors(
-            system_id,
-            system.param_slots(),
-        ))
-    }
-
     pub fn run_schedule<L: ScheduleLabel>(&mut self, world: &mut World) -> Result<()> {
-        self.run_schedule_with_deferred_apply_boundary::<L, _>(world, |_boundary, _world| Ok(()))
+        self.run_schedule_with_deferred_apply_boundary::<L, _, _>(world, |_boundary, _world| {
+            Ok::<(), RuntimeError>(())
+        })
     }
 
-    pub fn run_schedule_with_deferred_apply_boundary<L, F>(
+    pub fn run_schedule_with_deferred_apply_boundary<L, F, E>(
         &mut self,
         world: &mut World,
         mut on_boundary: F,
     ) -> Result<()>
     where
         L: ScheduleLabel,
-        F: FnMut(DeferredApplyBoundary, &mut World) -> Result<()>,
+        F: FnMut(DeferredApplyBoundary, &mut World) -> std::result::Result<(), E>,
+        E: Into<Box<dyn Error + Send + Sync>> + 'static,
     {
         if let Err(err) = self.ensure_build_ready() {
             self.discard_deferred_commands();
             return Err(err);
         }
 
-        let plan_start = Instant::now();
         let plan = match self.scheduler.plan_for::<L>() {
             Ok(Some(plan)) => plan.clone(),
             Ok(None) => {
-                telemetry::record_runtime_plan(plan_start.elapsed().as_nanos() as u64);
                 return Ok(());
             }
             Err(err) => {
@@ -799,22 +781,19 @@ impl Runtime {
                 return Err(err.into());
             }
         };
-        telemetry::record_runtime_plan(plan_start.elapsed().as_nanos() as u64);
-
         for (boundary_index, stage) in plan.stages.iter().enumerate() {
-            let stage_start = Instant::now();
             for system_index in &stage.system_indices {
                 let Some(system) = self.scheduler.systems_mut().get_mut(*system_index) else {
                     self.discard_deferred_commands();
-                    return Err(anyhow!("execution plan referenced missing system"));
+                    return Err(RuntimeError::Invariant {
+                        message: "execution plan referenced missing system",
+                    });
                 };
                 if let Err(err) = system.run(world) {
                     self.discard_deferred_commands();
                     return Err(err);
                 }
             }
-            telemetry::record_runtime_stage(stage_start.elapsed().as_nanos() as u64);
-
             if let Err(err) = self.flush_stage_commands(world) {
                 self.discard_deferred_commands();
                 return Err(err);
@@ -828,7 +807,7 @@ impl Runtime {
                 world,
             ) {
                 self.discard_deferred_commands();
-                return Err(err);
+                return Err(RuntimeError::Boundary { source: err.into() });
             }
         }
         Ok(())
@@ -839,18 +818,17 @@ impl Runtime {
             return Ok(());
         }
         let messages: Vec<_> = self.build_errors.iter().map(ToString::to_string).collect();
-        Err(anyhow!("runtime setup failed:\n{}", messages.join("\n")))
+        Err(RuntimeError::Setup {
+            message: messages.join("\n"),
+        })
     }
 
     fn flush_stage_commands(&self, world: &mut World) -> Result<()> {
-        let start = Instant::now();
         world.begin_stage_command_flush();
         let stage_commands = std::mem::take(&mut *self.deferred_commands.borrow_mut());
-        let command_queue_count = stage_commands.len() as u64;
         for commands in stage_commands {
             commands.apply(world)?;
         }
-        telemetry::record_runtime_flush(start.elapsed().as_nanos() as u64, command_queue_count);
         Ok(())
     }
 
@@ -864,8 +842,8 @@ fn query_access_to_system_access(access: QueryAccess) -> SystemAccess {
     for read in access.component_reads() {
         system_access.add_read(AccessKey::component_by_id(read.type_id(), read.name()));
     }
-    for read in access.orphaned_component_reads() {
-        system_access.add_read(AccessKey::orphaned_component_by_id(
+    for read in access.removed_component_reads() {
+        system_access.add_read(AccessKey::removed_component_by_id(
             read.type_id(),
             read.name(),
         ));

@@ -36,7 +36,7 @@ Current ownership split:
 - `world/*`: world state, lifecycle orchestration, world-facing APIs
 - `commands/*`: deferred command abstraction, typed-erased queue, batching
 - `query/*`: query/filter modeling and execution
-- `system/*`: system parameters, runtime execution, reports, and public scheduling integration
+- `system/*`: system parameters, runtime execution, and public scheduling integration
 - `scheduler/*`: crate-private ECS scheduling implementation for labels, access facts, registered systems, plan construction, and validation
 
 The crate-private `scheduler` module is an implementation detail of RunenECS. It is not the former standalone generic `scheduler` package and does not define host lifecycle policy.
@@ -53,7 +53,7 @@ Boundary intent:
 `QueryAccess` is transformed into ECS-owned `SystemAccess` facts:
 
 - component reads/writes
-- orphaned-component reads
+- removed-component reads
 - resource reads/writes
 - structural mutation facts for deferred commands
 - exclusive world access
@@ -68,7 +68,7 @@ Semantic precedence is derived only from explicit system-set relations:
 - `before`
 - `after`
 
-The ordering graph is cycle-validated. Registration order is the deterministic tie-break/reference execution order for systems that remain otherwise unordered. The current planner materializes deterministic `ExecutionStage` levels from this graph, but those stage indices are plan/report facts rather than host lifecycle, publication, or deferred-boundary identities.
+The ordering graph is cycle-validated. Registration order is the deterministic tie-break/reference execution order for systems that remain otherwise unordered. The planner's internal stages are not public lifecycle or publication identity.
 
 ### Access compatibility
 
@@ -91,7 +91,7 @@ Visibility contract:
 - systems that execute before the same deferred-apply boundary do not observe one another's deferred structural mutations
 - explicitly ordered dependent work after the boundary observes mutations applied before that boundary
 - access conflicts alone never introduce an extra visibility boundary
-- `DeferredApplyBoundary::index()` identifies deferred-apply progress within the schedule run and is deliberately independent of `ExecutionStage::index`
+- `DeferredApplyBoundary::index()` identifies deferred-apply progress within the schedule run.
 
 Failure atomicity contract:
 
@@ -117,15 +117,12 @@ Execution path split:
 
 ## 6. Change Boundary
 
-Two separate mechanisms intentionally coexist:
-
-- query/filter semantics:
-  - archetype-row `added_tick` / `changed_tick`
-  - APIs: `Changed<T>`, `Added<T>`
-- reporting/history:
-  - world-level change logs and tick maps
-  - APIs: `component_changed_since`, `resource_changed_since`,
-    `component_changes_since`, `resource_changes_since`
+Query/filter semantics use archetype-row `added_tick` / `changed_tick` values
+and query-local observation state through `Changed<T>` and `Added<T>`. World
+change positions are exposed only through `ChangeCursor` and lightweight
+`*_changed_since` checks; RunenECS does not retain an unbounded change journal.
+`ChangeCursor` crosses the inner counter boundary with an epoch and fails before
+reusing the absolute two-word position.
 
 ## 7. Event / Message Boundary
 
@@ -161,15 +158,9 @@ Required invariants:
 
 Unsafe blocks in these files require local invariant comments and focused tests.
 
-## 10. Telemetry Architecture
+## 10. Runtime error boundary
 
-Feature-gated telemetry (`--features telemetry`) records ECS-local hot-path cost attribution, including:
-
-- query matching/iteration/get/single
-- changed/added filter checks
-- runtime plan lookup
-- execution-stage timing
-- deferred-command flush cost
-- schedule planning and access-conflict checks
-
-Telemetry is observational and must not alter runtime semantics. Conflict counts and timing data must never be used to infer semantic ordering.
+`RuntimeError` preserves framework-owned setup, schedule-validation,
+system-parameter, command, system, boundary-callback, and invariant failures.
+User system and boundary failures are boxed causes inside those categories;
+the ECS runtime does not require an application error-reporting framework.

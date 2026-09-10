@@ -1,4 +1,4 @@
-// Owner: ecs World - Borrow Wrappers and Entity Views
+// Owner: RunenECS World - Borrow Wrappers and Entity Views
 use super::World;
 use crate::bundle::Bundle;
 use crate::component::Component;

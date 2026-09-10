@@ -1,13 +1,13 @@
-use ecs::Reflect;
+use runen_ecs::Reflect;
 
 struct ConstField<const N: usize>([u8; N]);
 
 impl<const N: usize> Reflect for ConstField<N> {
-    fn type_info() -> ecs::TypeInfo {
-        ecs::TypeInfo::new(
+    fn type_info() -> runen_ecs::TypeInfo {
+        runen_ecs::TypeInfo::new(
             std::any::type_name::<Self>(),
             "ConstField",
-            ecs::ReflectShape::Opaque,
+            runen_ecs::ReflectShape::Opaque,
         )
     }
 }

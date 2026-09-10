@@ -56,7 +56,7 @@ impl RenderPreparedFramePreflightMode {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 pub struct RenderPreflightValidationConfigResource {
     pub mode: RenderPreparedFramePreflightMode,
 }

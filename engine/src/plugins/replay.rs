@@ -24,7 +24,7 @@ pub enum ReplayMode {
     Playback,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 pub struct ReplaySessionInfo {
     pub session_id: SimulationSessionId,
     pub seed: SimulationSeed,
@@ -41,21 +41,21 @@ impl Default for ReplaySessionInfo {
     }
 }
 
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct ReplayState {
     pub mode: ReplayMode,
     pub initial_checkpoint_captured: bool,
     pub last_loaded_tick: Option<SimulationTick>,
 }
 
-#[derive(Debug, Clone, ecs::Component, ecs::Resource, Default)]
+#[derive(Debug, Clone, runen_ecs::Component, runen_ecs::Resource, Default)]
 pub struct ReplayRecorderResource {
     pub recorder: Option<ReplayRecorder<SceneSimulationSnapshotV2, SceneReplayInputFrameV2>>,
     pub checkpoint_policy: CheckpointPolicy,
     pub storage_policy: ReplayStoragePolicy,
 }
 
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct ReplayControllerResource {
     pub controller: ReplayController<SceneSimulationSnapshotV2, SceneReplayInputFrameV2>,
     pub last_validation: ReplayValidationReport,
@@ -90,7 +90,7 @@ impl Plugin for ReplayPlugin {
     }
 }
 
-pub(crate) fn start_recording(world: &mut ecs::World) -> Result<()> {
+pub(crate) fn start_recording(world: &mut runen_ecs::World) -> Result<()> {
     if !world.has_resource::<ReplayRecorderResource>() || !world.has_resource::<ReplayState>() {
         return Err(anyhow!("ReplayPlugin is not installed"));
     }
@@ -154,7 +154,7 @@ pub(crate) fn start_recording(world: &mut ecs::World) -> Result<()> {
     Ok(())
 }
 
-pub(crate) fn stop_recording(world: &mut ecs::World) -> Result<SceneReplayArchive> {
+pub(crate) fn stop_recording(world: &mut runen_ecs::World) -> Result<SceneReplayArchive> {
     if !world.has_resource::<ReplayRecorderResource>() || !world.has_resource::<ReplayState>() {
         return Err(anyhow!("ReplayPlugin is not installed"));
     }
@@ -173,7 +173,7 @@ pub(crate) fn stop_recording(world: &mut ecs::World) -> Result<SceneReplayArchiv
     Ok(archive)
 }
 
-pub(crate) fn load_replay(world: &mut ecs::World, archive: SceneReplayArchive) -> Result<()> {
+pub(crate) fn load_replay(world: &mut runen_ecs::World, archive: SceneReplayArchive) -> Result<()> {
     if !world.has_resource::<ReplayControllerResource>() || !world.has_resource::<ReplayState>() {
         return Err(anyhow!("ReplayPlugin is not installed"));
     }
@@ -190,7 +190,7 @@ pub(crate) fn load_replay(world: &mut ecs::World, archive: SceneReplayArchive) -
 }
 
 pub(crate) fn seek_loaded_replay(
-    world: &mut ecs::World,
+    world: &mut runen_ecs::World,
     target_tick: SimulationTick,
 ) -> Result<ReplayValidationReport> {
     let archive = world
@@ -297,7 +297,7 @@ fn replay_capture_checkpoint_system(
 
 fn replay_frame_end_system() {}
 
-fn fixed_tick_rate(world: &ecs::World) -> u16 {
+fn fixed_tick_rate(world: &runen_ecs::World) -> u16 {
     let step = world
         .resource::<FixedTimeConfig>()
         .map(|config| config.step_seconds)

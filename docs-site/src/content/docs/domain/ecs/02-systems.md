@@ -26,7 +26,7 @@ Systems are functions or processes that operate over components and resources. T
 - **Command Queue** – Deferred structural mutations collected per system run.
 - **System Set** – A semantic grouping used by explicit ordering constraints.
 - **Deferred Apply Boundary** – The ECS-owned point at which queued structural mutations become visible.
-- **Execution Stage** – Current plan/report grouping used for execution and diagnostics; it is not an application lifecycle or publication identity.
+- **WorldMut** – Built-in exclusive access to the complete world for a system that needs coordinated ECS operations.
 
 ## Implementation / API
 
@@ -35,10 +35,10 @@ Systems are added to a `Runtime` under an ECS-owned `ScheduleLabel`. System para
 ### System with Query
 
 ```rust
-#[derive(Debug, Copy, Clone, PartialEq, ecs::Component)]
+#[derive(Debug, Copy, Clone, PartialEq, runen_ecs::Component)]
 struct Position { x: f32, y: f32 }
 
-#[derive(Debug, Copy, Clone, PartialEq, ecs::Component)]
+#[derive(Debug, Copy, Clone, PartialEq, runen_ecs::Component)]
 struct Velocity { x: f32, y: f32 }
 
 fn movement_system(mut query: Query<(&mut Position, &Velocity)>) {
@@ -64,7 +64,7 @@ fn spawn_entity(mut commands: Commands) {
 Runtime execution can be ordered explicitly. `ScheduleLabel` and `SystemSet` are available from the ECS prelude:
 
 ```rust
-use ecs::prelude::*;
+use runen_ecs::prelude::*;
 
 #[derive(Copy, Clone)]
 struct Update;
@@ -94,9 +94,9 @@ The explicit `after(Gameplay)` edge establishes semantic precedence. Deferred co
 - The serial reference executor uses deterministic registration order for otherwise unordered systems.
 - Structural changes are **deferred** and become visible only after an ECS deferred-apply boundary.
 - Systems that execute before the same deferred-apply boundary do not observe one another's deferred structural mutations.
-- Current execution stages are plan/report facts, not Engine lifecycle phases or publication identities.
+- `WorldMut` is an ECS-owned exclusive parameter; it cannot be combined with sibling world borrows in one system.
 - Avoid hidden side effects outside system parameters when deterministic behavior matters.
-- Use plan reports, history, and telemetry for diagnostics rather than as gameplay authority.
+- Runtime errors preserve ECS-owned categories while user failures remain causes.
 
 ## Usage Examples
 

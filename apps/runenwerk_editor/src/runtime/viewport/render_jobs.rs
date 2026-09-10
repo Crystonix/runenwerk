@@ -44,7 +44,7 @@ impl ViewportRenderJob {
     }
 }
 
-#[derive(Debug, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct ViewportRenderJobResource {
     jobs_by_viewport: BTreeMap<ViewportId, ViewportRenderJob>,
 }

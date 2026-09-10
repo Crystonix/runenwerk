@@ -3,19 +3,19 @@ use engine::prelude::*;
 use winit::event::ElementState;
 use winit::keyboard::KeyCode;
 
-#[derive(Debug, Copy, Clone, PartialEq, Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Component, runen_ecs::Resource)]
 struct Position {
     x: i32,
     y: i32,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Component, runen_ecs::Resource)]
 struct Velocity {
     x: i32,
     y: i32,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Default, Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Default, Component, runen_ecs::Resource)]
 struct FrameCounter(u32);
 
 struct MinimalPlugin;
@@ -54,7 +54,7 @@ fn app_runs_startup_once_and_updates_each_frame() {
     assert_eq!(positions, vec![Position { x: 6, y: 3 }]);
 }
 
-#[derive(Debug, Default, Component, ecs::Resource)]
+#[derive(Debug, Default, Component, runen_ecs::Resource)]
 struct StartupSnapshot {
     saw_headless_window: bool,
     saw_title: String,
@@ -93,7 +93,7 @@ fn headless_run_exposes_builtin_runtime_resources_before_startup() {
     assert_eq!(snapshot.saw_title, "Headless Runtime");
 }
 
-#[derive(Debug, Default, Component, ecs::Resource)]
+#[derive(Debug, Default, Component, runen_ecs::Resource)]
 struct OrderLog(Vec<&'static str>);
 
 #[derive(Debug, Copy, Clone)]
@@ -145,10 +145,10 @@ fn tuple_system_registration_respects_set_ordering() {
     );
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Component, ecs::Resource)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Component, runen_ecs::Resource)]
 struct Player;
 
-#[derive(Debug, Default, Component, ecs::Resource)]
+#[derive(Debug, Default, Component, runen_ecs::Resource)]
 struct DemoFrames(u32);
 
 struct DemoLogicPlugin;
@@ -214,7 +214,7 @@ fn demo_style_plugin_updates_title_and_close_state_headlessly() {
     assert_eq!(positions, vec![Position { x: 1, y: 0 }]);
 }
 
-#[derive(Debug, Default, Component, ecs::Resource)]
+#[derive(Debug, Default, Component, runen_ecs::Resource)]
 struct FixedScheduleLog(Vec<&'static str>);
 
 struct FixedTickPlugin;
@@ -283,7 +283,7 @@ fn run_for_ticks_executes_fixed_update_deterministically() {
     assert_eq!(fixed_state.saturated_frames, 0);
 }
 
-#[derive(Debug, Default, Component, ecs::Resource)]
+#[derive(Debug, Default, Component, runen_ecs::Resource)]
 struct ScriptedDeltaState {
     next_frame: usize,
     fixed_updates: u32,
@@ -329,7 +329,7 @@ fn fixed_step_schedule_supports_zero_and_batched_ticks_per_frame() {
     assert_eq!(fixed_state.saturated_frames, 0);
 }
 
-#[derive(Debug, Default, Component, ecs::Resource)]
+#[derive(Debug, Default, Component, runen_ecs::Resource)]
 struct TickVisibilityLog(Vec<u64>);
 
 struct TickVisibilityPlugin;
@@ -376,7 +376,7 @@ fn fixed_step_advances_tick_before_each_fixed_update_step() {
     );
 }
 
-#[derive(Debug, Default, Component, ecs::Resource)]
+#[derive(Debug, Default, Component, runen_ecs::Resource)]
 struct SaturationFixedStepCounter(u32);
 
 struct SaturationPlugin;
@@ -424,7 +424,7 @@ fn fixed_step_saturation_tracks_dropped_backlog_when_budget_is_exhausted() {
     assert_eq!(fixed_state.accumulator_seconds, 0.0);
 }
 
-#[derive(Debug, Default, Component, ecs::Resource)]
+#[derive(Debug, Default, Component, runen_ecs::Resource)]
 struct RuntimeLifecycleLog(Vec<&'static str>);
 
 struct RuntimeLifecyclePlugin;

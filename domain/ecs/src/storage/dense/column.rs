@@ -1,28 +1,20 @@
-// Owner: ecs Storage - Dense Row-Aligned Storage Primitives
+// Owner: RunenECS Storage - Dense Row-Aligned Storage Primitives
 use crate::entity::Entity;
+use crate::world::ChangeCursor;
 
 #[allow(dead_code)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub(crate) struct DenseRowMetadata {
-    pub(crate) added_tick: u64,
-    pub(crate) changed_tick: u64,
-    pub(crate) state_generation: u64,
-    pub(crate) state_version: u64,
+    pub(crate) added_tick: ChangeCursor,
+    pub(crate) changed_tick: ChangeCursor,
 }
 
 #[allow(dead_code)]
 impl DenseRowMetadata {
-    pub(crate) const fn new(
-        added_tick: u64,
-        changed_tick: u64,
-        state_generation: u64,
-        state_version: u64,
-    ) -> Self {
+    pub(crate) const fn new(added_tick: ChangeCursor, changed_tick: ChangeCursor) -> Self {
         Self {
             added_tick,
             changed_tick,
-            state_generation,
-            state_version,
         }
     }
 }
@@ -164,20 +156,11 @@ impl<T> DenseColumn<T> {
         row
     }
 
-    pub(crate) fn mark_changed(&mut self, row: usize, tick: u64) -> bool {
+    pub(crate) fn mark_changed(&mut self, row: usize, tick: ChangeCursor) -> bool {
         let Some(metadata) = self.metadata.get_mut(row) else {
             return false;
         };
         metadata.changed_tick = tick;
-        true
-    }
-
-    pub(crate) fn mark_stateful_changed(&mut self, row: usize, tick: u64) -> bool {
-        let Some(metadata) = self.metadata.get_mut(row) else {
-            return false;
-        };
-        metadata.changed_tick = tick;
-        metadata.state_version = metadata.state_version.saturating_add(1);
         true
     }
 
@@ -219,13 +202,37 @@ mod tests {
     #[test]
     fn dense_column_swap_remove_reports_moved_row_and_preserves_alignment() {
         let mut column = DenseColumn::default();
-        column.push(10_i32, DenseRowMetadata::new(1, 1, 1, 0));
-        column.push(20_i32, DenseRowMetadata::new(2, 2, 2, 0));
-        column.push(30_i32, DenseRowMetadata::new(3, 3, 3, 0));
+        column.push(
+            10_i32,
+            DenseRowMetadata::new(
+                ChangeCursor::from_parts(0, 1),
+                ChangeCursor::from_parts(0, 1),
+            ),
+        );
+        column.push(
+            20_i32,
+            DenseRowMetadata::new(
+                ChangeCursor::from_parts(0, 2),
+                ChangeCursor::from_parts(0, 2),
+            ),
+        );
+        column.push(
+            30_i32,
+            DenseRowMetadata::new(
+                ChangeCursor::from_parts(0, 3),
+                ChangeCursor::from_parts(0, 3),
+            ),
+        );
 
         let removed = column.swap_remove(1).expect("row must exist");
         assert_eq!(removed.removed_value, 20);
-        assert_eq!(removed.removed_metadata, DenseRowMetadata::new(2, 2, 2, 0));
+        assert_eq!(
+            removed.removed_metadata,
+            DenseRowMetadata::new(
+                ChangeCursor::from_parts(0, 2),
+                ChangeCursor::from_parts(0, 2)
+            )
+        );
         assert_eq!(
             removed.swap,
             DenseSwapRemove {
@@ -235,7 +242,13 @@ mod tests {
         );
         assert_eq!(column.len(), 2);
         assert_eq!(column.get(1), Some(&30));
-        assert_eq!(column.metadata(1), Some(DenseRowMetadata::new(3, 3, 3, 0)));
+        assert_eq!(
+            column.metadata(1),
+            Some(DenseRowMetadata::new(
+                ChangeCursor::from_parts(0, 3),
+                ChangeCursor::from_parts(0, 3)
+            ))
+        );
     }
 
     #[test]

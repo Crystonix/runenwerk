@@ -56,7 +56,7 @@ pub struct WorldRenderCacheInvalidationRecord {
     pub region_ids: BTreeSet<RegionId>,
 }
 
-#[derive(Debug, Clone, Default, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, runen_ecs::Component, runen_ecs::Resource)]
 pub struct WorldRenderCacheInvalidationQueueResource {
     pub pending_records: VecDeque<WorldRenderCacheInvalidationRecord>,
 }

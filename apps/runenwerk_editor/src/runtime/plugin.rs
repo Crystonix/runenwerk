@@ -1,4 +1,3 @@
-use ecs::{SystemSetKey, World};
 use engine::plugins::render::backend::RenderSurfaceRegistryResource;
 use engine::plugins::render::{
     PreparedRenderProductSelectionResource, RenderDynamicTextureTargetRequestRegistryResource,
@@ -8,6 +7,7 @@ use engine::plugins::render::{
 use engine::prelude::*;
 use engine::runtime::{CoreSet, IntoSystemSetKey, SystemConfigExt, WindowStateRegistryResource};
 use engine::runtime::{ProductPublicationRuntimeResource, PublicationBoundary};
+use runen_ecs::{SystemSetKey, World};
 
 use crate::asset_pipeline::publish_pending_field_product_publications;
 use crate::material_lab::publish_pending_material_preview_publications;

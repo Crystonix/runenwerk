@@ -5,7 +5,7 @@ use std::hash::{Hash, Hasher};
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum AccessDomain {
     Component,
-    OrphanedComponent,
+    RemovedComponent,
     Resource,
     Structural,
     World,
@@ -31,13 +31,13 @@ impl AccessKey {
         }
     }
 
-    pub fn orphaned_component<T: 'static>(name: &'static str) -> Self {
-        Self::orphaned_component_by_id(TypeId::of::<T>(), name)
+    pub fn removed_component<T: 'static>(name: &'static str) -> Self {
+        Self::removed_component_by_id(TypeId::of::<T>(), name)
     }
 
-    pub fn orphaned_component_by_id(type_id: TypeId, name: &'static str) -> Self {
+    pub fn removed_component_by_id(type_id: TypeId, name: &'static str) -> Self {
         Self {
-            domain: AccessDomain::OrphanedComponent,
+            domain: AccessDomain::RemovedComponent,
             type_id: Some(type_id),
             name,
         }
@@ -86,7 +86,7 @@ impl AccessKey {
     pub fn diagnostic_label(&self) -> String {
         let domain = match self.domain {
             AccessDomain::Component => "component",
-            AccessDomain::OrphanedComponent => "orphaned component",
+            AccessDomain::RemovedComponent => "removed component",
             AccessDomain::Resource => "resource",
             AccessDomain::Structural => "structural access",
             AccessDomain::World => "world access",

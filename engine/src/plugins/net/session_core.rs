@@ -11,7 +11,7 @@ use std::collections::HashMap;
 /// iteration. It is updated only after successful Core lifecycle operations and is suitable for
 /// engine scheduling, owner routing, diagnostics, and presentation. It is never consulted to
 /// authorize admission, loss, retention, replacement, removal, expiry, or closure.
-#[derive(Debug, Clone, Default, PartialEq, Eq, ecs::Component, ecs::Resource)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, runen_ecs::Component, runen_ecs::Resource)]
 pub struct RunenNetSessionProjection {
     bindings: HashMap<ConnectionHandle, ParticipantId>,
 }
@@ -51,7 +51,7 @@ impl RunenNetSessionProjection {
 /// authoritative for compatibility negotiation, participant membership, connection binding,
 /// loss, retention, replacement, removal, expiry, and closure. Runenwerk owns only where these
 /// Core owners live and when application lifecycle code invokes them.
-#[derive(Debug, ecs::Component, ecs::Resource)]
+#[derive(Debug, runen_ecs::Component, runen_ecs::Resource)]
 pub struct RunenNetSessionCore {
     negotiation: NegotiationManager,
     session: Session,

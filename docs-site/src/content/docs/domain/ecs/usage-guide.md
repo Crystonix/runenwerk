@@ -18,32 +18,32 @@ For internals and invariants, see [architecture.md](architecture.md).
 ## 1. Import the API
 
 ```rust
-use ecs::prelude::*;
+use runen_ecs::prelude::*;
 ```
 
 ## 2. Define Components, Tags, Resources
 
-Per-entity data derives `ecs::Component`; world-singleton data derives `ecs::Resource`.
+Per-entity data derives `runen_ecs::Component`; world-singleton data derives `runen_ecs::Resource`.
 
 ```rust
-use ecs::prelude::*;
+use runen_ecs::prelude::*;
 
-#[derive(Debug, Copy, Clone, PartialEq, ecs::Component)]
+#[derive(Debug, Copy, Clone, PartialEq, runen_ecs::Component)]
 struct Position {
     x: f32,
     y: f32,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, ecs::Component)]
+#[derive(Debug, Copy, Clone, PartialEq, runen_ecs::Component)]
 struct Velocity {
     x: f32,
     y: f32,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, ecs::Component)]
+#[derive(Debug, Copy, Clone, PartialEq, runen_ecs::Component)]
 struct Player;
 
-#[derive(Debug, PartialEq, Eq, ecs::Resource)]
+#[derive(Debug, PartialEq, Eq, runen_ecs::Resource)]
 struct Frame(u64);
 ```
 
@@ -54,9 +54,9 @@ struct Frame(u64);
 ## 3. World Lifecycle
 
 ```rust
-use ecs::prelude::*;
+use runen_ecs::prelude::*;
 
-#[derive(Debug, Copy, Clone, PartialEq, ecs::Component)]
+#[derive(Debug, Copy, Clone, PartialEq, runen_ecs::Component)]
 struct Position {
     x: f32,
     y: f32,
@@ -76,15 +76,15 @@ assert!(!world.contains(entity));
 Tuple bundles are supported directly:
 
 ```rust
-use ecs::prelude::*;
+use runen_ecs::prelude::*;
 
-#[derive(Debug, Copy, Clone, PartialEq, ecs::Component)]
+#[derive(Debug, Copy, Clone, PartialEq, runen_ecs::Component)]
 struct Position {
     x: f32,
     y: f32,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, ecs::Component)]
+#[derive(Debug, Copy, Clone, PartialEq, runen_ecs::Component)]
 struct Velocity {
     x: f32,
     y: f32,
@@ -99,15 +99,15 @@ assert_eq!(removed.0.x, 0.0);
 Custom bundle structs are available via derive:
 
 ```rust
-use ecs::prelude::*;
+use runen_ecs::prelude::*;
 
-#[derive(Debug, PartialEq, Eq, ecs::Component)]
+#[derive(Debug, PartialEq, Eq, runen_ecs::Component)]
 struct Health(i32);
 
-#[derive(Debug, Clone, PartialEq, Eq, ecs::Component)]
+#[derive(Debug, Clone, PartialEq, Eq, runen_ecs::Component)]
 struct Name(String);
 
-#[derive(Debug, PartialEq, ecs::Bundle)]
+#[derive(Debug, PartialEq, runen_ecs::Bundle)]
 struct CombatBundle {
     health: Health,
     name: Name,
@@ -126,9 +126,9 @@ assert_eq!(removed.health, Health(10));
 ## 5. Entity Access
 
 ```rust
-use ecs::prelude::*;
+use runen_ecs::prelude::*;
 
-#[derive(Debug, Copy, Clone, PartialEq, ecs::Component)]
+#[derive(Debug, Copy, Clone, PartialEq, runen_ecs::Component)]
 struct Position {
     x: f32,
     y: f32,
@@ -152,15 +152,15 @@ entity_mut.require_mut::<Position>().unwrap().y += 1.0;
 Detached reusable query state:
 
 ```rust
-use ecs::prelude::*;
+use runen_ecs::prelude::*;
 
-#[derive(Debug, Copy, Clone, PartialEq, ecs::Component)]
+#[derive(Debug, Copy, Clone, PartialEq, runen_ecs::Component)]
 struct Position {
     x: f32,
     y: f32,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, ecs::Component)]
+#[derive(Debug, Copy, Clone, PartialEq, runen_ecs::Component)]
 struct Velocity {
     x: f32,
     y: f32,
@@ -192,17 +192,17 @@ Common forms:
 ## 7. Query Filters
 
 ```rust
-use ecs::prelude::*;
+use runen_ecs::prelude::*;
 
 fn players(_query: Query<&Position, With<Player>>) {}
 fn active_players(_query: Query<&Position, (With<Player>, Without<Disabled>)>) {}
 fn changed_players(_query: Query<&Position, Changed<Position>>) {}
 fn added_health(_query: Query<(Entity, &Health), Added<Health>>) {}
 
-# #[derive(ecs::Component)] struct Position;
-# #[derive(ecs::Component)] struct Player;
-# #[derive(ecs::Component)] struct Disabled;
-# #[derive(ecs::Component)] struct Health;
+# #[derive(runen_ecs::Component)] struct Position;
+# #[derive(runen_ecs::Component)] struct Player;
+# #[derive(runen_ecs::Component)] struct Disabled;
+# #[derive(runen_ecs::Component)] struct Health;
 ```
 
 `Changed<T>` and `Added<T>` are stateful per `QueryState`/`Query` instance.
@@ -210,9 +210,9 @@ fn added_health(_query: Query<(Entity, &Health), Added<Health>>) {}
 ## 8. Resources
 
 ```rust
-use ecs::prelude::*;
+use runen_ecs::prelude::*;
 
-#[derive(Debug, PartialEq, Eq, ecs::Resource)]
+#[derive(Debug, PartialEq, Eq, runen_ecs::Resource)]
 struct Frame(u64);
 
 let mut world = World::new();
@@ -227,15 +227,15 @@ assert_eq!(world.remove_resource::<Frame>(), Some(Frame(2)));
 ## 9. Commands
 
 ```rust
-use ecs::prelude::*;
+use runen_ecs::prelude::*;
 
-#[derive(Debug, Copy, Clone, PartialEq, ecs::Component)]
+#[derive(Debug, Copy, Clone, PartialEq, runen_ecs::Component)]
 struct Position {
     x: f32,
     y: f32,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, ecs::Component)]
+#[derive(Debug, Copy, Clone, PartialEq, runen_ecs::Component)]
 struct Velocity {
     x: f32,
     y: f32,
@@ -252,10 +252,10 @@ commands.apply(&mut world).unwrap();
 
 ## 10. Runtime Basics
 
-`ScheduleLabel` is owned by `ecs` and is available through the prelude.
+`ScheduleLabel` is owned by `runen-ecs` and is available through the prelude.
 
 ```rust
-use ecs::prelude::*;
+use runen_ecs::prelude::*;
 
 #[derive(Copy, Clone)]
 struct Update;
@@ -265,7 +265,7 @@ impl ScheduleLabel for Update {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, ecs::Resource)]
+#[derive(Debug, PartialEq, Eq, runen_ecs::Resource)]
 struct Frame(u64);
 
 fn tick(mut frame: ResMut<Frame>) {
@@ -286,7 +286,7 @@ assert_eq!(world.resource::<Frame>().unwrap().0, 1);
 Use system sets and explicit `before` / `after` relations when one system must observe deferred structural changes from another.
 
 ```rust
-use ecs::prelude::*;
+use runen_ecs::prelude::*;
 
 #[derive(Copy, Clone)]
 struct Update;
@@ -320,9 +320,9 @@ Generic broadcast/event channels are not part of the current RunenECS public con
 ## 12. Change Tracking Basics
 
 ```rust
-use ecs::prelude::*;
+use runen_ecs::prelude::*;
 
-#[derive(Debug, Copy, Clone, PartialEq, ecs::Component)]
+#[derive(Debug, Copy, Clone, PartialEq, runen_ecs::Component)]
 struct Position {
     x: f32,
     y: f32,
@@ -334,15 +334,15 @@ let entity = world.spawn(Position { x: 0.0, y: 0.0 });
 world.require_mut::<Position>(entity).unwrap().x = 1.0;
 
 assert!(world.component_changed_since::<Position>(tick));
-assert!(!world.component_changes_since(tick).is_empty());
+assert!(world.current_change_tick() > tick);
 ```
 
 ## 13. Secondary Indexes Basics
 
 ```rust
-use ecs::prelude::*;
+use runen_ecs::prelude::*;
 
-#[derive(Debug, Clone, PartialEq, Eq, ecs::Component)]
+#[derive(Debug, Clone, PartialEq, Eq, runen_ecs::Component)]
 struct Name(String);
 
 let mut world = World::new();
@@ -366,9 +366,9 @@ Common error types:
 - `ScheduleValidationError`: invalid schedule structure such as an explicit ordering cycle
 
 ```rust
-use ecs::prelude::*;
+use runen_ecs::prelude::*;
 
-#[derive(Debug, PartialEq, Eq, ecs::Resource)]
+#[derive(Debug, PartialEq, Eq, runen_ecs::Resource)]
 struct Frame(u64);
 
 let world = World::new();
@@ -376,19 +376,15 @@ let missing = world.resource::<Frame>();
 assert!(missing.is_err());
 ```
 
-## 15. Telemetry and Benchmark Entry Points
+## 15. Benchmark entry point
 
-`ecs` exposes feature-gated runtime telemetry for profiling and cost attribution.
+The package contains a semantic Criterion baseline covering insertion, query
+iteration, archetype transitions, serial schedule execution, and deferred
+command application:
 
-```powershell
-cargo test -p ecs
-cargo bench -p ecs --bench phase6 --features telemetry -- --quick
-cargo run -p ecs --example phase6_profile --features telemetry --release
+```text
+cargo bench -p runen-ecs --bench semantic_baseline --locked
 ```
 
-Telemetry APIs:
-
-- `ecs::telemetry::reset()`
-- `ecs::telemetry::snapshot()`
-
-Detailed profiling interpretation and workflow lives in [advanced-guide.md](advanced-guide.md).
+The benchmark is a measurement aid, not a hard performance guarantee. Its
+provenance is recorded in `domain/ecs/benchmarks/semantic_baseline.md`.

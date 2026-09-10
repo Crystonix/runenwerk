@@ -6,12 +6,12 @@ use drawing::{CanvasTileId, DrawingInkTileProduct, ProductQualityClass};
 
 use crate::app::{DrawingInkSurfaceKind, RunenwerkDrawApp};
 
-#[derive(Debug, Default, ecs::Resource)]
+#[derive(Debug, Default, runen_ecs::Resource)]
 pub struct DrawingHostResource {
     pub app: RunenwerkDrawApp,
 }
 
-#[derive(Debug, Default, ecs::Resource)]
+#[derive(Debug, Default, runen_ecs::Resource)]
 pub struct DrawingInkUploadTrackerResource {
     committed_generations: BTreeMap<DrawingInkUploadKey, u64>,
     preview_generations: BTreeMap<DrawingInkUploadKey, u64>,
