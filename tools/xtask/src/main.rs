@@ -226,7 +226,7 @@ fn audit_repository(root: &Path) -> Result<(), String> {
         "ARCHITECTURE.md",
         "TESTING.md",
         "tools/checks/ux_lab_terminology.py",
-        "docs-site/src/content/docs/workspace/engineering-workflow.md",
+        "docs-site/src/content/docs/workspace/start-here.md",
         "docs-site/src/content/docs/workspace/documentation-structure.md",
         "docs-site/src/content/docs/workspace/planning/roadmap.md",
         "docs-site/src/content/docs/guidelines/dependency-rules.md",
@@ -293,9 +293,21 @@ fn audit_repository(root: &Path) -> Result<(), String> {
     )?;
     require_text(
         root,
-        "docs-site/src/content/docs/workspace/engineering-workflow.md",
-        "GitHub issues and pull requests manage work",
-        "the canonical workflow must use ordinary repository artifacts",
+        "AGENTS.md",
+        "dornglut/engineering",
+        "the agent entrypoint must delegate organization-wide governance to Engineering",
+    )?;
+    require_text(
+        root,
+        "TESTING.md",
+        "Root-only documentation changes outside that path scope do not automatically trigger Documentation Build",
+        "the local validation map must state the maintained documentation-build trigger scope",
+    )?;
+    require_text(
+        root,
+        "docs-site/src/content/docs/workspace/start-here.md",
+        "https://github.com/dornglut/engineering",
+        "the local cold-start entrypoint must route organization-wide governance to Engineering",
     )?;
 
     forbid_text(
