@@ -5,7 +5,7 @@ status: active
 owner: workspace
 layer: workspace
 canonical: true
-last_reviewed: 2026-04-27
+last_reviewed: 2026-09-11
 ---
 
 # Intra‑Crate Module Structure Guidelines
@@ -17,7 +17,8 @@ It complements:
 
 -   `AGENTS.md`
 -   `architecture.md`
--   `domain-map.md`
+-   [`../workspace/crate-inventory.md`](../workspace/crate-inventory.md)
+-   [`dependency-rules.md`](dependency-rules.md)
 
 These rules help both humans and AI coding agents consistently place
 code and navigate subsystems.
@@ -273,24 +274,26 @@ Pick the owner before picking a file.
 
 Use these rules:
 
-- `domain/` for low-level reusable and engine-agnostic runtime primitives
-- `engine/` for engine-generic runtime composition, plugins, rendering, input, scene, UI, and time
-- `net/` for protocol, session, transport, replication contracts, replay, and runtime adapters
-- `apps/` for process wiring, config loading, and external service integration
-- `adapters/` for external runtime/engine integration glue
+- `domain/` for Runenwerk-owned engine-agnostic domain contracts and logic
+- `engine/` for Runenwerk runtime composition, plugins, rendering integration, input, scene, UI, and time
+- `net/` for the remaining Runenwerk simulation/history/network-authoring and migration surfaces; reusable realtime-networking semantics belong to standalone RunenNet
+- `apps/` for process wiring, config loading, product policy, and external service integration
+- `adapters/` for explicit external runtime/engine integration glue
 
-If the logic is engine-host agnostic, it belongs in `domain/`.
-If the logic is engine-generic runtime glue, it belongs in `engine/`.
+If a reusable semantic already belongs to a peer framework, change that framework through its own repository rather than adding duplicate Runenwerk authority. If the logic is Runenwerk-specific runtime/product glue, place it in the appropriate local integration owner.
 
 ## 2. Choose the owning crate next
 
 Examples:
 
-- Shared network contract change  
-  -> `net/engine_net`
+- Reusable realtime-networking contract change  
+  -> standalone `dornglut/runen-net`, not `net/engine_net`
 
-- QUIC transport/runtime behavior  
-  -> `net/engine_net_quic`
+- Runenwerk-specific retained replication migration behavior  
+  -> `net/engine_net` only while that current RN8 migration surface exists
+
+- QUIC transport realization  
+  -> standalone `runen-net-quic`; Runenwerk keeps only maintained app/host integration
 
 - ECS/plugin integration for networking  
   -> `engine/src/plugins/net`
@@ -320,7 +323,7 @@ Examples:
   -> `engine/src/plugins/scene/lifecycle/`
 
 - Client-side net prediction  
-  -> the owning gameplay module (`domain/*` or `apps/*`) or `engine/src/plugins/net/` depending on whether it is game-specific or engine-generic
+  -> the owning gameplay module (`domain/*` or `apps/*`) or `engine/src/plugins/net/` depending on whether it is game-specific or Runenwerk runtime integration; reusable prediction semantics remain RunenNet-owned
 
 Prefer extending an existing subsystem over creating a new bucket.
 
@@ -368,17 +371,18 @@ Promote code upward only when it is truly reused across domains or subsystems.
 
 ## Decision examples
 
-### Example A: add snapshot ack encoding
+### Example A: change reusable snapshot/ack semantics
 Owner:
-- top-level domain: `net`
-- crate: `net/engine_net`
-- subsystem: `protocol/` or `replication/`
+- repository: standalone `dornglut/runen-net`
+- package/subsystem: the owning RunenNet replication/delivery contract
 
-### Example B: add QUIC datagram MTU safety logic
+If the change is only to Runenwerk's still-retained migration adapter/state, keep that narrower change in the current `net/engine_net` migration surface instead of redefining the reusable contract.
+
+### Example B: change QUIC datagram MTU safety logic
 Owner:
-- top-level domain: `net`
-- crate: `net/engine_net_quic`
-- subsystem: `transport/`
+- repository: standalone `dornglut/runen-net`
+- package: `runen-net-quic`
+- Runenwerk changes only if its maintained consumer integration must adapt to the public contract
 
 ### Example C: add remote player smoothing for current gameplay module
 Owner:
@@ -396,10 +400,11 @@ Owner:
 
 Choose placement in this order:
 
-1. top-level domain
-2. crate
-3. subsystem
-4. file/module
+1. semantic owner/repository
+2. top-level Runenwerk area when Runenwerk owns the change
+3. crate
+4. subsystem
+5. file/module
 
 Never choose the file first and invent ownership afterward.
 
