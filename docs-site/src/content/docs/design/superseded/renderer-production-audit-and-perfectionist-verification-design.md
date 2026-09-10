@@ -1,6 +1,6 @@
 ---
 title: Renderer Production Audit And Perfectionist Verification Platform
-description: Superseded design for the historical cross-track renderer audit and perfectionist-verification model.
+description: Superseded design for final cross-track renderer audit, evidence matrix, gap closure, documentation consistency, and perfectionist verification.
 status: superseded
 owner: workspace
 layer: workspace / engine-runtime
@@ -24,19 +24,19 @@ related_designs:
 
 ## Superseded status
 
-This document is retained as historical rationale for the older `perfectionist_verified` audit model. It no longer owns current renderer acceptance or final no-gap verification. ADR 0021, the accepted RunenRender semantic-rendering architecture, and the active RunenRender R8 -> RX execution/conformance sequence replace that authority. Do not activate or close renderer work against this historical track.
+This historical audit model no longer owns renderer acceptance or final no-gap verification. ADR 0021, the accepted RunenRender architecture, and the active R8 -> RX execution/conformance sequence replace that authority. The original rationale below is retained for provenance only.
 
-## Historical Decision
+## Decision
 
-`perfectionist_verified` was defined as a separate audit outcome. No renderer capability
-track could claim it merely because its implementation passed focused tests.
-The historical final audit intended to verify that runtime evidence, docs, examples, diagnostics,
-public APIs, hardware matrices, and ownership boundaries were coherent across
+`perfectionist_verified` is a separate audit outcome. No renderer capability
+track may claim it merely because its implementation passes focused tests.
+The final audit verifies that runtime evidence, docs, examples, diagnostics,
+public APIs, hardware matrices, and ownership boundaries are coherent across
 all renderer tracks.
 
-## Historical Scope
+## Scope
 
-This track covered:
+This track covers:
 
 - cross-track evidence matrix and hardware profile coverage;
 - known quality gap inventory and closure;
@@ -44,11 +44,11 @@ This track covered:
 - ownership-boundary audit for product truth and renderer-derived state;
 - final production closeout.
 
-It did not implement renderer features itself and blocked on completed
+It does not implement renderer features itself. It blocks on completed
 runtime-proven renderer tracks.
 
-## Historical Evidence Model
+## Evidence
 
-The historical perfectionist-verification model required no open known quality gaps, completed
+Perfectionist verification requires no open known quality gaps, completed
 closeout evidence for all prerequisite tracks, consistent generated planning
-docs, and an audit report usable without reading backend internals. Current acceptance semantics and residual-audit sequencing are owned by ADR 0021 and RunenRender R8 -> RX instead.
+docs, and an audit report that can be used without reading backend internals.
