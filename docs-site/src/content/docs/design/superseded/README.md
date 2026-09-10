@@ -5,7 +5,7 @@ status: active
 owner: workspace
 layer: workspace
 canonical: true
-last_reviewed: 2026-08-13
+last_reviewed: 2026-09-10
 ---
 
 # Superseded Designs
@@ -30,6 +30,7 @@ No superseded editor-domain design documents are currently tracked in this folde
 
 - [SDF Product Renderer Architecture](sdf-product-renderer-architecture.md)
 - [ECS Scheduler Execution Fabric Design](ecs-scheduler-execution-fabric-design.md)
+- [Renderer Production Audit And Perfectionist Verification Platform](renderer-production-audit-and-perfectionist-verification-design.md)
 
 ### App / Tooling
 
