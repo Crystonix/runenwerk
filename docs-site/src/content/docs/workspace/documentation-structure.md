@@ -8,6 +8,8 @@ canonical: true
 last_reviewed: 2026-09-11
 related_docs:
   - ./start-here.md
+  - ./engineering-workflow.md
+  - ./authority-model.md
 ---
 
 # Documentation Structure
