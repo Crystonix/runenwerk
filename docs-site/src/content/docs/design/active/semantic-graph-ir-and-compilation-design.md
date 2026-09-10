@@ -5,7 +5,7 @@ status: active
 owner: workspace
 layer: cross-domain
 canonical: true
-last_reviewed: 2026-05-04
+last_reviewed: 2026-09-11
 related_docs:
   - ../../guidelines/runenwerk-architecture.md
   - ../../domain/scheduler/README.md
@@ -469,7 +469,7 @@ Before accepting this design:
 4. Define exact issue codes and diagnostic subjects.
 5. Prove the lowering target does not require runtime graph interpretation.
 6. Add focused ratification and lowering tests.
-7. Update crate/domain docs and `CRATES.md` only when a new crate is actually added.
+7. Update the canonical [`crate inventory`](../../workspace/crate-inventory.md) and owning crate/domain docs only when a new workspace crate is actually added.
 
 ## Remaining Questions
 
