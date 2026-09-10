@@ -30,7 +30,7 @@ RunenRender -> RunenGPU
 
 ## Current source layout
 
-The standalone RunenGPU successor is accepted. Runenwerk's exact-revision consumer cutover is a separate repository-local acceptance boundary owned by issue `#449`.
+The standalone RunenGPU successor and Runenwerk consumer cutover are accepted. The workspace consumes `runen-gpu` through an exact accepted Git revision; RunenGPU implementation and framework conformance belong to `dornglut/runen-gpu` rather than to Runenwerk.
 
 ```text
 foundation -> domain -> engine/runtime -> apps/adapters/tools
