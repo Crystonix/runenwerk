@@ -44,7 +44,7 @@ pub(crate) fn run_startup_if_needed(
 /// 5. `RenderSubmit`
 /// 6. `FrameEnd`
 ///
-/// RunenECS executes each generic schedule and reports ECS-neutral stage
+/// RunenECS executes each generic schedule and reports ECS-neutral deferred-apply
 /// boundaries after deferred commands are applied. Engine publication policy is
 /// dispatched at those boundaries.
 pub(crate) fn run_frame(world: &mut World, scheduler: &mut Runtime) -> Result<()> {
