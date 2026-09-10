@@ -1,36 +1,44 @@
 # AGENTS.md
 
-Runenwerk uses repository evidence, ordinary GitHub issues and pull requests, accepted architecture documents, and permanent CI. Do not create generated prompts, execution locks, truth certificates, temporary authoring workflows, or parallel workflow state.
+Runenwerk is a Dornglut `integration-product` repository. This file defines only the Runenwerk-specific executor contract.
+
+Organization-wide work selection, repository and GitHub rules, validation-evidence semantics, contribution/licensing defaults, and cross-repository governance are owned by `dornglut/engineering`:
+
+- [Authority and work](https://github.com/dornglut/engineering/blob/main/governance/authority-and-work.md)
+- [Repository standard](https://github.com/dornglut/engineering/blob/main/standards/repositories.md)
+- [GitHub standard](https://github.com/dornglut/engineering/blob/main/standards/github.md)
+- [Validation standard](https://github.com/dornglut/engineering/blob/main/standards/validation.md)
+- [Licensing standard](https://github.com/dornglut/engineering/blob/main/standards/licensing.md)
+- [Runen-family architecture](https://github.com/dornglut/engineering/blob/main/architecture/runen-family.md)
+
+When operating through GPT Web with the GitHub connector, also follow the [Engineering GPT Web GitHub procedure](https://github.com/dornglut/engineering/blob/main/tooling/gpt-web-github.md).
 
 ## Before editing
 
-1. Identify the owner of the behavior or invariant.
-2. Inspect the current code, tests, and relevant accepted ADR or design.
-3. Check the active issue when the work is already planned.
-4. Keep the change to one coherent boundary.
+1. Identify the semantic owner of the behavior or invariant.
+2. Inspect the current owning source and tests.
+3. Read the relevant accepted Runenwerk ADR or design; use [`ARCHITECTURE.md`](ARCHITECTURE.md) for cross-domain work.
+4. Check the owning active issue when the work is already accepted.
+5. Keep the change to one coherent boundary.
 
-For repository-wide architecture and extraction work, start with:
+For cross-repository boundaries or extraction, also read the Engineering Runen-family architecture and the owning framework authority. Do not infer reusable framework semantics from Runenwerk adapters or product integration.
 
-- [`ARCHITECTURE.md`](ARCHITECTURE.md)
-- [`docs-site/src/content/docs/workspace/engineering-workflow.md`](docs-site/src/content/docs/workspace/engineering-workflow.md)
-- the relevant accepted ADR or design under `docs-site/src/content/docs`.
+## Runenwerk boundaries
 
-## Validation
+- Runenwerk owns integration and product policy, not reusable framework semantics.
+- Preserve one-way framework and local dependency direction.
+- Do not add compatibility aliases, forwarding modules, source mirrors, or duplicate authority without a demonstrated current compatibility requirement and removal condition.
+- Do not create generated prompts, work-state ledgers, truth certificates, execution locks, or temporary/self-authoring feature workflows as parallel authority.
+- Do not use GitHub Actions to author feature-branch changes.
 
-Use focused package checks while editing. Before merge, run:
+## Validation and evidence
+
+Use focused checks while editing. The repository-owned merge baseline is:
 
 ```text
 cargo validate
 ```
 
-GitHub Actions runs the same `cargo validate` baseline at the reviewed commit.
+Run it from a checked-out executor before merge when that execution path is available. Acceptance requires repository-owned exact-head hosted CI to execute the canonical baseline for the unchanged reviewed feature head. See [`TESTING.md`](TESTING.md) for the current Runenwerk validation map.
 
-## Rules
-
-- Preserve one-way dependency direction.
-- Put reusable framework semantics in the owning framework boundary and product integration in Runenwerk.
-- Do not add compatibility aliases, forwarding modules, or duplicate source without a real consumer and a removal condition.
-- Do not use GitHub Actions to author feature-branch commits.
-- Do not claim tests, CI, runtime behavior, or cleanup that was not actually observed.
-
-Report what changed, the owning boundary, validation actually run, and any remaining blocker.
+Report only validation and behavior actually observed. Report what changed, the owning boundary, evidence actually obtained, and any remaining blocker.
