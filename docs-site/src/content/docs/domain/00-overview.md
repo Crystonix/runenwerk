@@ -5,7 +5,7 @@ status: active
 owner: domain
 layer: domain
 canonical: true
-last_reviewed: 2026-09-10
+last_reviewed: 2026-09-11
 ---
 
 # Domain Layer Overview
@@ -99,11 +99,12 @@ Start here when working in the domain layer:
 - Drawing: [`drawing/README.md`](./drawing/README.md)
 - UI substrate: [`ui/README.md`](./ui/README.md)
 
-For workspace-wide ownership, see:
+For workspace-wide placement, membership, and dependency ownership, see:
 
-- `DOMAIN_MAP.md`
-- `CRATES.md`
-- [`../workspace/crate-docs-status.md`](../workspace/crate-docs-status.md)
+- [`../guidelines/architecture.md`](../guidelines/architecture.md) for Runenwerk placement and boundary guidance;
+- [`../workspace/crate-inventory.md`](../workspace/crate-inventory.md) for current local workspace members;
+- [`../guidelines/dependency-rules.md`](../guidelines/dependency-rules.md) for dependency direction and peer-framework ownership;
+- [`../workspace/crate-docs-status.md`](../workspace/crate-docs-status.md) for documentation coverage.
 
 ## Known Gaps
 
