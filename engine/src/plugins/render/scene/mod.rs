@@ -6,7 +6,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::error::Error;
 use std::fmt;
 use std::num::NonZeroU64;
-use std::sync::Arc;
+use std::sync::{Arc, Weak};
 
 const RADIX_BITS: usize = 4;
 const RADIX_MASK: u64 = (1 << RADIX_BITS) - 1;
@@ -547,6 +547,26 @@ fn collect_object_ids(
     }
 }
 
+/// Opaque renderer-local continuity evidence for one immutable scene position.
+///
+/// The weak root identity is provenance only: it does not retain old scene contents and is not part
+/// of public semantic snapshot equality or a persisted/global scene identity.
+#[derive(Debug, Clone)]
+pub(crate) struct RenderSceneContinuity {
+    revision: RenderSceneRevision,
+    root: Weak<SceneNode>,
+}
+
+impl RenderSceneContinuity {
+    pub(crate) const fn revision(&self) -> RenderSceneRevision {
+        self.revision
+    }
+
+    fn same_position(&self, other: &Self) -> bool {
+        self.revision == other.revision && Weak::ptr_eq(&self.root, &other.root)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RenderSceneSnapshot {
     revision: RenderSceneRevision,
@@ -584,13 +604,29 @@ impl RenderSceneSnapshot {
     pub fn object_ids(&self) -> Vec<RenderObjectId> {
         self.objects.object_ids()
     }
+
+    pub(crate) fn continuity(&self) -> RenderSceneContinuity {
+        RenderSceneContinuity {
+            revision: self.revision,
+            root: Arc::downgrade(&self.objects.root),
+        }
+    }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct RenderSceneCommit {
+    previous: RenderSceneContinuity,
     snapshot: RenderSceneSnapshot,
     change_set: RenderSceneChangeSet,
 }
+
+impl PartialEq for RenderSceneCommit {
+    fn eq(&self, other: &Self) -> bool {
+        self.snapshot == other.snapshot && self.change_set == other.change_set
+    }
+}
+
+impl Eq for RenderSceneCommit {}
 
 impl RenderSceneCommit {
     pub const fn revision(&self) -> RenderSceneRevision {
@@ -603,6 +639,18 @@ impl RenderSceneCommit {
 
     pub const fn change_set(&self) -> &RenderSceneChangeSet {
         &self.change_set
+    }
+
+    pub(crate) const fn previous_revision(&self) -> RenderSceneRevision {
+        self.previous.revision()
+    }
+
+    pub(crate) fn directly_follows(&self, previous: &RenderSceneContinuity) -> bool {
+        self.previous.same_position(previous)
+    }
+
+    pub(crate) fn continuity(&self) -> RenderSceneContinuity {
+        self.snapshot.continuity()
     }
 }
 
@@ -796,7 +844,9 @@ impl RenderSceneStore {
     ) -> Result<RenderSceneCommit, RenderSceneCommitError> {
         let validated = self.validate_update(&update)?;
         if validated.is_noop() {
+            let previous = self.snapshot().continuity();
             return Ok(RenderSceneCommit {
+                previous,
                 snapshot: self.snapshot(),
                 change_set: RenderSceneChangeSet::incremental(
                     Vec::new(),
@@ -814,6 +864,7 @@ impl RenderSceneStore {
             .revision
             .checked_next()
             .ok_or(RenderSceneCommitError::RevisionExhausted)?;
+        let previous = self.snapshot().continuity();
 
         let ValidatedRenderSceneUpdate {
             inserted,
@@ -848,6 +899,7 @@ impl RenderSceneStore {
         self.revision = next_revision;
 
         Ok(RenderSceneCommit {
+            previous,
             snapshot: self.snapshot(),
             change_set: RenderSceneChangeSet::incremental(
                 inserted_ids,
@@ -1227,6 +1279,7 @@ mod tests {
         let object_id = store.allocate_object_id().expect("ID should allocate");
         let insert = insert_one(&mut store, object_id);
         assert_eq!(insert.revision(), RenderSceneRevision(1));
+        assert_eq!(insert.previous_revision(), RenderSceneRevision::INITIAL);
         assert!(insert.snapshot().contains(object_id));
         assert_eq!(insert.change_set().inserted(), Some(&[object_id][..]));
         assert_eq!(insert.change_set().removed(), Some(&[][..]));
@@ -1242,6 +1295,7 @@ mod tests {
         let mut remove_update = RenderSceneUpdate::new();
         remove_update.remove(object_id);
         let remove = store.commit(remove_update).expect("remove should commit");
+        assert_eq!(remove.previous_revision(), RenderSceneRevision(1));
         assert_eq!(remove.revision(), RenderSceneRevision(2));
         assert!(!remove.snapshot().contains(object_id));
         assert_eq!(remove.change_set().removed(), Some(&[object_id][..]));
@@ -1298,11 +1352,14 @@ mod tests {
     fn empty_update_is_accepted_no_op() {
         let mut store = RenderSceneStore::new();
         let before = store.snapshot();
+        let continuity = before.continuity();
         let commit = store
             .commit(RenderSceneUpdate::new())
             .expect("empty update should be accepted");
         assert_eq!(commit.snapshot(), &before);
+        assert_eq!(commit.previous_revision(), RenderSceneRevision::INITIAL);
         assert_eq!(commit.revision(), RenderSceneRevision::INITIAL);
+        assert!(commit.directly_follows(&continuity));
         assert!(commit.change_set().is_empty_incremental());
         assert_eq!(store.snapshot(), before);
     }
@@ -1314,12 +1371,15 @@ mod tests {
         let second = store.allocate_object_id().expect("ID should allocate");
         let third = store.allocate_object_id().expect("ID should allocate");
         insert_one(&mut store, first);
+        let previous = store.snapshot().continuity();
         let mut update = RenderSceneUpdate::new();
         update.remove(first).insert(second).insert(third);
         let commit = store
             .commit(update)
             .expect("multi-operation update should commit");
+        assert_eq!(commit.previous_revision(), RenderSceneRevision(1));
         assert_eq!(commit.revision(), RenderSceneRevision(2));
+        assert!(commit.directly_follows(&previous));
         assert_eq!(commit.snapshot().object_ids(), vec![second, third]);
         assert_eq!(commit.change_set().inserted(), Some(&[second, third][..]));
         assert_eq!(commit.change_set().removed(), Some(&[first][..]));
@@ -1481,6 +1541,7 @@ mod tests {
         let equal_commit = store
             .commit(equal)
             .expect("equal replacement should be accepted");
+        assert_eq!(equal_commit.previous_revision(), revision);
         assert_eq!(equal_commit.revision(), revision);
         assert!(equal_commit.change_set().is_empty_incremental());
 

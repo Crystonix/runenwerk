@@ -5,6 +5,8 @@ pub mod appearance;
 pub mod backend;
 pub mod composition;
 pub mod derived_state;
+#[cfg_attr(not(test), allow(dead_code))]
+mod derived_transform;
 pub mod features;
 pub mod frame;
 pub mod gpu_primitives;
@@ -30,6 +32,8 @@ pub mod space_time;
 pub mod surface_result;
 mod texture_upload;
 
+#[cfg(test)]
+mod derived_transform_r7_proof;
 #[cfg(test)]
 mod r6_proof;
 #[cfg(test)]

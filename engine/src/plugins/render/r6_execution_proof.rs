@@ -6,6 +6,9 @@
 // exact. Concrete surface behavior comes from `r6_proof`, and CPU shading/depth meaning comes from
 // `r6_reference_proof`.
 
+use super::super::derived_transform::{
+    RenderCompiledObjectTransform, RenderCompiledObjectTransformError,
+};
 use super::super::lowering::RenderWorkSet;
 use super::super::r6_proof::FoundingRepresentationRealization;
 use super::super::r6_reference_proof::{direct_lighting_radiance, observation_forward_depth};
@@ -1172,55 +1175,18 @@ fn observation_forward(transform: RenderAffineTransform3) -> Result<[f64; 3], St
 }
 
 fn object_transform(state: &RenderObjectState) -> Result<PackedObjectTransform, String> {
-    let spatial = state.spatial();
-    let matrix = spatial.local_to_scene().row_major_3x4();
-    let units = spatial.local_space().meters_per_unit();
-    let local_to_scene = [
-        matrix[0] * units,
-        matrix[1] * units,
-        matrix[2] * units,
-        matrix[4] * units,
-        matrix[5] * units,
-        matrix[6] * units,
-        matrix[8] * units,
-        matrix[9] * units,
-        matrix[10] * units,
-    ];
-    let scene_to_local = inverse3(local_to_scene)
-        .ok_or_else(|| "R6 object transform is non-invertible".to_string())?;
+    let transform = RenderCompiledObjectTransform::compile(state.spatial()).map_err(|error| {
+        match error {
+            RenderCompiledObjectTransformError::NonInvertibleObjectTransform => {
+                "R6 object transform is non-invertible".to_string()
+            }
+        }
+    })?;
     Ok((
-        scene_to_local,
-        [matrix[3], matrix[7], matrix[11]],
-        transpose3(scene_to_local),
+        transform.scene_to_local_units_row_major(),
+        transform.translation_scene(),
+        transform.normal_local_to_scene_row_major(),
     ))
-}
-
-fn inverse3(matrix: [f64; 9]) -> Option<[f64; 9]> {
-    let determinant = matrix[0] * (matrix[4] * matrix[8] - matrix[5] * matrix[7])
-        - matrix[1] * (matrix[3] * matrix[8] - matrix[5] * matrix[6])
-        + matrix[2] * (matrix[3] * matrix[7] - matrix[4] * matrix[6]);
-    if determinant == 0.0 || !determinant.is_finite() {
-        return None;
-    }
-    let inverse = determinant.recip();
-    Some([
-        (matrix[4] * matrix[8] - matrix[5] * matrix[7]) * inverse,
-        (matrix[2] * matrix[7] - matrix[1] * matrix[8]) * inverse,
-        (matrix[1] * matrix[5] - matrix[2] * matrix[4]) * inverse,
-        (matrix[5] * matrix[6] - matrix[3] * matrix[8]) * inverse,
-        (matrix[0] * matrix[8] - matrix[2] * matrix[6]) * inverse,
-        (matrix[2] * matrix[3] - matrix[0] * matrix[5]) * inverse,
-        (matrix[3] * matrix[7] - matrix[4] * matrix[6]) * inverse,
-        (matrix[1] * matrix[6] - matrix[0] * matrix[7]) * inverse,
-        (matrix[0] * matrix[4] - matrix[1] * matrix[3]) * inverse,
-    ])
-}
-
-fn transpose3(matrix: [f64; 9]) -> [f64; 9] {
-    [
-        matrix[0], matrix[3], matrix[6], matrix[1], matrix[4], matrix[7], matrix[2], matrix[5],
-        matrix[8],
-    ]
 }
 
 fn normalize3(value: [f64; 3]) -> Result<[f64; 3], String> {
