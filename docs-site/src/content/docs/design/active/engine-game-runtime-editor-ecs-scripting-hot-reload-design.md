@@ -36,7 +36,7 @@ M5 adopts an external runtime preview process for preview, simulate, and play ex
 
 ## Current Repository Anchors (Implemented Today)
 
-- Workspace ownership/layering is defined by current members in [`Cargo.toml`](../../../../../../Cargo.toml) and root domain ownership in [`DOMAIN_MAP.md`](../../../../../../DOMAIN_MAP.md).
+- Workspace membership is defined by current members in [`Cargo.toml`](../../../../../../Cargo.toml); current local package locations live in the [`workspace crate inventory`](../../workspace/crate-inventory.md), and Runenwerk placement/ownership guidance lives in [`guidelines/architecture.md`](../../guidelines/architecture.md).
 - Runtime app composition currently flows through `engine::App` (`add_plugin`, `add_systems`, `add_scene`, `add_scene_template`, `run`) in [`engine/src/app/domain/app.rs`](../../../../../../engine/src/app/domain/app.rs).
 - Runnable editor composition is in [`apps/runenwerk_editor/src/runtime/app.rs`](../../../../../../apps/runenwerk_editor/src/runtime/app.rs).
 - M5 external runtime preview protocol contracts live in [`domain/editor/editor_preview/src/lib.rs`](../../../../../../domain/editor/editor_preview/src/lib.rs).
