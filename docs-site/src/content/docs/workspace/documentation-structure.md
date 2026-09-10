@@ -5,11 +5,9 @@ status: active
 owner: workspace
 layer: workspace
 canonical: true
-last_reviewed: 2026-08-13
+last_reviewed: 2026-09-11
 related_docs:
   - ./start-here.md
-  - ./engineering-workflow.md
-  - ./authority-model.md
 ---
 
 # Documentation Structure
@@ -36,12 +34,18 @@ AGENTS.md
 ARCHITECTURE.md
 TESTING.md
 DEPENDENCY_RULES.md
-DOMAIN_MAP.md
-CRATES.md
-GLOSSARY.md
 ```
 
-`README.md`, `AGENTS.md`, `ARCHITECTURE.md`, and `TESTING.md` are concise operational summaries. The other root documents are compatibility entrypoints to canonical docs-site owners. Root documents must not become roadmaps, design dossiers, execution ledgers, or duplicated reference manuals.
+`README.md`, `AGENTS.md`, `ARCHITECTURE.md`, and `TESTING.md` are the primary public and contributor entrypoints. `DEPENDENCY_RULES.md` remains a concise dependency entrypoint in the current repository and routes to the canonical long-form dependency rules.
+
+Crate inventory, code-placement guidance, and shared vocabulary live directly in their canonical docs-site owners rather than through root compatibility pointers:
+
+- [`crate-inventory.md`](./crate-inventory.md) for active local workspace membership;
+- [`../guidelines/architecture.md`](../guidelines/architecture.md) for Runenwerk placement and boundary guidance;
+- [`../guidelines/dependency-rules.md`](../guidelines/dependency-rules.md) for dependency direction and framework ownership;
+- [`glossary.md`](./glossary.md) for shared vocabulary.
+
+Root documents must not become roadmaps, design dossiers, execution ledgers, or duplicated reference manuals.
 
 ## Canonical tree
 
