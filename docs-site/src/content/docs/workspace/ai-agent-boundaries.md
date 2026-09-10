@@ -1,28 +1,22 @@
 ---
 title: AI Agent Boundaries
-description: Boundaries for AI-assisted work in Runenwerk.
+description: Runenwerk-specific placement boundary for runtime AI integrations.
 status: active
 owner: workspace
 layer: workspace
 canonical: true
-last_reviewed: 2026-06-25
+last_reviewed: 2026-09-10
 related_docs:
   - ../../../AGENTS.md
-  - ./operating-model.md
-  - ./authority-model.md
 ---
 
 # AI Agent Boundaries
 
-This is a reference page. The root AI entrypoint is `AGENTS.md`.
+The root [`AGENTS.md`](../../../../../AGENTS.md) owns the Runenwerk executor contract. Organization-wide GitHub and GPT Web connector procedure belongs to [`dornglut/engineering`](https://github.com/dornglut/engineering).
 
-## Rule
+This page owns only the Runenwerk-specific placement rule for runtime AI integrations.
 
-AI-assisted work uses the same repository contracts as humans, tests, editor tools, and scripts. There is no privileged AI mutation path.
-
-AI may inspect, propose, patch, summarize, and report evidence. It must not bypass domain ownership, accepted ADR/design gates, dependency rules, validation, or closeout evidence.
-
-## Placement
+## Runtime integration placement
 
 Runtime AI integrations belong in:
 
@@ -34,17 +28,8 @@ adapters/
 
 Do not add LLM clients, prompts, autonomous agents, or workflow-specific AI policy to `foundation/` or pure `domain/` crates.
 
-## Connector mode
-
-When command execution is unavailable:
-
-- inspect files by exact path;
-- name authority files used as evidence;
-- patch only scoped files;
-- use manual validation checklists;
-- report command validation as unavailable;
-- stop when required authority cannot be inspected.
+Tool-assisted development and repository automation do not make runtime AI a foundation or domain semantic owner.
 
 ## Concept ownership
 
-Use `DOMAIN_MAP.md` for concept placement. Do not duplicate the concept map here.
+Use [`DOMAIN_MAP.md`](../../../../../DOMAIN_MAP.md) for concept placement. Do not duplicate the concept map here.

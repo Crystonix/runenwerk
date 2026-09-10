@@ -5,10 +5,8 @@ status: active
 owner: workspace
 layer: workspace
 canonical: true
-last_reviewed: 2026-08-12
+last_reviewed: 2026-09-10
 related_docs:
-  - ./engineering-workflow.md
-  - ./authority-model.md
   - ./documentation-structure.md
   - ../architecture/runenwerk-platform-architecture.md
 ---
@@ -17,21 +15,22 @@ related_docs:
 
 ## Repository work
 
-1. Read [`AGENTS.md`](../../../../../AGENTS.md) for the concise operating rules.
+1. Read [`AGENTS.md`](../../../../../AGENTS.md) for the Runenwerk-specific executor contract over central Engineering authority.
 2. Inspect the owning code and tests.
 3. Read the [Runenwerk Platform Architecture](../architecture/runenwerk-platform-architecture.md)
    and the relevant accepted ADR or owner design for architectural work.
 4. Use the active GitHub issue when the task is already planned.
-5. Run focused checks while editing and `cargo validate` before merge.
+5. Run focused checks while editing and `cargo validate` before merge; see [`TESTING.md`](../../../../../TESTING.md).
 
 ## Primary authority
 
-- [Engineering Workflow](engineering-workflow.md) — process and validation.
-- [Authority Model](authority-model.md) — conflict resolution and artifact ownership.
-- [Documentation Structure](documentation-structure.md) — where durable documents belong.
+- [`AGENTS.md`](../../../../../AGENTS.md) — Runenwerk-specific executor and repository-boundary rules.
+- [`dornglut/engineering`](https://github.com/dornglut/engineering) — organization-wide work selection, GitHub mutation/review, validation-evidence semantics, repository standards, and cross-repository governance.
+- [`TESTING.md`](../../../../../TESTING.md) — Runenwerk-local validation and CI semantics.
+- [Documentation Structure](documentation-structure.md) — where durable Runenwerk documents belong.
 - [Runenwerk Platform Architecture](../architecture/runenwerk-platform-architecture.md) — current top-down platform spine.
 - [Roadmap](planning/roadmap.md) — high-level sequencing.
-- [Repository-family architecture](../architecture/repository-family-architecture.md) — framework ownership.
+- [Repository-family architecture](../architecture/repository-family-architecture.md) — current Runenwerk repository-family architecture material pending its separately governed authority cutover.
 - [Dependency Rules](../guidelines/dependency-rules.md) — dependency and cutover rules.
 
 ## Architecture cold start

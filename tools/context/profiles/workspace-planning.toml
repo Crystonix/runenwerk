@@ -6,7 +6,6 @@ include = [
   "DOMAIN_MAP.md",
   "CRATES.md",
   "docs-site/src/content/docs/workspace/start-here.md",
-  "docs-site/src/content/docs/workspace/authority-model.md",
   "docs-site/src/content/docs/workspace/documentation-structure.md",
   "docs-site/src/content/docs/workspace/operating-model.md",
   "docs-site/src/content/docs/workspace/planning/**",

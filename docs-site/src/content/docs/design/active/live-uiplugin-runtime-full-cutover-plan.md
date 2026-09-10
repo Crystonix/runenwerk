@@ -17,8 +17,6 @@ related_docs:
   - ../../reports/closeouts/pt-ui-framework-app-integration-002-closeout.md
   - ../../workspace/planning/roadmap.md
   - ../../workspace/planning/decision-register.md
-  - ../../workspace/engineering-workflow.md
-  - ../../workspace/authority-model.md
   - ../../guidelines/programming-principles.md
 ---
 
@@ -74,9 +72,9 @@ This planning file owns phase sequencing and activation conditions. The architec
 
 | Authority | How this plan uses it |
 |---|---|
-| `workspace/engineering-workflow.md` | Keeps live task state in issues, architecture in accepted designs, delivery evidence in PRs, and implementation bounded by explicit ownership, migration, validation, and stop conditions. |
+| `AGENTS.md` | Owns Runenwerk-specific executor boundaries and routes organization-wide governance to Engineering. |
+| `dornglut/engineering` | Owns generic work selection, GitHub/review rules, validation-evidence semantics, and cross-repository governance. |
 | `TESTING.md` | Defines repository validation authority and exact-head evidence expectations. |
-| `workspace/authority-model.md` | Prevents this phase plan from becoming parallel live task or implementation authority. |
 | `guidelines/programming-principles.md` | Enforces KISS/DRY/YAGNI/SOLID/separation constraints in every phase. |
 | `architecture/ui-framework-architecture.md` | Keeps source/program/runtime/render ownership separated. |
 | `architecture/live-uiplugin-runtime-platform-architecture.md` | Owns runtime-specific architecture, render-boundary ordering, SDF-backend deferral, diagrams, agent/trace model, Counter contract, reload, persistence, and phase-spec decisions. |
@@ -706,7 +704,7 @@ A simple implementation agent must receive exactly one phase at a time. The prom
 
 ```text
 phase ID and title
-authority docs to read, including AGENTS.md, ARCHITECTURE.md, DOMAIN_MAP.md, TESTING.md, engineering-workflow.md, roadmap, the owning GitHub issue/Engineering Portfolio, and the owning design/architecture docs
+authority docs to read, including AGENTS.md, ARCHITECTURE.md, DOMAIN_MAP.md, TESTING.md, current dornglut/engineering governance, roadmap, the owning GitHub issue/Engineering Portfolio, and the owning design/architecture docs
 allowed files/crates
 forbidden files/crates
 expected public API shape
