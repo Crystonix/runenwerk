@@ -13,8 +13,6 @@ related_docs:
   - ./ui-component-platform-base-control-packages-design.md
   - ./ui-component-platform-ownership-realignment-design.md
   - ./runenwerk-typed-app-composition-plugin-framework-implementation-roadmap.md
-  - ../../workspace/engineering-workflow.md
-  - ../../workspace/authority-model.md
   - ../../guidelines/runenwerk-architecture.md
   - ../../guidelines/domain-program-architecture-pattern.md
   - ../../guidelines/programming-principles.md
@@ -431,7 +429,7 @@ Safeguard: every preset expansion appears in reports and can be overridden or re
 
 No implementation is authorized by this design alone.
 
-Implementation requires an owning issue and pull request that follow [Engineering Workflow](../../workspace/engineering-workflow.md) and record:
+Implementation requires an owning GitHub issue and pull request under the repository executor contract in [`AGENTS.md`](../../../../../../AGENTS.md) and must record:
 
 ```text
 accepted architecture direction
