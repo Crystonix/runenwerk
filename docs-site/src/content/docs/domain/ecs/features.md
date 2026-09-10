@@ -25,9 +25,9 @@ last_reviewed: 2026-09-10
 | **Queries** | `Query<&T>`, `Query<&mut T>`, tuples, optional forms | ✅ | Core query surface is in place. |
 |  | Filters `With`, `Without`, `Added`, `Changed` | ✅ | Filter semantics backed by archetype metadata ticks. |
 |  | Reusable `QueryState<Q, F>` | ✅ | Detached query state and cache reuse supported. |
-|  | `QueryOrphaned<T>` / `QueryOrphanedState<T>` | ✅ | Removed-component stage window is supported. |
+|  | `QueryOrphaned<T>` / `QueryOrphanedState<T>` | ✅ | Current removed-component observation window is supported; planner-stage identity is not part of its public meaning. |
 |  | Query history / undo-oriented query APIs | ❌ | Not part of current ECS scope. |
-| **System Params** | `Res<T>`, `ResMut<T>`, `ResView<T>` | ✅ | `ResView<T>` is a semantic alias for read-only resource access. |
+| **System Params** | `Res<T>`, `ResMut<T>`, `ResView<T>` | ✅ | `ResView<T>` is currently a type alias for read-only resource access. |
 |  | `Commands` param | ✅ | Deferred structural mutation param with runtime scope protection. |
 |  | Generic event reader/writer params | ❌ | No current `BroadcastReader` / `BroadcastWriter` compatibility surface is retained. |
 | **Commands / Runtime** | `Commands` queue + `apply` | ✅ | Deferred commands are collected and flushed at ECS deferred-apply boundaries. |
