@@ -1,6 +1,6 @@
 ---
 title: Renderer Procedural Population Hardening Platform
-description: Implemented design for fail-closed indirect draw contracts, reusable GPU primitive dispatch, graph-level fixed-step catch-up, and reusable procedural camera projection.
+description: Implemented design for fail-closed indirect draw contracts, reusable GPU primitive dispatch, graph-level fixed-step catch-up, and reusable procedural camera projection after the procedural population runtime proof.
 status: implemented
 owner: engine
 layer: engine-runtime / renderer / procedural
@@ -13,34 +13,34 @@ related_designs:
   - ../accepted/runenrender-decomposition-design.md
 related_reports:
   - ../../reports/closeouts/pt-render-procedural-population-runtime-proven/closeout.md
-  - ../../reports/closeouts/pt-render-procedural-population-hardening-runtime-proven/closeout.md
 ---
 
 # Renderer Procedural Population Hardening Platform
 
 ## Implementation status
 
-This hardening architecture is implemented and backed by the completed runtime-proven hardening track. It remains a durable renderer capability contract, subordinate to ADR 0021 and the accepted RunenRender architecture where broader renderer ownership or lifecycle terminology conflicts. Current final operational conformance and residual-audit authority belongs to the RunenRender R8 -> RX sequence, not the historical `PT-RENDER-PERFECTION` track.
+This hardening architecture is implemented and backed by the completed runtime-proven hardening track. The design-time gap and production-slice language below is retained as rationale; current code, tests, and closeout evidence own exact implementation state. Where broader renderer acceptance terminology conflicts, ADR 0021 and the accepted RunenRender architecture win. Final operational conformance and residual-audit authority now belongs to the RunenRender R8 -> RX sequence rather than the historical `PT-RENDER-PERFECTION` track.
 
 ## Decision
 
-`PT-RENDER-PROCEDURAL-POPULATION-HARDENING` closed the direct technical gaps
+`PT-RENDER-PROCEDURAL-POPULATION-HARDENING` closes the direct technical gaps
 left visible by the `PT-RENDER-PROCEDURAL-POPULATION` runtime-proven closeout.
-This was a focused hardening track, not a cleanup bucket and not a replacement
-for current RunenRender conformance authority.
+This is a focused hardening track, not a cleanup bucket and not a replacement
+for current RunenRender R8 -> RX conformance authority.
 
-The renderer hardened four production contracts:
+The renderer must harden four production contracts before later population
+expansion:
 
-- indirect draw submission is typed, bounds-checked, indexed-aware, and
+- indirect draw submission must be typed, bounds-checked, indexed-aware, and
   fail-closed before runtime submission;
-- GPU primitives lower into reusable renderer-owned shader dispatches,
+- GPU primitives must lower into reusable renderer-owned shader dispatches,
   including hierarchical prefix scan for arbitrary counts;
-- fixed-step catch-up is graph scheduling with bounded repeated pass
+- fixed-step catch-up must become graph scheduling with bounded repeated pass
   execution, iteration-scoped uniform projection, and runtime fixed-time source
   reuse rather than example-local timing logic;
-- procedural 2D camera projection is a reusable derived renderer contract, so
-  examples can fill the target without letterbox, non-uniform stretch, or
-  viewport-dependent simulation truth.
+- procedural 2D camera projection must become a reusable derived renderer
+  contract, so examples can fill the target without letterbox, non-uniform
+  stretch, or viewport-dependent simulation truth.
 
 Spatial hash and chunked unbounded populations are intentionally outside this
 track. They require a separate intake and design because they add collision
@@ -94,8 +94,8 @@ This track does not implement:
 - camera source-truth ownership inside `PreparedViewFrame`;
 - final no-gap renderer verification.
 
-Those remain separate design or audit work. Current no-gap renderer verification
-belongs to the accepted RunenRender R8 -> RX sequence.
+Those remain separate design or audit work. Current final no-gap renderer
+verification belongs to the accepted RunenRender R8 -> RX sequence.
 
 ## Ownership
 
@@ -131,37 +131,32 @@ uniforms from that intent and surface dimensions.
 
 ## Current Gaps
 
-The completed procedural population track left these explicit gaps before this
-hardening track:
+The completed procedural population track left these explicit gaps:
 
-- `engine/src/plugins/render/graph/pass_graph.rs::RenderDrawSource` represented
-  indirect drawing, but generic `IndirectDrawArgsBuffer` typing was erased before
-  validation and execution, so indexed and non-indexed argument compatibility was
+- `engine/src/plugins/render/graph/pass_graph.rs::RenderDrawSource` represents
+  indirect drawing, but generic `IndirectDrawArgsBuffer` typing is erased before
+  validation and execution, so indexed and non-indexed argument compatibility is
   not yet a fully enforced runtime contract.
 - `engine/src/plugins/render/graph/validation.rs::validate_graphics_draw_source`
-  checked declaration and 4-byte byte-offset alignment, but did not prove byte
+  checks declaration and 4-byte byte-offset alignment, but does not prove byte
   offset bounds against the typed indirect argument element size.
 - `engine/src/plugins/render/api/passes.rs::GraphicsPassBuilder::draw_indirect_with_offsets`
-  exposed CPU-side offsets that WGPU indirect submission cannot consume; that
-  API shape could mislead users into believing offsets were applied outside the
+  exposes CPU-side offsets that WGPU indirect submission cannot consume; that
+  API shape can mislead users into believing offsets are applied outside the
   indirect argument buffer.
-- `engine/src/plugins/render/gpu_primitives` provided reusable descriptors,
+- `engine/src/plugins/render/gpu_primitives` provides reusable descriptors,
   validation, and explicit primitive execution plans, but not renderer-owned
   shader dispatch kernels.
 - `engine/examples/boids_render_flow/rendering/state.rs::BoidsRenderState`
-  exposed fixed-step evidence for one submitted simulation step, but multi-step
-  catch-up was not graph scheduling and could not be added locally to boids.
-- The boids example could still tie simulation advancement to render/update
-  cadence if it bypassed runtime fixed-time source truth; cursor movement,
-  mouse motion, redraw bursts, or resize events had to remain unable to increase
-  simulation steps per real second.
-- Boids resize handling needed a reusable renderer procedural camera/projection
-  contract. A boids-only draw-parameter patch would have left aspect correctness
+  exposes fixed-step evidence for one submitted simulation step, but multi-step
+  catch-up is not graph scheduling and must not be added locally to boids.
+- The boids example can still tie simulation advancement to render/update
+  cadence if it bypasses runtime fixed-time source truth; cursor movement,
+  mouse motion, redraw bursts, or resize events must not increase simulation
+  steps per real second.
+- Boids resize handling needs a reusable renderer procedural camera/projection
+  contract. A boids-only draw-parameter patch would leave aspect correctness
   unowned and would not prove equal world x/y scale after projection.
-
-These are retained as the design-time baseline that the completed hardening
-track addressed; current code and closeout evidence own exact implementation
-state.
 
 ## Architecture Rules
 
@@ -212,12 +207,12 @@ state.
 - `WR-101`: procedural 2D camera and view projection contract.
 - `WR-093`: evidence, benchmarks, docs, and runtime-proven closeout.
 
-`WR-089` was the activation slice only and did not absorb product code from
+`WR-089` is the activation slice only. It must not absorb product code from
 later slices.
 
 ## Evidence
 
-Closeout evidence proves:
+Closeout evidence must prove:
 
 - invalid indexed versus non-indexed indirect argument buffers fail graph
   validation before submit;
