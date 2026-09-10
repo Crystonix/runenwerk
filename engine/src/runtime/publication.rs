@@ -73,10 +73,10 @@ pub(crate) fn run_schedule_with_publication<L: ScheduleLabel>(
     let mut publications = world
         .remove_resource::<PublicationHandlers>()
         .unwrap_or_default();
-    let result = runtime.run_schedule_with_deferred_apply_boundary::<L, _>(
-        world,
-        |boundary, world| publications.dispatch(boundary, world),
-    );
+    let result = runtime
+        .run_schedule_with_deferred_apply_boundary::<L, _>(world, |boundary, world| {
+            publications.dispatch(boundary, world)
+        });
     world.insert_resource(publications);
     result
 }
