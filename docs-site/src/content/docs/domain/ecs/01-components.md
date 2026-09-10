@@ -120,6 +120,6 @@ world.resource_mut::<Frame>().unwrap().0 += 1;
 ## References & Links
 
 - [usage-guide.md](usage-guide.md) – Basic ECS API usage.
-- [advanced-guide.md](advanced-guide.md) – Deferred commands, events, and runtime integration.
+- [advanced-guide.md](advanced-guide.md) – Deferred commands, scheduling, telemetry, and runtime integration.
 - [architecture.md](architecture.md) – Internal invariants and unsafe boundaries.
 - [features.md](features.md) – ECS feature map.
