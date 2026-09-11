@@ -20,6 +20,8 @@ pub mod params;
 pub mod participation;
 pub mod pipelines;
 pub mod procedural;
+#[cfg_attr(not(test), allow(dead_code))]
+mod render_result;
 pub mod renderer;
 pub mod representation;
 pub mod request;
