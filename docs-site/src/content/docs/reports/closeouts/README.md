@@ -5,20 +5,18 @@ status: active
 owner: workspace
 layer: reports
 canonical: true
-last_reviewed: 2026-07-28
+last_reviewed: 2026-09-11
 related_docs:
-  - ../../workspace/workflow-lifecycle.md
-  - ../../workspace/planning/completed-work.md
-  - ../../workspace/routines/phase-completion-drift-check-routine.md
+  - ../../workspace/planning/README.md
 ---
 
 # Closeout Reports
 
-Use this folder for detailed historical completion evidence.
+Use this folder for detailed historical completion evidence whose retained value exceeds ordinary pull-request and Git chronology.
 
-`completed-work.md` remains the short completion index. Closeout reports keep larger evidence records out of planning files.
+Current work state, priority, activation, and delivery acceptance do not live here. See [Planning Records](../../workspace/planning/README.md) for the current authority split.
 
-## Current repository-family closeouts
+## Selected repository-family closeouts
 
 - [RunenGPU G1A Closeout](pt-runengpu-g1a-closeout.md)
 - [RunenGPU G2 Implementation Closeout](pt-runengpu-g2-implementation-closeout.md)
@@ -28,7 +26,7 @@ Use this folder for detailed historical completion evidence.
 
 ## Use when
 
-Create a closeout report when a completed phase, migration, proof gate, or cleanup pass needs more detail than a short completed-work entry should carry.
+Create or retain a closeout report when a completed phase, migration, proof gate, or cleanup pass has durable evidence that should remain available beyond the owning pull request or ordinary Git history.
 
 Examples:
 
@@ -63,10 +61,10 @@ Evidence links:
 ## Rules
 
 - Closeout reports are historical evidence.
-- Closeout reports do not own current planning state.
-- Link closeout reports from `completed-work.md` when they exist.
+- Closeout reports do not own current planning, activation, priority, or delivery state.
+- Cross-link a closeout from current authority only when its retained evidence is materially useful; do not build a separate completion ledger.
 - Do not move active work or roadmap state into closeout reports.
-- Preserve evidence when moving detail from planning into a closeout report.
+- Preserve truthful point-in-time terminology, paths, and evidence inside historical closeouts rather than rewriting them to look current.
 - Use kebab-case filenames.
 
 ## Naming
