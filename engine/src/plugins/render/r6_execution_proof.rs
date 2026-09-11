@@ -12,6 +12,7 @@ use super::super::derived_transform::{
 use super::super::lowering::RenderWorkSet;
 use super::super::r6_proof::FoundingRepresentationRealization;
 use super::super::r6_reference_proof::{direct_lighting_radiance, observation_forward_depth};
+use super::super::render_result::RenderResult;
 use super::super::representation::RenderSurfaceQuery;
 use super::super::surface_result::RenderOrientedSurfaceHit;
 use super::*;
@@ -320,7 +321,7 @@ struct ExecutionFixture {
 
 struct LoweredExecution {
     work_set: RenderWorkSet,
-    output_readbacks: [GpuReadbackId; 4],
+    output_readbacks: BTreeMap<usize, GpuReadbackId>,
     status_readback: GpuReadbackId,
     object_codes: BTreeMap<RenderObjectId, u32>,
 }
@@ -735,6 +736,40 @@ fn validate_founding_admission(
     Ok(())
 }
 
+fn normalize_output_readbacks(
+    admitted: &super::super::admission::AdmittedRenderPlan,
+    correlations: impl IntoIterator<Item = (usize, GpuReadbackId)>,
+) -> Result<BTreeMap<usize, GpuReadbackId>, String> {
+    let output_count = admitted.outputs().len();
+    let mut normalized = BTreeMap::new();
+    for (output_index, readback_id) in correlations {
+        if output_index >= output_count {
+            return Err(format!(
+                "R6 output-readback correlation {output_index} is outside {output_count} outputs"
+            ));
+        }
+        if admitted.outputs()[output_index].output_index() != output_index {
+            return Err(format!(
+                "R6 admitted output identity changed at output {output_index}"
+            ));
+        }
+        if normalized.insert(output_index, readback_id).is_some() {
+            return Err(format!(
+                "duplicate R6 output-readback correlation for output {output_index}"
+            ));
+        }
+    }
+    for output in admitted.outputs() {
+        if !normalized.contains_key(&output.output_index()) {
+            return Err(format!(
+                "missing R6 output-readback correlation for output {}",
+                output.output_index()
+            ));
+        }
+    }
+    Ok(normalized)
+}
+
 fn lower_execution(
     admitted: &super::super::admission::AdmittedRenderPlan,
     inputs: &[FoundingRealizationInput],
@@ -994,7 +1029,7 @@ fn lower_execution(
     .map_err(|error| error.to_string())?;
 
     let mut readback_operations = Vec::new();
-    let mut readback_ids = Vec::new();
+    let mut readback_correlations = Vec::new();
     for output_index in 0..3 {
         let RenderOutputDestination::SampleLatticeTexture(texture) =
             admitted.outputs()[output_index].binding().destination()
@@ -1005,15 +1040,15 @@ fn lower_execution(
             GpuTextureCopyRegion::whole_base_mip(texture).map_err(|error| error.to_string())?,
         ))
         .map_err(|error| error.to_string())?;
-        readback_ids.push(operation.id());
-        readback_operations.push(operation);
+        readback_correlations.push((output_index, operation.id()));
+        readback_operations.push((output_index, operation));
     }
     let scalar_readback = GpuReadbackOperation::ordinary(GpuTransferRegion::from(
         GpuBufferRegion::whole(scalar_destination).map_err(|error| error.to_string())?,
     ))
     .map_err(|error| error.to_string())?;
-    readback_ids.push(scalar_readback.id());
-    readback_operations.push(scalar_readback);
+    readback_correlations.push((3, scalar_readback.id()));
+    readback_operations.push((3, scalar_readback));
     let status_readback = GpuReadbackOperation::ordinary(GpuTransferRegion::from(
         GpuBufferRegion::whole(&status).map_err(|error| error.to_string())?,
     ))
@@ -1036,7 +1071,7 @@ fn lower_execution(
             work.operation(format!("copy founding lattice output {output_index}"), copy)?;
         }
         work.operation("copy founding scalar output", scalar_copy)?;
-        for (output_index, readback) in readback_operations.into_iter().enumerate() {
+        for (output_index, readback) in readback_operations {
             work.operation(
                 format!("read back admitted founding output {output_index}"),
                 readback,
@@ -1047,9 +1082,7 @@ fn lower_execution(
     })
     .map_err(|error| error.to_string())?;
 
-    let output_readbacks: [GpuReadbackId; 4] = readback_ids
-        .try_into()
-        .map_err(|_| "R6 output-readback cardinality changed".to_string())?;
+    let output_readbacks = normalize_output_readbacks(admitted, readback_correlations)?;
     Ok(LoweredExecution {
         work_set: RenderWorkSet::from_lowering(admitted, vec![fragment]),
         output_readbacks,
@@ -1547,6 +1580,68 @@ fn founding_lowering_is_deterministic_across_realization_insertion_order() {
 }
 
 #[test]
+fn founding_output_readback_correlation_is_checked_and_order_independent() {
+    let Some(context) = request_execution_context() else {
+        return;
+    };
+    let fixture = execution_fixture();
+    let (admitted, _) = admit_execution(&fixture, &context);
+    let inputs = founding_realizations(&fixture);
+    let row_alignment = admitted_texture_row_alignment(&context).unwrap();
+    let lowered = lower_execution(&admitted, &inputs, row_alignment).unwrap();
+    let correlations = lowered
+        .output_readbacks
+        .iter()
+        .map(|(&output_index, &readback_id)| (output_index, readback_id))
+        .collect::<Vec<_>>();
+    let mut reversed = correlations.clone();
+    reversed.reverse();
+    assert_eq!(
+        normalize_output_readbacks(&admitted, correlations.clone()).unwrap(),
+        normalize_output_readbacks(&admitted, reversed).unwrap(),
+        "physical readback construction order must not carry semantic output meaning"
+    );
+
+    let mut duplicate = correlations.clone();
+    duplicate.push(correlations[0]);
+    assert!(normalize_output_readbacks(&admitted, duplicate).is_err());
+
+    let mut missing = correlations.clone();
+    missing.pop();
+    assert!(normalize_output_readbacks(&admitted, missing).is_err());
+
+    let mut out_of_range = correlations;
+    out_of_range.push((
+        admitted.outputs().len(),
+        *lowered.output_readbacks.get(&0).unwrap(),
+    ));
+    assert!(normalize_output_readbacks(&admitted, out_of_range).is_err());
+}
+
+#[test]
+fn complete_render_result_requires_exact_founding_outputs() {
+    let Some(context) = request_execution_context() else {
+        return;
+    };
+    let fixture = execution_fixture();
+    let (admitted, _) = admit_execution(&fixture, &context);
+
+    assert!(RenderResult::complete(&admitted, [0, 1, 2]).is_err());
+    assert!(RenderResult::complete(&admitted, [0, 1, 2, 3, 3]).is_err());
+    assert!(RenderResult::complete(&admitted, [0, 1, 2, 3, 4]).is_err());
+
+    let result = RenderResult::complete(&admitted, [3, 1, 0, 2]).unwrap();
+    assert_eq!(
+        result
+            .outputs()
+            .iter()
+            .map(|output| output.output_index())
+            .collect::<Vec<_>>(),
+        vec![0, 1, 2, 3]
+    );
+}
+
+#[test]
 fn founding_renderer_executes_and_matches_cpu_reference_through_public_runengpu() {
     let Some(context) = request_execution_context() else {
         return;
@@ -1596,6 +1691,7 @@ fn founding_renderer_executes_and_matches_cpu_reference_through_public_runengpu(
     ))
     .expect("public RunenGPU must execute the R6 founding work set");
 
+    wait_submission(&context, &submission);
     let status = decode_words(&wait_readback(
         &context,
         &submission,
@@ -1607,27 +1703,74 @@ fn founding_renderer_executes_and_matches_cpu_reference_through_public_runengpu(
         "any primary/probe miss is a structural R6 proof failure, never a semantic zero sentinel"
     );
 
+    let executed_admission = lowered.work_set.admitted_plan();
+    let result = RenderResult::complete(
+        executed_admission,
+        executed_admission
+            .outputs()
+            .iter()
+            .map(|output| output.output_index()),
+    )
+    .expect("completed founding execution must form one complete semantic result");
+    assert_eq!(result.scene_revision(), admitted.scene_revision());
+    assert_eq!(result.scene(), admitted.plan().scene());
+    assert_eq!(result.request(), admitted.plan().request());
+    assert_eq!(
+        result.method_id(),
+        admitted.selected_candidate().method_id(),
+        "semantic result must retain the selected method identity"
+    );
+    assert_eq!(result.outputs().len(), admitted.outputs().len());
+    for (result_output, admitted_output) in result.outputs().iter().zip(admitted.outputs()) {
+        assert_eq!(result_output.output_index(), admitted_output.output_index());
+        assert_eq!(
+            result_output.observation_index(),
+            admitted_output.observation_index()
+        );
+        assert_eq!(result_output.approximation(), admitted_output.approximation());
+        assert_eq!(
+            result_output.object_representations().len(),
+            admitted_output.object_representations().len()
+        );
+        for (result_object, admitted_object) in result_output
+            .object_representations()
+            .iter()
+            .zip(admitted_output.object_representations())
+        {
+            assert_eq!(result_object.object_id(), admitted_object.object_id());
+            assert_eq!(
+                result_object.representation(),
+                admitted_object.representation()
+            );
+        }
+    }
+
+    let output_readback = |output_index| {
+        *lowered
+            .output_readbacks
+            .get(&output_index)
+            .expect("founding output must retain checked readback correlation")
+    };
     let radiance = decode_words(&wait_readback(
         &context,
         &submission,
-        lowered.output_readbacks[0],
+        output_readback(0),
     ));
     let depth = decode_words(&wait_readback(
         &context,
         &submission,
-        lowered.output_readbacks[1],
+        output_readback(1),
     ));
     let identity = decode_words(&wait_readback(
         &context,
         &submission,
-        lowered.output_readbacks[2],
+        output_readback(2),
     ));
     let probe = decode_words(&wait_readback(
         &context,
         &submission,
-        lowered.output_readbacks[3],
+        output_readback(3),
     ));
-    wait_submission(&context, &submission);
 
     assert_eq!(radiance.len(), expected_pixels.len());
     assert_eq!(depth.len(), expected_pixels.len());

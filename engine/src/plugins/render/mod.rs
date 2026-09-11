@@ -23,6 +23,8 @@ pub mod procedural;
 pub mod renderer;
 pub mod representation;
 pub mod request;
+#[cfg_attr(not(test), allow(dead_code))]
+mod render_result;
 pub mod residency;
 pub mod resource;
 pub mod scene;
