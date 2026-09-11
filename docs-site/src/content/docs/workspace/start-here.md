@@ -31,7 +31,7 @@ related_docs:
 - [Runenwerk Platform Architecture](../architecture/runenwerk-platform-architecture.md) — current top-down platform spine.
 - [Roadmap](planning/roadmap.md) — high-level sequencing.
 - [Framework Integration Architecture](../architecture/repository-family-architecture.md) — Runenwerk-owned adapter, compatibility, recovery, and product-integration contracts over independently owned frameworks.
-- [Dependency Rules](../guidelines/dependency-rules.md) — dependency and cutover rules.
+- [Dependency Rules](../guidelines/dependency-rules.md) — Runenwerk-local dependency and integration rules.
 
 ## Architecture cold start
 

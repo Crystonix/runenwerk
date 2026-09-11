@@ -217,9 +217,9 @@ Describes the repository boundary, major layers, dependency direction, repositor
 
 Defines focused checks, the canonical repository validation baseline, hosted-CI relationship, and evidence rules.
 
-### Retained dependency summary
+### Dependency guidance
 
-`DEPENDENCY_RULES.md` remains a concise root dependency summary while current consumers justify it. Canonical dependency, framework-ownership, and clean-cutover rules live in [`../../guidelines/dependency-rules.md`](../../guidelines/dependency-rules.md). New documentation and tooling should prefer the canonical owner directly rather than creating another forwarding layer.
+Canonical Runenwerk-local dependency and integration rules live in [`../../guidelines/dependency-rules.md`](../../guidelines/dependency-rules.md). Cross-repository family membership, repository relationships, and source-transfer policy remain owned by `dornglut/engineering`; do not recreate a root forwarding summary.
 
 ### Canonical long-form owners
 
@@ -227,7 +227,7 @@ Use the docs-site owners directly for detailed repository facts:
 
 - [`../../workspace/crate-inventory.md`](../../workspace/crate-inventory.md) — canonical human-readable active workspace inventory; `Cargo.toml` remains executable membership truth.
 - [`../../guidelines/architecture.md`](../../guidelines/architecture.md) — current Runenwerk placement and boundary guide.
-- [`../../guidelines/dependency-rules.md`](../../guidelines/dependency-rules.md) — canonical dependency/framework ownership and clean-cutover rules.
+- [`../../guidelines/dependency-rules.md`](../../guidelines/dependency-rules.md) — canonical Runenwerk-local dependency direction, adapter boundaries, and framework-consumer rules.
 - [`../../workspace/glossary.md`](../../workspace/glossary.md) — shared architecture and authoring vocabulary.
 - [`../../workspace/ai-agent-boundaries.md`](../../workspace/ai-agent-boundaries.md) — Runenwerk-specific placement rule for runtime AI integrations.
 
