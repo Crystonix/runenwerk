@@ -1,38 +1,24 @@
 ---
 title: Batch Reports
-description: Index of preserved parallel roadmap batch manifests, prompts, closeouts, and historical proposal artifacts.
+description: Index of retained historical evidence from the retired parallel-roadmap batch workflow.
 status: active
 owner: workspace
 layer: workspace
 canonical: true
-last_reviewed: 2026-05-20
+last_reviewed: 2026-09-11
+related_docs:
+  - ../../workspace/planning/README.md
 ---
 
 # Batch Reports
 
-This folder preserves generated parallel-roadmap batch evidence. Batch artifacts
-are historical records, not active roadmap truth. The active roadmap source is
-[`Roadmap`](../../workspace/planning/roadmap.md), and
-the generated roadmap view is
-[`../../workspace/roadmap-decision-register.md`](../../workspace/roadmap-decision-register.md).
+This folder preserves selected historical evidence from the retired parallel-roadmap batch workflow. Batch reports may retain validation, integration, merge, scope, or tooling-hardening evidence, but they do not own current roadmap or work state.
 
-## Current Proposal
+Current sequencing and work-state authority are defined by [Planning Records](../../workspace/planning/README.md) and the GitHub owners named there.
 
-No active parallel roadmap batch proposal is indexed here. `WR-018` and
-`WR-020` are completed closeout evidence, and `WR-026` editor adapters remain
-not-started downstream work.
+## Retained Batch Evidence
 
-## Historical Proposal Artifacts
-
-- Rejected WR-029 parallel-batch proposal: historical context only. WR-029
-  Phase 1-3 evidence lives in
-  [`../implementation-plans/wr-029-model-mesh-material-binding/plan.md`](../implementation-plans/wr-029-model-mesh-material-binding/plan.md),
-  and Phase 4 remains open for model/mesh GPU pixel proof.
-- Rejected WR-018 continuation proposal: historical context only. WR-018
-  completion evidence lives in
-  [`../closeouts/wr-018-rendered-world-v1/closeout.md`](../closeouts/wr-018-rendered-world-v1/closeout.md).
-
-## Completed Batch Evidence
+The entries below are historical evidence, not a current execution queue or status registry.
 
 - [`2026-05-14-l0-substrate-pilot`](2026-05-14-l0-substrate-pilot/batch.md):
   integrated L0 ECS/runtime and render contract support.
@@ -57,11 +43,7 @@ not-started downstream work.
 
 ## Preservation Rules
 
-- Keep batch manifests, worker prompts, and rendered `batch.md` reports when
-  they contain unique validation, integration, or tooling-hardening evidence.
-- Proposed batches may remain only while they represent the current intended
-  continuation and all prompt paths are repository-relative.
-- Completed batches must record `integration_status = "merged"` and
-  `closeout_status = "completed"` in `batch.toml`.
-- Historical malformed slugs may remain when indexed here, but new generated
-  batches should use suffix-preserving batch ids.
+- Retain an existing batch report when it contains unique historical validation, integration, merge, scope, or tooling-hardening evidence.
+- Treat candidate names, branches, statuses, and roadmap language inside retained batch reports as point-in-time evidence, not current instructions.
+- Use GitHub issues / Engineering Portfolio for current work state and the maintained planning surfaces for durable sequence; do not reactivate the retired batch workflow as a second planning system.
+- Do not create new generated batch, proposal, prompt, or status ledgers as parallel current authority without a proven consumer and explicit removal condition.
