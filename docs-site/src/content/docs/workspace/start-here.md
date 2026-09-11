@@ -5,7 +5,7 @@ status: active
 owner: workspace
 layer: workspace
 canonical: true
-last_reviewed: 2026-09-10
+last_reviewed: 2026-09-11
 related_docs:
   - ./documentation-structure.md
   - ../architecture/runenwerk-platform-architecture.md
@@ -30,7 +30,7 @@ related_docs:
 - [Documentation Structure](documentation-structure.md) — where durable Runenwerk documents belong.
 - [Runenwerk Platform Architecture](../architecture/runenwerk-platform-architecture.md) — current top-down platform spine.
 - [Roadmap](planning/roadmap.md) — high-level sequencing.
-- [Repository-family architecture](../architecture/repository-family-architecture.md) — current Runenwerk repository-family architecture material pending its separately governed authority cutover.
+- [Framework Integration Architecture](../architecture/repository-family-architecture.md) — Runenwerk-owned adapter, compatibility, recovery, and product-integration contracts over independently owned frameworks.
 - [Dependency Rules](../guidelines/dependency-rules.md) — dependency and cutover rules.
 
 ## Architecture cold start

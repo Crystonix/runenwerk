@@ -2,7 +2,7 @@
 
 Runenwerk is an experimental Rust platform for building world-centric applications, editors, simulations, and rendering systems.
 
-It is the integration and product repository for the wider Runen framework family. Reusable foundations are being separated into focused repositories, while Runenwerk retains application lifecycle, cross-domain composition, editor and runtime integration, adapters, and product-level policy.
+It is the integration and product repository for the wider Runen framework family. Dornglut Engineering owns cross-repository family membership and repository roles; Runenwerk consumes accepted peer-framework public contracts while retaining application lifecycle, cross-domain composition, editor and runtime integration, adapters, and product-level policy.
 
 > **Status:** Active development. Architecture and package boundaries are still evolving. Runenwerk does not yet provide a stable public API or production-readiness guarantee.
 
@@ -15,18 +15,11 @@ It is the integration and product repository for the wider Runen framework famil
 - reusable frameworks separated from application and product integration;
 - headless validation and focused conformance tests.
 
-## Repository family
+## Framework integration
 
-Runenwerk is being decomposed into focused peer frameworks:
+Standalone peer repositories own their reusable semantics and public contracts; family membership alone does not imply Runenwerk adoption or semantic ownership. Runenwerk composes accepted public framework capabilities through explicit adapters and product integration.
 
-- **RunenSDF** — signed-distance and implicit-field foundations;
-- **RunenSpatial** — host-neutral spatial identity, addressing, demand planning, and availability lifecycle mechanics;
-- **RunenECS** — ECS and scheduling foundations;
-- **RunenGPU** — shared GPU execution;
-- **RunenRender** — image formation and rendering;
-- **RunenUI** — standalone UI framework developed as a separate workstream.
-
-Some extractions are still in progress. Runenwerk remains responsible for composing these frameworks into applications and tools.
+RunenRender remains Runenwerk-owned rendering integration until a separately accepted external cutover and consumes RunenGPU only through its accepted public API. Current cross-repository family architecture is owned by [Dornglut Engineering](https://github.com/dornglut/engineering/blob/main/architecture/runen-family.md).
 
 ## Repository layout
 
@@ -44,7 +37,7 @@ docs-site/   canonical documentation
 - [Architecture overview](ARCHITECTURE.md)
 - [Testing and validation](TESTING.md)
 - [Canonical documentation](docs-site/src/content/docs/index.mdx)
-- [Repository-family architecture](docs-site/src/content/docs/architecture/repository-family-architecture.md)
+- [Framework integration architecture](docs-site/src/content/docs/architecture/repository-family-architecture.md)
 - [Dependency rules](docs-site/src/content/docs/guidelines/dependency-rules.md)
 - [Crate inventory](docs-site/src/content/docs/workspace/crate-inventory.md)
 

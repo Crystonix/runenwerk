@@ -5,7 +5,7 @@ status: accepted
 owner: workspace
 layer: architecture
 canonical: true
-last_reviewed: 2026-08-12
+last_reviewed: 2026-09-11
 related_adrs:
   - ../adr/accepted/0014-repository-family-extraction-boundaries.md
   - ../adr/accepted/0015-separate-gpu-execution-from-rendering.md
@@ -110,14 +110,18 @@ machinery.
 
 This is an ownership/integration map, not one mandatory dataflow pipeline.
 
-# 1. Family ownership
+# 1. Framework ownership and Runenwerk integration
 
-ADR 0014 establishes the repository-family rule:
+Current cross-repository family membership, repository roles, and source-authority
+handoffs are owned by [Dornglut Engineering](https://github.com/dornglut/engineering/blob/main/architecture/runen-family.md)
+and [Engineering ADR 0008](https://github.com/dornglut/engineering/blob/main/adrs/0008-adopt-bounded-source-authority-handoffs.md).
+
+Within Runenwerk, ADR 0014 establishes the local integration consequence:
 
 > Independently useful frameworks own their reusable semantics. Runenwerk owns
 > application lifecycle, cross-framework integration, product policy, and adapters.
 
-The default direction is:
+The Runenwerk integration direction is:
 
 ```text
 peer frameworks / domain owners
@@ -133,15 +137,16 @@ A peer framework must not depend on Runenwerk merely to obtain a global identity
 participate in inspection, register into a universal database, or make application
 composition convenient.
 
-Direct peer-framework dependencies require their own accepted justification. ADR 0015,
-for example, accepts `RunenRender -> RunenGPU` because semantic image formation needs
-GPU execution while RunenGPU remains independently useful.
+Current accepted peer-framework relationships are recorded by Engineering's Runen-family
+architecture. ADR 0015 is the Runenwerk-local ownership-separation decision underlying
+the accepted `RunenRender -> RunenGPU` relationship: semantic image formation needs GPU
+execution while RunenGPU remains independently useful.
 
 Current source location is implementation evidence, not permanent ownership.
 
 # 2. Semantic ownership and contracts
 
-The foundational family law is:
+The foundational ownership law is:
 
 ```text
 One semantic invariant set has one authority.
@@ -553,7 +558,7 @@ Other powerful patterns remain local where their semantics fit:
 
 # 12. What is deliberately not universal
 
-Current architecture does not authorize one family-wide implementation for:
+Current Runenwerk architecture does not authorize one universal implementation for:
 
 ```text
 object identity
@@ -580,9 +585,9 @@ These may exist locally. Shared extraction remains possible after real repeated 
 
 # 13. Accepted architecture versus future implementation
 
-Accepted durable authority includes:
+Accepted durable Runenwerk authority includes:
 
-- repository-family ownership and one-way integration direction;
+- framework ownership separation and one-way Runenwerk integration direction;
 - one semantic invariant set per authority;
 - explicit foreign-owner contracts;
 - owner-local versions and consumer-owned admission;
@@ -632,17 +637,18 @@ The architecture remains healthy when:
 For cross-domain architecture work:
 
 1. **This page** — current Runenwerk-wide synthesis.
-2. [ADR 0014](../adr/accepted/0014-repository-family-extraction-boundaries.md) —
-   repository-family ownership and dependency direction.
-3. [ADR 0017](../adr/accepted/0017-cross-authority-consistency-and-graph-semantics.md) —
+2. [Dornglut Engineering Runen-family architecture](https://github.com/dornglut/engineering/blob/main/architecture/runen-family.md) — current cross-repository family membership and repository relationships.
+3. [ADR 0014](../adr/accepted/0014-repository-family-extraction-boundaries.md) —
+   Runenwerk-local framework extraction and integration decision basis.
+4. [ADR 0017](../adr/accepted/0017-cross-authority-consistency-and-graph-semantics.md) —
    authority, consistency, graph, incremental, capability, extraction, and safety laws.
-4. [ADR 0018](../adr/accepted/0018-semantic-federation-and-physical-realization.md) —
+5. [ADR 0018](../adr/accepted/0018-semantic-federation-and-physical-realization.md) —
    positive semantic-federation, physical-realization, and Workbench direction.
-5. [ADR 0019](../adr/accepted/0019-batteries-included-application-composition.md) —
+6. [ADR 0019](../adr/accepted/0019-batteries-included-application-composition.md) —
    product-facing `App` and usability doctrine.
-6. [Repository Family Architecture](./repository-family-architecture.md) and the owning
+7. [Framework Integration Architecture](./repository-family-architecture.md) and the owning
    subsystem/framework design for the work at hand.
-7. [Authority-Centered Boundary Architecture](../guidelines/authority-centered-boundary-architecture.md)
+8. [Authority-Centered Boundary Architecture](../guidelines/authority-centered-boundary-architecture.md)
    or [Domain Program Architecture Pattern](../guidelines/domain-program-architecture-pattern.md)
    when those specialized guidelines apply.
 

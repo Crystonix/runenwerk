@@ -1,40 +1,30 @@
 # Runenwerk Architecture
 
-Runenwerk is the integration and product repository for a family of focused Rust frameworks. Canonical long-form architecture lives under `docs-site/src/content/docs`.
+Runenwerk is the integration and product repository for a family of focused Rust frameworks. Canonical long-form Runenwerk architecture lives under `docs-site/src/content/docs`; Dornglut Engineering owns cross-repository family architecture.
 
-## Repository family
+## Framework integration
 
-```text
-RunenSDF -----+
-RunenSpatial -+
-RunenECS -----+--> Runenwerk adapters/integration --> applications
-RunenUI ------+
-                   |
-                   +--> RunenRender --> RunenGPU
-                   +--> non-render RunenGPU workloads
-```
+Current family membership, repository roles, and cross-repository dependency direction are owned by [Dornglut Engineering's Runen family architecture](https://github.com/dornglut/engineering/blob/main/architecture/runen-family.md). Standalone framework repositories own their reusable semantics, public contracts, conformance, validation, and release policy.
 
-Framework repositories must not depend on Runenwerk. The accepted direct framework dependency is:
+Runenwerk consumes accepted public framework contracts through explicit adapters and product integration:
 
 ```text
-RunenRender -> RunenGPU
+standalone framework public contracts
+              |
+              v
+      Runenwerk adapters/integration
+              |
+              v
+       applications and tools
 ```
 
-- **RunenGPU** owns general GPU execution, WGPU realization, resources, workloads, submissions, uploads/readback, surfaces, and device outcomes.
-- **RunenRender** owns semantic rendering: renderer-local scene state, renderer-specific observations and output meaning, representations and protocols, materials/media/emitters, visibility/transport, render methods, conditional semantic planning, renderer admission, reconstruction, overlays, presentation intent, and lowering into RunenGPU workloads. Image formation is one important result family, not the root ontology.
-- **RunenSDF** owns reusable signed-distance and implicit-field mathematics and reference queries.
-- **RunenSpatial** owns host-neutral spatial identity, addressing and coordinate mechanics, bounded spatial-demand planning, and content-agnostic availability lifecycle mechanics.
-- **RunenECS** owns reusable entity/component/resource, query, and scheduling semantics.
-- **RunenUI** owns renderer-neutral semantic UI, state/actions, layout, text, focus, accessibility, and paint output.
-- **Runenwerk** retains application lifecycle, windows/event-loop policy, cross-framework adapters, editor/runtime integration, product policy, diagnostics presentation, and applications.
+Runenwerk retains application lifecycle, windows/event-loop policy, cross-framework adapters, editor/runtime integration, product policy, diagnostics presentation, and applications. Cross-framework meaning is translated explicitly rather than by reaching into framework internals.
+
+The render plugin remains Runenwerk-owned integration until the separately bounded RunenRender extraction. It consumes RunenGPU only through the external public API; the accepted direct dependency direction is `RunenRender -> RunenGPU`.
 
 ## Current source layout
 
-The standalone RunenECS and RunenGPU successors and their Runenwerk consumer
-cutovers are accepted. The workspace consumes `runen-ecs` and `runen-gpu`
-through exact accepted Git revisions; their implementations and framework
-conformance belong to `dornglut/runen-ecs` and `dornglut/runen-gpu` rather than
-to Runenwerk.
+The standalone RunenECS and RunenGPU successors and their Runenwerk consumer cutovers are accepted. The workspace consumes `runen-ecs` and `runen-gpu` through exact accepted Git revisions; their implementations and framework conformance belong to `dornglut/runen-ecs` and `dornglut/runen-gpu` rather than to Runenwerk.
 
 ```text
 foundation -> domain -> engine/runtime -> apps/adapters/tools
@@ -43,8 +33,7 @@ foundation -> domain -> engine/runtime -> apps/adapters/tools
                  +----------------> exact-SHA runen-gpu consumer
 ```
 
-The render plugin remains Runenwerk-owned integration until the separately bounded
-RunenRender extraction. It must consume RunenGPU only through the external public API.
+Current workspace membership is implementation evidence, not cross-repository semantic ownership.
 
 ## Foundation crates
 
@@ -62,32 +51,18 @@ foundation/resource_ref   portable external resource references
 
 The canonical workspace membership and purpose descriptions live in the [crate inventory](docs-site/src/content/docs/workspace/crate-inventory.md). Keep this root summary aligned with that inventory and the workspace manifest. Foundation must not own domain-specific invariants, application or editor policy, runtime orchestration, backend integration, or cross-framework composition.
 
-The framework extraction sequence is:
-
-```text
-current-source inventory
--> accepted external RunenECS successor
--> exact-revision Runenwerk RunenECS consumer cutover and predecessor deletion
--> internal RunenGPU proof
--> accepted external RunenGPU successor
--> exact-revision Runenwerk RunenGPU consumer cutover and predecessor deletion
--> RunenRender R0 normative architecture gate
--> internal RunenRender proof on RunenGPU
--> external RunenRender clean cutover
-```
-
 ## Invariants
 
 - Framework repositories do not depend on Runenwerk.
-- RunenGPU contains no renderer, ECS, UI, SDF, editor, or product meaning.
+- Runenwerk integrates frameworks through accepted public contracts and explicit adapters.
 - RunenRender depends on RunenGPU and does not own WGPU directly.
 - RunenRender semantic meaning remains distinct from source-domain state, request-scoped foreign semantic inputs, current availability/residency, and physical GPU realization.
-- Cross-framework meaning is translated by explicit Runenwerk adapters.
-- A completed extraction leaves one source authority, exact dependency pinning, all consumers migrated, and no forwarding namespace, source mirror, submodule, branch dependency, or duplicate implementation.
+- After an accepted framework consumer cutover, Runenwerk does not retain a writable predecessor implementation, forwarding namespace, source mirror, submodule, or moving branch dependency as parallel authority.
 
-## Canonical authority
+## Authority
 
-- [Repository-family architecture](docs-site/src/content/docs/architecture/repository-family-architecture.md)
+- [Dornglut Runen family architecture](https://github.com/dornglut/engineering/blob/main/architecture/runen-family.md) — cross-repository family membership and repository relationships.
+- [Framework integration architecture](docs-site/src/content/docs/architecture/repository-family-architecture.md) — Runenwerk-local adapters, compatibility, recovery, and product integration.
 - [Repository extraction ADR](docs-site/src/content/docs/adr/accepted/0014-repository-family-extraction-boundaries.md)
 - [GPU/render ownership ADR](docs-site/src/content/docs/adr/accepted/0015-separate-gpu-execution-from-rendering.md)
 - [Cross-authority consistency and graph-semantics ADR](docs-site/src/content/docs/adr/accepted/0017-cross-authority-consistency-and-graph-semantics.md)

@@ -5,7 +5,7 @@ status: active
 owner: workspace
 layer: workspace
 canonical: true
-last_reviewed: 2026-09-10
+last_reviewed: 2026-09-11
 ---
 
 # Runenwerk Workspace
@@ -37,7 +37,7 @@ cross-domain ownership decisions.
 
 - [Runenwerk Platform Architecture](../architecture/runenwerk-platform-architecture.md)
 - [Architecture Boundaries](../guidelines/architecture.md)
-- [Repository Family Architecture](../architecture/repository-family-architecture.md)
+- [Framework Integration Architecture](../architecture/repository-family-architecture.md)
 - [Programming Principles](../guidelines/programming-principles.md)
 - [Domain Overview](../domain/00-overview.md)
 - [Engine Docs](../engine/index.md)
