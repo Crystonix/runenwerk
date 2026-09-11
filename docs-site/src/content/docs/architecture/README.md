@@ -5,7 +5,7 @@ status: active
 owner: workspace
 layer: architecture
 canonical: true
-last_reviewed: 2026-08-12
+last_reviewed: 2026-09-11
 ---
 
 # Architecture
@@ -18,7 +18,7 @@ framework architecture for the work at hand.
 ## Runenwerk-wide spine
 
 - [Runenwerk Platform Architecture](./runenwerk-platform-architecture.md) — current
-  family/integration, semantic-federation, specialized-execution, Workbench, and
+  integration, semantic-federation, specialized-execution, Workbench, and
   application-composition architecture.
 
 Its durable decision basis is:
@@ -30,7 +30,7 @@ Its durable decision basis is:
 
 ## Subsystem spines
 
-- [Repository Family Architecture](./repository-family-architecture.md)
+- [Framework Integration Architecture](./repository-family-architecture.md)
 - [Runenwerk UI Framework Architecture](./ui-framework-architecture.md)
 - [Live UiPlugin Runtime Platform Architecture](./live-uiplugin-runtime-platform-architecture.md)
 

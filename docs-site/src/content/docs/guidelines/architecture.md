@@ -19,7 +19,7 @@ For the reusable boundary doctrine underneath that specialization, see
 [`authority-centered-boundary-architecture.md`](authority-centered-boundary-architecture.md).
 
 For the exact current local workspace-member inventory, see
-[`../workspace/crate-inventory.md`](../workspace/crate-inventory.md). Dependency direction, peer-framework ownership, and clean-cutover rules are owned by [`dependency-rules.md`](dependency-rules.md).
+[`../workspace/crate-inventory.md`](../workspace/crate-inventory.md). For detailed dependency guidance, see [`dependency-rules.md`](dependency-rules.md). Cross-repository family membership, repository relationships, and source-authority transfer governance remain owned by Dornglut Engineering rather than by a Runenwerk guideline.
 
 This page remains the workspace boundary and placement guide; it is not a second crate inventory or repository-family authority.
 
@@ -38,7 +38,7 @@ Standalone peer-framework implementations such as RunenSpatial and RunenGPU are 
 
 ## Dependency Direction
 
-The canonical dependency contract is [`dependency-rules.md`](dependency-rules.md). In local placement terms:
+Apply [`dependency-rules.md`](dependency-rules.md) to Runenwerk-local placement under the Engineering owner split above. In local placement terms:
 
 - foundation does not depend on higher Runenwerk layers;
 - domain code may depend on foundation and justified lower-level contracts but not on runtime/app wiring or concrete backends it does not own;
@@ -47,10 +47,7 @@ The canonical dependency contract is [`dependency-rules.md`](dependency-rules.md
 
 Avoid sideways coupling between application crates through private internals.
 
-Repository-family extraction and peer-framework dependency direction are governed by
-[Repository Family Architecture](../architecture/repository-family-architecture.md) and
-[ADR 0014](../adr/accepted/0014-repository-family-extraction-boundaries.md), not by the
-physical location of legacy code in this workspace.
+Cross-repository family membership, repository relationships, and source-authority transfers are owned by [Dornglut Engineering](https://github.com/dornglut/engineering/blob/main/architecture/runen-family.md) and [Engineering ADR 0008](https://github.com/dornglut/engineering/blob/main/adrs/0008-adopt-bounded-source-authority-handoffs.md). Runenwerk-local adapter and product-integration consequences are owned by [Framework Integration Architecture](../architecture/repository-family-architecture.md). [ADR 0014](../adr/accepted/0014-repository-family-extraction-boundaries.md) remains a Runenwerk-local accepted decision rather than organization-level family authority.
 
 ## Ownership Boundaries
 
