@@ -19,7 +19,6 @@ related:
   - ../../domain/graph/README.md
   - ../../domain/ecs/README.md
   - ../../domain/ecs/03-queries.md
-  - ../../domain/scheduler/README.md
   - ../../domain/world-sdf/README.md
 ---
 
@@ -45,8 +44,8 @@ Implemented today:
 
 - `domain/graph` owns neutral graph structure and validation.
 - `docs-site/src/content/docs/design/active/semantic-graph-ir-and-compilation-design.md` defines the generic semantic graph pipeline and the `SELECT`, `RELATE`, `TRANSFORM` primitive family.
-- `domain/ecs` owns live ECS state, queries, systems, events, schedules, and deferred ECS commands.
-- `domain/scheduler` owns deterministic execution ordering contracts.
+- Standalone `dornglut/runen-ecs` owns live ECS state, queries, systems, events, schedules, and deferred ECS commands.
+- Standalone RunenECS owns deterministic ECS execution ordering contracts; Runenwerk owns only host lifecycle and adapter policy.
 - Standalone `dornglut/runen-sdf` owns reusable SDF field queries, including raymarch, projection, classification, and sweep foundations.
 - `domain/world_sdf` owns world-scale SDF payloads and collision query readiness contracts.
 - Deferred gameplay action/power designs exist, but they do not define an active gameplay graph compiler.
@@ -299,7 +298,7 @@ The first implementation should form descriptors and fixed executor products, no
 
 ### Boundary With ECS
 
-`domain/ecs` owns live state and execution.
+Standalone `runen-ecs` owns live state and execution.
 
 Gameplay graph lowering may emit ECS query descriptors, event descriptors, system descriptors, access metadata, and schedule edges. It must not own ECS storage internals, bypass ECS command queues, or mutate ECS state from graph nodes.
 

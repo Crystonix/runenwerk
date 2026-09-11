@@ -1,9 +1,6 @@
 [workspace]
 resolver = "3"
 members = [
-    "domain/ecs",
-    "domain/ecs_macros",
-    "domain/ecs_conformance",
     "domain/geometry",
     "domain/asset",
     "domain/product",
@@ -146,8 +143,7 @@ editor_scene = { path = "domain/editor/editor_scene" }
 editor_inspector = { path = "domain/editor/editor_inspector" }
 editor_persistence = { path = "domain/editor/editor_persistence" }
 
-runen_ecs = { package = "runen-ecs", path = "domain/ecs" }
-runen_ecs_macros = { package = "runen-ecs-macros", path = "domain/ecs_macros" }
+runen_ecs = { package = "runen-ecs", git = "https://github.com/dornglut/runen-ecs", rev = "fed4f080abd4a2124dac10b80518469dd678d9f0" }
 graph = { path = "domain/graph" }
 texture = { path = "domain/texture" }
 material_graph = { path = "domain/material_graph" }

@@ -2,7 +2,7 @@
 title: Usage Guide
 description: Engine-agnostic guide for ecs usage.
 status: active
-owner: ecs
+owner: runen-ecs
 layer: domain
 canonical: true
 last_reviewed: 2026-09-10
@@ -387,4 +387,6 @@ cargo bench -p runen-ecs --bench semantic_baseline --locked
 ```
 
 The benchmark is a measurement aid, not a hard performance guarantee. Its
-provenance is recorded in `domain/ecs/benchmarks/semantic_baseline.md`.
+provenance is maintained in the standalone repository's
+`benchmarks/semantic_baseline.md`; Runenwerk does not carry benchmark artifacts
+or a second benchmark authority.

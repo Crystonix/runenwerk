@@ -8,7 +8,7 @@ canonical: true
 last_reviewed: 2026-09-11
 related_docs:
   - ../../guidelines/runenwerk-architecture.md
-  - ../../domain/scheduler/README.md
+  - ../../domain/ecs/architecture.md
 related_designs:
   - ./gameplay-graph-atr-ir-and-ecs-lowering-design.md
   - ./engine-game-runtime-editor-ecs-scripting-hot-reload-design.md
@@ -46,8 +46,7 @@ The runtime should execute formed ECS systems, event channels, schedule plans, r
 Current implemented anchors:
 
 - `domain/graph` owns the domain-neutral graph substrate: typed graph, node, port, edge definitions, validation, traversal, and cycle policy.
-- `domain/scheduler` owns deterministic scheduling contracts and execution ordering.
-- `domain/ecs` owns live entity/component/resource state, system execution, events, queries, and deferred ECS commands.
+- Standalone `runen-ecs` owns deterministic scheduling contracts, execution ordering, live entity/component/resource state, system execution, events, queries, and deferred ECS commands.
 - `foundation/schema` owns portable schema vocabulary.
 - `foundation/commands` owns portable command descriptor/proposal vocabulary, not execution.
 - `foundation/ratification` owns report vocabulary; concrete ratification meaning stays domain-owned.
@@ -123,7 +122,7 @@ Commands mutate.
 | Ratified | Accepted semantic IR with domain-owned issue checks passed | semantic graph domain ratifier |
 | Formed | ECS queries, event channel definitions, system descriptors, schedule edges, render/material products, or domain-specific execution packages | semantic graph domain plus target execution domain contracts |
 | Instantiated | Loaded runtime resources and source-to-runtime mappings | engine/runtime or target domain runtime owner |
-| Simulated | Hot ECS/world/runtime state | `domain/ecs`, engine runtime, or target runtime owner |
+| Simulated | Hot ECS/world/runtime state | standalone `runen-ecs`, engine runtime, or target runtime owner |
 | Observed | Inspector reports, graph-to-system maps, diagnostics, provenance, debug views | owning observation/inspector domain |
 | Expressed | Viewport/tool products derived from formed or simulated data | expression/product owner and presentation consumer |
 
@@ -252,7 +251,7 @@ Future semantic graph crates may depend on `domain/graph`. `domain/graph` must n
 
 ## Boundary With ECS
 
-`domain/ecs` owns live ECS state and ECS execution contracts.
+Standalone `runen-ecs` owns live ECS state and ECS execution contracts.
 
 Semantic graph domains may form ECS-facing products such as:
 
@@ -267,11 +266,13 @@ They must not own ECS storage internals or bypass ECS command/stage rules.
 
 If a formed semantic graph product wants to mutate ECS state, the mutation must go through ECS-owned execution mechanisms, domain-owned commands, or controlled runtime application contracts.
 
-## Boundary With Scheduler
+## Boundary With ECS Scheduling
 
-`domain/scheduler` owns deterministic execution planning and ordering.
+Standalone `runen-ecs` owns deterministic execution planning and ordering.
 
-Semantic graph compilers may emit scheduler input contracts. They must not make scheduler behavior depend on editor concepts or semantic graph canvas state.
+Semantic graph compilers may emit ECS scheduling input contracts. They must not
+make scheduling behavior depend on editor concepts or semantic graph canvas
+state.
 
 Execution order should be explicit in formed products:
 

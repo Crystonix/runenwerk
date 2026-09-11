@@ -1081,41 +1081,6 @@ fn inspector_enum_mutation_routes_through_domain_contract_and_provider_dispatch(
 }
 
 #[test]
-fn reflected_ecs_enums_remain_unit_variant_typed_and_inspector_backed() {
-    let type_info = read_workspace_source("domain/ecs/src/reflect/type_info.rs");
-    let enum_info = read_workspace_source("domain/ecs/src/reflect/enum_info.rs");
-    let value = read_workspace_source("domain/ecs/src/reflect/value.rs");
-    let macros = read_workspace_source("domain/ecs_macros/src/lib.rs");
-    let inspector_adapter =
-        read_workspace_source("domain/editor/editor_inspector/src/bridge/ecs_adapter.rs");
-    let inspector_editing = read_workspace_source("domain/editor/editor_inspector/src/editing.rs");
-
-    assert!(
-        type_info.contains("ReflectShape::Enum") && enum_info.contains("EnumVariantInfo"),
-        "ECS reflection should expose enum shape metadata instead of stringly special cases",
-    );
-    assert!(
-        enum_info.contains("EnumCurrentVariant") && enum_info.contains("EnumSetUnitVariant"),
-        "reflected enums must expose typed current-variant and mutation function pointers",
-    );
-    assert!(
-        value.contains("enum_ref(") && value.contains("enum_mut("),
-        "dynamic reflected values should expose enum accessors beside struct accessors",
-    );
-    assert!(
-        macros.contains("Data::Enum")
-            && macros.contains("unit/no-payload variants")
-            && macros.contains("ReflectShape::Enum"),
-        "derive support must be intentionally limited to no-payload enum variants",
-    );
-    assert!(
-        inspector_adapter.contains("InspectorValue::Enum")
-            && inspector_editing.contains("set_unit_variant"),
-        "editor_inspector should render and mutate reflected ECS enums through the typed enum contract",
-    );
-}
-
-#[test]
 fn viewport_surface_binary_options_use_reusable_toggles_with_typed_routing() {
     let builder =
         read_workspace_source("domain/editor/editor_shell/src/composition/build_viewport_panel.rs");

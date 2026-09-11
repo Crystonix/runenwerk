@@ -2,7 +2,7 @@
 title: Architecture
 description: Internal architecture and invariants for the ecs runtime.
 status: active
-owner: ecs
+owner: runen-ecs
 layer: domain
 canonical: true
 last_reviewed: 2026-09-10
@@ -10,8 +10,10 @@ last_reviewed: 2026-09-10
 
 # ECS Architecture
 
-This document is internal-facing and describes `domain/ecs` runtime internals,
-unsafe invariants, and behavior contracts.
+This document records the RunenECS runtime boundary consumed by Runenwerk,
+including its unsafe invariants and behavior contracts. The implementation is
+owned by the standalone `runen-ecs` repository; these pages are retained as
+Runenwerk-facing integration guidance.
 
 For public API usage, see [usage-guide.md](usage-guide.md).
 For advanced integration patterns, see [advanced-guide.md](advanced-guide.md).
@@ -31,7 +33,7 @@ Supported function-system and tuple-registration arity is implemented and regres
 
 ## 2. Module Boundaries
 
-Current ownership split:
+Standalone RunenECS ownership split:
 
 - `world/*`: world state, lifecycle orchestration, world-facing APIs
 - `commands/*`: deferred command abstraction, typed-erased queue, batching
@@ -39,7 +41,9 @@ Current ownership split:
 - `system/*`: system parameters, runtime execution, and public scheduling integration
 - `scheduler/*`: crate-private ECS scheduling implementation for labels, access facts, registered systems, plan construction, and validation
 
-The crate-private `scheduler` module is an implementation detail of RunenECS. It is not the former standalone generic `scheduler` package and does not define host lifecycle policy.
+The crate-private `scheduler` module is an implementation detail of standalone
+RunenECS. It is not the former standalone generic `scheduler` package and does
+not define host lifecycle policy.
 
 Boundary intent:
 

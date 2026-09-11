@@ -34,9 +34,9 @@ implementation batch, not excluded from the program.
 
 - `domain/product` owns `ProductJobDescriptor`, publication outcomes, query
   snapshots, render selection, diagnostics, and ratification.
-- `domain/scheduler` emits execution waves and deterministic barriers.
-- `domain/ecs` owns `WorkQueue<T>` as world messaging. It is not the product
-  job executor.
+- standalone `runen-ecs` owns ECS scheduling and deferred-command visibility;
+  Runenwerk Engine owns product-job sequencing and publication barriers.
+- ECS-owned command queues are not the product job executor.
 - `engine/src/runtime/jobs` owns the serial and bounded worker runtime job
   executor, typed handles, generations, stale suppression, panic capture,
   queue backpressure diagnostics, and clean shutdown.
@@ -310,8 +310,8 @@ Requirements:
 ## Invariants
 
 - `domain/product` owns product descriptors and ratification, not execution.
-- `domain/scheduler` owns plans and barriers, not worker threads.
-- `domain/ecs::WorkQueue<T>` remains world messaging, not the executor.
+- standalone `runen-ecs` owns ECS plans and deferred-command boundaries, not
+  worker threads or product publication.
 - `engine/src/runtime/jobs` owns execution, queues, workers, completions, and
   runtime diagnostics.
 - Product visibility changes only through publication/query barriers.
@@ -321,8 +321,8 @@ Requirements:
 
 ## Stop Conditions
 
-- Stop if a phase requires runtime concepts inside `domain/product`,
-  `domain/scheduler`, or another pure domain crate.
+- Stop if a phase requires runtime concepts inside `domain/product`, the
+  standalone ECS framework, or another pure domain crate.
 - Stop if a worker job needs live `World` access.
 - Stop if GPU work requires renderer-private app semantics.
 - Stop if cache work needs package-format decisions before cache identity is

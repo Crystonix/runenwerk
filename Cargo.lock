@@ -2588,25 +2588,16 @@ dependencies = [
 [[package]]
 name = "runen-ecs"
 version = "0.1.0"
+source = "git+https://github.com/dornglut/runen-ecs?rev=fed4f080abd4a2124dac10b80518469dd678d9f0#fed4f080abd4a2124dac10b80518469dd678d9f0"
 dependencies = [
- "criterion",
- "glam 0.31.1",
  "runen-ecs-macros",
  "thiserror 2.0.18",
- "trybuild",
-]
-
-[[package]]
-name = "runen-ecs-conformance"
-version = "0.1.0"
-dependencies = [
- "runen-ecs",
- "trybuild",
 ]
 
 [[package]]
 name = "runen-ecs-macros"
 version = "0.1.0"
+source = "git+https://github.com/dornglut/runen-ecs?rev=fed4f080abd4a2124dac10b80518469dd678d9f0#fed4f080abd4a2124dac10b80518469dd678d9f0"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",

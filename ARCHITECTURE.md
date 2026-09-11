@@ -30,12 +30,17 @@ RunenRender -> RunenGPU
 
 ## Current source layout
 
-The standalone RunenGPU successor and Runenwerk consumer cutover are accepted. The workspace consumes `runen-gpu` through an exact accepted Git revision; RunenGPU implementation and framework conformance belong to `dornglut/runen-gpu` rather than to Runenwerk.
+The standalone RunenECS and RunenGPU successors and their Runenwerk consumer
+cutovers are accepted. The workspace consumes `runen-ecs` and `runen-gpu`
+through exact accepted Git revisions; their implementations and framework
+conformance belong to `dornglut/runen-ecs` and `dornglut/runen-gpu` rather than
+to Runenwerk.
 
 ```text
 foundation -> domain -> engine/runtime -> apps/adapters/tools
-                               |
-                               +--> exact-SHA runen-gpu consumer
+                 |             |
+                 |             +--> exact-SHA runen-ecs consumer
+                 +----------------> exact-SHA runen-gpu consumer
 ```
 
 The render plugin remains Runenwerk-owned integration until the separately bounded
@@ -57,13 +62,15 @@ foundation/resource_ref   portable external resource references
 
 The canonical workspace membership and purpose descriptions live in the [crate inventory](docs-site/src/content/docs/workspace/crate-inventory.md). Keep this root summary aligned with that inventory and the workspace manifest. Foundation must not own domain-specific invariants, application or editor policy, runtime orchestration, backend integration, or cross-framework composition.
 
-The GPU/render extraction sequence is:
+The framework extraction sequence is:
 
 ```text
 current-source inventory
+-> accepted external RunenECS successor
+-> exact-revision Runenwerk RunenECS consumer cutover and predecessor deletion
 -> internal RunenGPU proof
 -> accepted external RunenGPU successor
--> exact-revision Runenwerk consumer cutover and predecessor deletion
+-> exact-revision Runenwerk RunenGPU consumer cutover and predecessor deletion
 -> RunenRender R0 normative architecture gate
 -> internal RunenRender proof on RunenGPU
 -> external RunenRender clean cutover

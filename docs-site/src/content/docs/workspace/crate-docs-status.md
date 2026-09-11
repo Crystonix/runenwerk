@@ -35,9 +35,6 @@ Status labels:
 
 | Crate | Path | Status | Primary docs |
 | --- | --- | --- | --- |
-| `runen-ecs` | `domain/ecs` | current | [`../domain/ecs/README.md`](../domain/ecs/README.md) |
-| `runen-ecs-macros` | `domain/ecs_macros` | thin | [`../domain/ecs-macros/README.md`](../domain/ecs-macros/README.md) |
-| `runen-ecs-conformance` | `domain/ecs_conformance` | current | [`../domain/ecs/README.md`](../domain/ecs/README.md) |
 | `geometry` | `domain/geometry` | current | [`../domain/geometry/README.md`](../domain/geometry/README.md) |
 | `asset` | `domain/asset` | thin | [`../domain/00-overview.md`](../domain/00-overview.md) |
 | `product` | `domain/product` | thin | [`../domain/00-overview.md`](../domain/00-overview.md) |

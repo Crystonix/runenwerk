@@ -2,7 +2,7 @@
 title: ECS Parallel System Execution Design
 description: Deferred design for future ECS schedule parallelism, deterministic command merging, world access sharding, and blocked-parallelism diagnostics.
 status: deferred
-owner: domain/ecs
+owner: runen-ecs
 layer: domain
 canonical: true
 last_reviewed: 2026-09-10
@@ -28,7 +28,7 @@ Deferred design only. ECS execution remains serial while current scheduler/acces
 The scheduler already computes dependency waves and conflict diagnostics:
 
 - `domain/scheduler/src/plan.rs::ExecutionScheduler::run_schedule`
-- `domain/ecs/src/system/runtime.rs::Runtime::run_schedule`
+- standalone `runen-ecs` runtime `Runtime::run_schedule`
 - `domain/scheduler/src/plan.rs::SerialWaveMirrorsStage`
 
 Current execution is serial by wave and serial within each wave. Deferred commands are not thread-safe and are flushed after each wave.
@@ -54,7 +54,7 @@ Parallel ECS implementation must define:
 
 The sequence below is dormant while this design is deferred:
 
-1. Keep `domain/ecs/src/system/runtime.rs::Runtime::run_schedule` serial.
+1. Keep standalone `runen-ecs` `Runtime::run_schedule` serial.
 2. Add blocked-parallelism reporting from existing wave/conflict metadata.
 3. Introduce thread-safe deferred command buffers behind an internal feature gate.
 4. Add deterministic merge tests.
