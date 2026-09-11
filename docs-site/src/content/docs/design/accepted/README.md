@@ -5,7 +5,7 @@ status: active
 owner: workspace
 layer: workspace
 canonical: true
-last_reviewed: 2026-09-10
+last_reviewed: 2026-09-11
 ---
 
 # Accepted Designs
@@ -59,6 +59,7 @@ Move a design to `implemented/` only after code has been checked against it and 
 
 ### Workspace / Cross-Domain
 
+- [Runenwerk Render Lab Product Design](runenwerk-render-lab-product-design.md)
 - [AI-Friendly Engine Architecture](workspace-ai-friendly-engine-architecture.md)
 - [SDF-First Field World Platform Design](sdf-first-field-world-platform-design.md)
 - [Field Product Contracts, Diagnostics, and Residency Design](field-product-contracts-diagnostics-and-residency-design.md)
