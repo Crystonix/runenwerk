@@ -1,109 +1,159 @@
 ---
 title: Dependency Rules
-description: Canonical dependency direction and clean-cutover rules for Runenwerk and peer frameworks.
+description: Canonical Runenwerk-local dependency direction, adapter boundaries, and framework-consumer rules.
 status: active
 owner: workspace
 layer: guidelines
 canonical: true
-last_reviewed: 2026-08-30
+last_reviewed: 2026-09-11
 related_docs:
   - ../architecture/repository-family-architecture.md
+  - ./architecture.md
   - ../adr/accepted/0014-repository-family-extraction-boundaries.md
   - ../adr/accepted/0015-separate-gpu-execution-from-rendering.md
 ---
 
 # Dependency Rules
 
-## Repository direction
+## Purpose and authority
 
-```text
-RunenSDF -----+
-RunenSpatial -+
-RunenECS -----+--> Runenwerk adapters/integration --> applications
-RunenUI ------+
-                   |
-                   +--> RunenRender --> RunenGPU
-                   +--> non-render RunenGPU workloads
-```
+This document owns Runenwerk-local dependency direction and the dependency consequences
+of integrating independently owned frameworks. It does not own the Dornglut repository
+family or a framework's reusable semantics.
 
-Framework repositories do not depend on Runenwerk. A direct framework dependency requires an accepted ADR proving correct ownership and independent value.
+Cross-repository family membership, repository relationships, and source-authority
+transfer procedure are owned by Dornglut Engineering:
 
-The accepted direct framework dependency is:
+- [Runen family architecture](https://github.com/dornglut/engineering/blob/main/architecture/runen-family.md)
+- [Repository standard](https://github.com/dornglut/engineering/blob/main/standards/repositories.md)
+- [ADR 0008: bounded source-authority handoffs](https://github.com/dornglut/engineering/blob/main/adrs/0008-adopt-bounded-source-authority-handoffs.md)
 
-```text
-RunenRender -> RunenGPU
-```
+Each standalone framework repository owns its reusable semantics, public dependency
+contract, conformance, validation, release policy, and repository-local architecture.
+Runenwerk consumes those public contracts; it does not redefine them here.
 
-RunenGPU and RunenRender each begin with one public package. Additional packages require a concrete dependency, backend, release, ABI, platform, or compile-time reason.
+For Runenwerk's adapter, compatibility, recovery, and product-integration contracts,
+see [Framework Integration Architecture](../architecture/repository-family-architecture.md).
 
-## Layer direction inside Runenwerk
+## Runenwerk layer direction
 
-Until clean cutovers complete:
+Runenwerk-local code follows this dependency direction:
 
 ```text
 foundation -> domain -> engine/runtime -> apps/adapters/tools
 ```
 
-- Foundation contains low-level reusable vocabulary and does not depend on domain, runtime, editor, app, adapter, workflow, UI, or concrete backend code.
-- Domain code may depend on foundation and lower-level domain contracts, but not on runtime, app wiring, or concrete backends it does not own.
-- Runtime composes domains, frameworks, and backend implementations without moving product or source-domain meaning into reusable APIs.
-- Apps and tools compose higher layers but do not define framework or domain invariants.
+- Foundation contains low-level reusable vocabulary and may depend only on justified
+  lower-level external libraries or other foundation contracts. It does not depend on
+  domain, runtime, editor, app, adapter, workflow, UI-framework, or concrete-backend
+  code.
+- Domain code may depend on foundation and justified lower-level domain contracts, but
+  not on engine/runtime, app wiring, or concrete backends it does not own.
+- Engine/runtime composes domains and accepted peer-framework public contracts without
+  moving their semantic ownership into Runenwerk runtime APIs.
+- Apps, adapters, and tools may compose higher-level systems but do not define reusable
+  framework or domain invariants merely because they integrate them.
 
-## Framework boundaries
+The current local workspace inventory is owned by
+[`../workspace/crate-inventory.md`](../workspace/crate-inventory.md). Physical source
+location is implementation evidence, not permission to reverse these dependency rules.
 
-### RunenGPU
+## Peer-framework consumption
 
-RunenGPU may own WGPU internally and owns normalized capabilities, GPU resources and views, access and lifetime rules, hazards, workloads, submission, upload/readback, low-level surfaces, backend outcomes, and GPU diagnostics.
+The local integration direction is:
 
-RunenGPU does not own renderer, ECS, SDF, UI, world, editor, application, or product semantics. It does not own Winit event-loop policy, shader filesystem watching, or product recovery.
+```text
+standalone framework public contract
+              |
+              v
+      Runenwerk adapter/integration
+              |
+              v
+      Runenwerk application/tool
+```
 
-### RunenRender
+A standalone framework must not depend on Runenwerk merely to participate in product
+integration. A Runenwerk dependency on a framework records product adoption of that
+framework's public contract; it does not transfer reusable semantic ownership into
+Runenwerk.
 
-RunenRender depends on RunenGPU. It may own prepared render scenes, views and logical targets, providers and interactions, materials and media, visibility, transport, caches, reconstruction, overlays, color, presentation intent, and lowering render plans into RunenGPU workloads.
-
-RunenRender does not depend directly on WGPU, Winit, Runenwerk, RunenSDF, RunenECS, RunenUI, source scene/material/editor domains, or application lifecycle.
-
-### RunenSDF, RunenSpatial, RunenECS, and RunenUI
-
-- RunenSDF remains backend-neutral and owns field and numerical semantics.
-- RunenSpatial remains host-neutral and owns reusable spatial identity, addressing and coordinate mechanics, bounded spatial-demand planning, and content-agnostic availability lifecycle mechanics.
-- RunenECS owns ECS lifecycle, query, storage, and system semantics.
-- RunenUI owns semantic UI, state/actions, focus/accessibility, layout/style/text, hit testing, and renderer-neutral paint output.
-
-Display or acceleration does not make these frameworks depend on RunenGPU or RunenRender. Cross-framework translation belongs in Runenwerk adapters until independent reuse proves another owner.
+Current family membership and repository-to-repository relationships are read from
+Engineering's Runen-family architecture rather than copied into this guideline.
 
 ## Adapter rules
 
-A Runenwerk adapter may depend on Runenwerk and the public contracts it translates between. Frameworks do not depend back on the adapter.
+A Runenwerk adapter may depend on the public contracts it translates between and on the
+Runenwerk integration surface that owns the product translation.
 
-Adapters translate identities, prepared inputs and outputs, lifecycle facts, diagnostics, provenance, and ownership. They do not duplicate algorithms, mirror source, expose mutable internals, or hide dependency cycles.
+Adapters may explicitly translate:
 
-## Version and cutover rules
+- identities and correspondence where required;
+- prepared inputs and outputs;
+- lifecycle and generation facts;
+- diagnostics and provenance;
+- ownership or availability facts;
+- Runenwerk product requirements into accepted framework requests.
 
-Before stable publication, Runenwerk pins an exact accepted revision or exact pre-release version. Moving branch dependencies are forbidden.
+Adapters must not:
 
-A completed extraction leaves:
+- reach through private framework implementation;
+- duplicate framework algorithms or semantic validation;
+- mirror authoritative source or create a writable shadow implementation;
+- preserve predecessor shape through broad compatibility facades without a demonstrated
+  current consumer and removal condition;
+- hide dependency cycles;
+- make a framework depend back on Runenwerk;
+- introduce a universal shared core merely because several adapters use similar
+  vocabulary.
 
-- one external source authority;
-- one-way dependency direction;
-- exact dependency pinning;
-- every active consumer migrated;
-- no original source copy;
-- no forwarding package or namespace;
-- no submodule, source include, moving branch dependency, or long-lived migration facade;
-- no duplicate runtime path.
+## Consumer revision policy
 
-Cross-repository transfers follow Dornglut Engineering ADR 0008. Before successor
-acceptance, copied source may exist only on an unmerged successor branch while the
-predecessor remains semantic source authority. Once the successor is accepted, its
-accepted revision is the sole semantic source authority; any still-present Runenwerk
-implementation is a frozen predecessor copy allowed only for the serialized consumer
-cutover. It may not receive independent semantic or implementation changes and must be
-deleted when consumers migrate or retired through an explicit accepted reversal.
-The final accepted state still has one implementation copy and no compatibility path.
+Runenwerk owns the admission and compatibility claim for the exact framework revisions
+it integrates. Before stable publication, maintained framework dependencies used for a
+claimed integration are pinned to an exact accepted Git revision or an exact accepted
+pre-release/version. A moving branch is not a compatibility contract.
 
-If Runenwerk has no real consumer, internal source may be removed without adding an unused external dependency.
+Changing an integrated framework revision is a Runenwerk consumer change and must prove
+that the affected adapters, product behavior, and integration evidence remain valid.
+That admission decision does not become framework release or compatibility policy.
+
+When a dependency change is part of a cross-repository source-authority handoff,
+Engineering ADR 0008 owns the handoff sequence and accepted-successor pinning rules.
+This document does not duplicate that procedure.
+
+## Completed handoff consequences
+
+After Runenwerk accepts a framework consumer cutover, its local dependency and adapter
+state must agree with the accepted semantic owner. Runenwerk does not retain a writable
+predecessor implementation, forwarding namespace, source mirror, private reach-through,
+or second runtime path as parallel authority.
+
+If Runenwerk has no real consumer for a newly externalized capability, it need not add an
+unused dependency merely because a standalone repository exists.
 
 ## Boundary escalation
 
-When one owner wants another owner's internals, determine whether the missing boundary is a public value, command, diagnostic, adapter, capability, workload, contribution, or test-support contract. Do not solve boundary pressure with a universal shared core, speculative package, compatibility facade, or exposed mutable internals.
+When Runenwerk integration needs something that an owning framework does not expose,
+identify the missing semantic owner before changing dependencies:
+
+- a reusable public DTO or value, command, ratifier or validation contract, diagnostic,
+  capability, workload, contribution, contract crate, or test-support contract belongs
+  in the owning framework under its accepted authority;
+- Runenwerk-specific product translation, composition, admission, presentation, or
+  recovery policy belongs in Runenwerk integration or adapters.
+
+Do not solve boundary pressure with private reach-through, a universal shared core,
+speculative packages, exposed mutable internals, or a compatibility facade that becomes
+a second semantic authority.
+
+## Non-authority
+
+This page does not own or inventory:
+
+- Dornglut repository-family membership or topology;
+- standalone framework mission or package definitions;
+- framework release, validation, or conformance policy;
+- organization-wide source extraction or transfer procedure;
+- live migration, branch, issue, or cutover state.
+
+Use the owning Engineering and standalone-framework authorities for those concerns.

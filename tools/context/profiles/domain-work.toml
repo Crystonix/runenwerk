@@ -3,7 +3,7 @@ description = "Domain-level authority and crate entrypoint context across all do
 include = [
   "AGENTS.md",
   "ARCHITECTURE.md",
-  "DEPENDENCY_RULES.md",
+  "docs-site/src/content/docs/guidelines/dependency-rules.md",
   "TESTING.md",
   "docs-site/src/content/docs/workspace/crate-inventory.md",
   "docs-site/src/content/docs/guidelines/architecture.md",

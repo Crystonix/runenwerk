@@ -35,16 +35,18 @@ README.md
 AGENTS.md
 ARCHITECTURE.md
 TESTING.md
-DEPENDENCY_RULES.md
 ```
 
-`README.md`, `AGENTS.md`, `ARCHITECTURE.md`, and `TESTING.md` are the primary public and contributor entrypoints. `DEPENDENCY_RULES.md` remains a concise dependency entrypoint in the current repository and routes to the canonical long-form dependency rules.
+These are the primary public and contributor entrypoints. Detailed dependency guidance
+lives directly in the canonical docs-site owner rather than through a root forwarding
+summary.
 
-Crate inventory, code-placement guidance, and shared vocabulary live directly in their canonical docs-site owners rather than through root compatibility pointers:
+Crate inventory, code-placement guidance, dependency rules, and shared vocabulary live
+directly in their canonical docs-site owners:
 
 - [`crate-inventory.md`](./crate-inventory.md) for active local workspace membership;
 - [`../guidelines/architecture.md`](../guidelines/architecture.md) for Runenwerk placement and boundary guidance;
-- [`../guidelines/dependency-rules.md`](../guidelines/dependency-rules.md) for dependency direction and framework ownership;
+- [`../guidelines/dependency-rules.md`](../guidelines/dependency-rules.md) for Runenwerk-local dependency direction, adapter boundaries, and framework-consumer rules;
 - [`glossary.md`](./glossary.md) for shared vocabulary.
 
 Root documents must not become roadmaps, design dossiers, execution ledgers, or duplicated reference manuals.

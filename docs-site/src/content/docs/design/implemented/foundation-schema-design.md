@@ -94,7 +94,7 @@ foundation -> domain crates -> engine/runtime -> apps/adapters/tools
 
 It also requires separation between description/model and execution/runtime layers. Descriptions should be serializable, inspectable, ratifiable, diffable, testable, and suitable for AI-assisted editing; execution objects may be optimized, backend-aware, resource-owning, and non-serializable.
 
-`DEPENDENCY_RULES.md` says foundation may depend only on justified foundation crates and low-level external libraries, and must not depend on domain, runtime, editor, app, adapter, AI integration, UI framework, or backend crates. It also says boundary pressure should first ask whether a DTO, command, ratifier, contract crate, or test-support crate is missing.
+[`../../guidelines/dependency-rules.md`](../../guidelines/dependency-rules.md) says foundation may depend only on justified foundation crates and low-level external libraries, and must not depend on domain, runtime, editor, app, adapter, AI integration, UI framework, or backend crates. It also says boundary pressure should first ask whether a DTO, command, ratifier, contract crate, or test-support crate is missing.
 
 ### Current foundation crates
 
@@ -1302,7 +1302,7 @@ Review this document against:
 
 ```text
 ARCHITECTURE.md
-DEPENDENCY_RULES.md
+docs-site/src/content/docs/guidelines/dependency-rules.md
 AI_GUIDE.md
 foundation-vocabulary-crates-design.md
 foundation-ratification-phase5-evaluation.md
