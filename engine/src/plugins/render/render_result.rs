@@ -92,7 +92,10 @@ impl fmt::Display for RenderResultFormationError {
                 "formed render output {output_index} is outside {output_count} admitted outputs"
             ),
             Self::DuplicateOutput { output_index } => {
-                write!(formatter, "render output {output_index} was formed more than once")
+                write!(
+                    formatter,
+                    "render output {output_index} was formed more than once"
+                )
             }
             Self::MissingOutput { output_index } => {
                 write!(formatter, "render output {output_index} was not formed")
