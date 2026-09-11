@@ -136,8 +136,9 @@ unused dependency merely because a standalone repository exists.
 When Runenwerk integration needs something that an owning framework does not expose,
 identify the missing semantic owner before changing dependencies:
 
-- a reusable public value, command, diagnostic, capability, workload, contribution, or
-  test-support contract belongs in the owning framework under its accepted authority;
+- a reusable public DTO or value, command, ratifier or validation contract, diagnostic,
+  capability, workload, contribution, contract crate, or test-support contract belongs
+  in the owning framework under its accepted authority;
 - Runenwerk-specific product translation, composition, admission, presentation, or
   recovery policy belongs in Runenwerk integration or adapters.
 
