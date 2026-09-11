@@ -2,7 +2,7 @@
 title: Systems
 description: Engine-agnostic guide to defining and using ecs systems in the domain layer.
 status: active
-owner: ecs
+owner: runen-ecs
 layer: domain
 canonical: true
 last_reviewed: 2026-09-10

@@ -2,7 +2,7 @@
 title: Commands
 description: Engine-agnostic guide for deferred ecs commands.
 status: active
-owner: ecs
+owner: runen-ecs
 layer: domain
 canonical: true
 last_reviewed: 2026-09-10

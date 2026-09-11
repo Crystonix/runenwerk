@@ -13,7 +13,10 @@ replaced_by: ../ecs/README.md
 
 The standalone `domain/scheduler` crate was retired by RunenECS C8.
 
-Its reusable ECS-owned semantics now live in `domain/ecs`: generic schedule labels, system sets, explicit semantic ordering, ECS access facts, validation, deterministic serial reference execution, and deferred-command/deferred-apply boundaries.
+Its reusable ECS-owned semantics now live in standalone `runen-ecs`: generic
+schedule labels, system sets, explicit semantic ordering, ECS access facts,
+validation, deterministic serial reference execution, and deferred-command /
+deferred-apply boundaries.
 
 Application lifecycle and publication policy remain owned by Runenwerk Engine. The retired scheduler's phases, waves, product/query publication barriers, generic DAG/demo/DOT/filesystem utilities, and scheduler-global telemetry are not current authority and are not compatibility contracts.
 

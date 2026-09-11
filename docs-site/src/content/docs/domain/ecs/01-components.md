@@ -2,7 +2,7 @@
 title: Components
 description: Engine-agnostic guide to defining and using ecs components in the domain layer.
 status: active
-owner: ecs
+owner: runen-ecs
 layer: domain
 canonical: true
 last_reviewed: 2026-04-27

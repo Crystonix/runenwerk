@@ -2,7 +2,7 @@
 title: Overview
 description: Engine-agnostic documentation for the standalone RunenECS package.
 status: active
-owner: ecs
+owner: runen-ecs
 layer: domain
 canonical: true
 last_reviewed: 2026-09-10

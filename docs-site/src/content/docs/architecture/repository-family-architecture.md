@@ -44,7 +44,7 @@ Focused accepted framework designs own subsystem contracts.
 product       repository                    package       crate
 RunenSDF      dornglut/runen-sdf            runen-sdf     runen_sdf
 RunenSpatial  dornglut/runen-spatial        existing workspace topology
-RunenECS      target dornglut/runen-ecs     see accepted RunenECS design
+RunenECS      dornglut/runen-ecs            runen-ecs     runen_ecs
 RunenGPU      dornglut/runen-gpu            runen-gpu     runen_gpu
 RunenRender   target dornglut/runen-render  runen-render  runen_render
 RunenUI       dornglut/runen-ui             existing workspace topology
@@ -88,12 +88,13 @@ No dependency cycle is allowed.
 |---|---|---|
 | RunenSDF | standalone authority in `dornglut/runen-sdf`; duplicate Runenwerk source retired through issue `#133` / PR `#157` | standalone roadmap and independently accepted adapters only |
 | RunenSpatial | standalone host-neutral spatial authority in `dornglut/runen-spatial`; downstream integration consumes accepted public contracts | standalone roadmap and independently accepted downstream adapters/integration only |
-| RunenECS | internal ownership and safety repair required | separately bounded investigation, design, and repair |
+| RunenECS | standalone authority in `dornglut/runen-ecs`; Runenwerk consumes the accepted public package through an exact Git revision | standalone roadmap and independently accepted downstream adapters/integration only |
 | RunenGPU | standalone successor accepted at `77c7c8d5ad6922b6f46c6b25e31b1a224c1314a4`; Runenwerk consumer cutover is pinned to that exact revision | successor repository owns framework implementation and conformance; downstream changes use its public API |
 | RunenRender | current Runenwerk render integration consumes the accepted RunenGPU public API | separately bounded R-phase work remains required before external RunenRender cutover |
 | RunenUI | independent repository/workstream | governed in RunenUI |
 
-RunenGPU semantic authority is already the accepted successor revision. Runenwerk's
+RunenECS and RunenGPU semantic authority are their accepted standalone successor
+revisions. Runenwerk's
 physical consumer cutover is governed separately by issue `#449` and is accepted only
 when the merged Runenwerk revision passes accepted-main validation. The workspace
 manifest and lockfile are implementation evidence, not downstream acceptance on their

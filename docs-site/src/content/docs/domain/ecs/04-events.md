@@ -2,7 +2,7 @@
 title: Events
 description: Current RunenECS scope for event and message transport.
 status: active
-owner: ecs
+owner: runen-ecs
 layer: domain
 canonical: true
 last_reviewed: 2026-09-10

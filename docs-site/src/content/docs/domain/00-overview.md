@@ -32,7 +32,7 @@ Domain crates must not depend on:
 
 | Area | Crates | Primary docs |
 | --- | --- | --- |
-| ECS | `domain/ecs`, `domain/ecs_macros` | [`ecs/00-overview.md`](./ecs/00-overview.md), [`ecs/README.md`](./ecs/README.md), [`ecs-macros/README.md`](./ecs-macros/README.md) |
+| ECS integration | standalone [`runen-ecs`](https://github.com/dornglut/runen-ecs), consumed by Runenwerk through an exact accepted revision | Retained Runenwerk-facing API and integration guidance: [`ecs/00-overview.md`](./ecs/00-overview.md), [`ecs/README.md`](./ecs/README.md), [`ecs/usage-guide.md`](./ecs/usage-guide.md) |
 | Scene | `domain/scene` | [`scene/README.md`](./scene/README.md) |
 | Asset and product contracts | `domain/asset`, `domain/product` | Workspace-level current-state contract summaries live in [`../workspace/sdf-first-execution-roadmap.md`](../workspace/sdf-first-execution-roadmap.md), [`../design/accepted/field-product-contracts-diagnostics-and-residency-design.md`](../design/accepted/field-product-contracts-diagnostics-and-residency-design.md), and [`../design/accepted/sdf-first-production-capability-map.md`](../design/accepted/sdf-first-production-capability-map.md) until deeper crate guides are written. |
 | Geometry | `domain/geometry` | [`geometry/README.md`](./geometry/README.md), [`geometry/ownership-boundary.md`](./geometry/ownership-boundary.md), [`geometry/api-notes.md`](./geometry/api-notes.md) |
@@ -43,7 +43,11 @@ Domain crates must not depend on:
 | UI substrate and definitions | `domain/ui/*`, including `domain/ui/ui_definition` | [`ui/README.md`](./ui/README.md), [`ui/architecture.md`](./ui/architecture.md), [`ui/roadmap.md`](./ui/roadmap.md) |
 | Editor domains and definitions | `domain/editor/*`, including `domain/editor/editor_definition` | [`editor/README.md`](./editor/README.md) |
 
-Generic ECS schedule identity, system sets, semantic ordering, access facts, validation, deterministic serial reference execution, and deferred-command visibility are part of `domain/ecs`. There is no active standalone `domain/scheduler` crate after RunenECS C8.
+Generic ECS schedule identity, system sets, semantic ordering, access facts,
+validation, deterministic serial reference execution, and deferred-command
+visibility are owned by standalone RunenECS. Runenwerk consumes those public
+contracts; it does not retain a local ECS implementation or an active
+standalone `domain/scheduler` crate.
 
 ## Planned Domain Areas
 

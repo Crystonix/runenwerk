@@ -326,8 +326,8 @@ only after their owning contracts can consume the same substrate.
 
 - `workspace/sdf-first-execution-roadmap.md` owns cross-track order.
 - `apps/runenwerk-editor/roadmap.md` owns editor milestone detail.
-- `domain/scheduler/*` owns scheduler contract detail.
-- `domain/ecs/*` owns ECS state, query, command, and runtime-bridge detail.
+- standalone `runen-ecs` owns reusable ECS state, query, command, and runtime
+  execution semantics; Runenwerk owns only the integration/runtime bridge.
 - `net/ecs-runtime-prioritized-roadmap.md` remains a net/runtime convergence
   tracker and feeds this roadmap where ECS runtime work is relevant.
 - `engine/plugins/render/docs/roadmap.md` owns render implementation detail, but

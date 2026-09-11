@@ -45,9 +45,6 @@ Dependency direction, peer-framework ownership, and clean-cutover rules live in 
 
 | Crate | Path | Layer | Purpose |
 | --- | --- | --- | --- |
-| `runen-ecs` | `domain/ecs` | domain | Current in-Runenwerk RunenECS source authority pending the separately governed external authority transfer/cutover. |
-| `runen-ecs-macros` | `domain/ecs_macros` | domain | Proc-macro companion for the current RunenECS source authority. |
-| `runen-ecs-conformance` | `domain/ecs_conformance` | domain | Downstream public-boundary fixture for RunenECS standalone conformance. |
 | `geometry` | `domain/geometry` | domain | Geometric primitives and queries. |
 | `asset` | `domain/asset` | domain | Asset identity, descriptors, import planning, dependency graph, diagnostics, and ratification contracts. |
 | `product` | `domain/product` | domain | Formed-product descriptors, jobs, query snapshots, diagnostics, policies, and ratification contracts. |
@@ -143,8 +140,11 @@ Exact dependency revisions are executable truth in root `Cargo.toml` / `Cargo.lo
 - `runen-net` and `runen-net-quic` — standalone RunenNet authority/transport realization consumed during the remaining RN8 migration.
 - `runen-spatial` — standalone reusable spatial identity/addressing mechanics.
 - `runen-gpu` — standalone GPU execution authority consumed by Runenwerk/RunenRender integration.
+- `runen-ecs` — standalone ECS authority consumed by Runenwerk through an exact accepted Git revision; implementation and downstream conformance live in `dornglut/runen-ecs`.
 
-RunenECS is intentionally still listed above as local workspace source authority until the separately governed successor acceptance and Runenwerk consumer cutover complete.
+RunenECS is no longer a local workspace member. Runenwerk retains only
+integration/public-API guidance; the standalone repository is the sole ECS
+implementation and conformance authority.
 
 ## Documentation status
 
