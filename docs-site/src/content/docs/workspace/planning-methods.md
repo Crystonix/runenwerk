@@ -5,7 +5,7 @@ status: active
 owner: workspace
 layer: workspace
 canonical: true
-last_reviewed: 2026-09-10
+last_reviewed: 2026-09-12
 related:
   - ./architecture-governance-review.md
   - ./design-implementation-triage.md
@@ -13,7 +13,6 @@ related:
   - ./roadmap-archive.yaml
   - ./roadmap-deferred.yaml
   - ./roadmap-decision-register.md
-  - ./repo-execution-priority-checklist.md
   - ./roadmap-index.md
   - ./diagrams/value-weighted-dependency-roadmap.puml
 ---
