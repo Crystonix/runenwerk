@@ -9,6 +9,7 @@ use super::space_time::{
     CanonicalF64, RenderAffineTransform3, RenderSemanticValueError, RenderSpatialCoverage,
     RenderTemporalSupport, RenderTimePoint,
 };
+use super::surface_input::RenderSurfaceSemanticInputRequirement;
 use std::error::Error;
 use std::fmt;
 use std::num::NonZeroU64;
@@ -149,6 +150,7 @@ impl RenderOrientedSurfaceProtocolEvidence {
 pub struct RenderSurfaceProtocolEvidence {
     revision: u32,
     oriented_surface: Option<RenderOrientedSurfaceProtocolEvidence>,
+    semantic_input_requirement: Option<RenderSurfaceSemanticInputRequirement>,
 }
 
 impl RenderSurfaceProtocolEvidence {
@@ -157,6 +159,7 @@ impl RenderSurfaceProtocolEvidence {
         Ok(Self {
             revision,
             oriented_surface: None,
+            semantic_input_requirement: None,
         })
     }
 
@@ -168,12 +171,28 @@ impl RenderSurfaceProtocolEvidence {
         self
     }
 
+    /// Declare that this concrete representation's surface protocol requires one current
+    /// request-scoped semantic surface value before use.
+    pub const fn with_semantic_input_requirement(
+        mut self,
+        requirement: RenderSurfaceSemanticInputRequirement,
+    ) -> Self {
+        self.semantic_input_requirement = Some(requirement);
+        self
+    }
+
     pub const fn revision(self) -> u32 {
         self.revision
     }
 
     pub const fn oriented_surface(self) -> Option<RenderOrientedSurfaceProtocolEvidence> {
         self.oriented_surface
+    }
+
+    pub const fn semantic_input_requirement(
+        self,
+    ) -> Option<RenderSurfaceSemanticInputRequirement> {
+        self.semantic_input_requirement
     }
 }
 
@@ -321,8 +340,9 @@ fn validate_protocol_revision(revision: u32) -> Result<(), RenderRepresentationV
 
 /// One renderer-visible representation record.
 ///
-/// The record carries only intrinsic semantics. It deliberately has no availability, residency,
-/// physical resource, request-applicability, method, or execution fields.
+/// The record carries only intrinsic semantics plus protocol-local declarations of any current
+/// request-scoped semantic value required to realize those semantics. It deliberately has no
+/// availability, residency, physical resource, request-applicability, method, or execution fields.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RenderRepresentationRecord {
     id: RenderRepresentationId,
@@ -373,6 +393,18 @@ impl RenderRepresentationRecord {
 
     pub const fn supports_field_distance(&self) -> bool {
         self.field_distance.is_some()
+    }
+
+    /// Return the request-scoped surface semantic-input prerequisite declared by this concrete
+    /// representation, if any. Surface and oriented-surface protocol uses share this declaration;
+    /// field-distance use remains independent.
+    pub const fn surface_semantic_input_requirement(
+        &self,
+    ) -> Option<RenderSurfaceSemanticInputRequirement> {
+        match self.surface_query {
+            Some(evidence) => evidence.semantic_input_requirement(),
+            None => None,
+        }
     }
 
     pub fn surface_query_protocol(
@@ -711,6 +743,7 @@ fn canonical_unit_direction(
 mod tests {
     use super::*;
     use crate::plugins::render::space_time::{RenderTimeInterval, RenderTimePoint};
+    use crate::plugins::render::surface_input::RenderSurfaceSemanticInputRequirement;
 
     fn instant() -> RenderTimePoint {
         RenderTimePoint::from_seconds(0.0).expect("finite time")
@@ -822,6 +855,45 @@ mod tests {
                 requested_revision: RENDER_ORIENTED_SURFACE_QUERY_PROTOCOL_REVISION + 1,
                 supported_revision: RENDER_ORIENTED_SURFACE_QUERY_PROTOCOL_REVISION,
             })
+        );
+    }
+
+    #[test]
+    fn surface_input_prerequisite_is_representation_owned_and_optional() {
+        let self_contained = representation(
+            1,
+            Some(
+                RenderSurfaceProtocolEvidence::exact(RENDER_SURFACE_QUERY_PROTOCOL_REVISION)
+                    .expect("surface protocol"),
+            ),
+            None,
+        );
+        assert_eq!(self_contained.surface_semantic_input_requirement(), None);
+
+        let requirement = RenderSurfaceSemanticInputRequirement::current();
+        let surface = RenderSurfaceProtocolEvidence::exact(RENDER_SURFACE_QUERY_PROTOCOL_REVISION)
+            .expect("surface protocol")
+            .with_oriented_surface(
+                RenderOrientedSurfaceProtocolEvidence::exact(
+                    RENDER_ORIENTED_SURFACE_QUERY_PROTOCOL_REVISION,
+                )
+                .expect("oriented protocol"),
+            )
+            .with_semantic_input_requirement(requirement);
+        let externally_bound = representation(2, Some(surface), None);
+        assert_eq!(
+            externally_bound.surface_semantic_input_requirement(),
+            Some(requirement)
+        );
+
+        let field = RenderFieldDistanceProtocolEvidence::new(
+            RENDER_FIELD_DISTANCE_PROTOCOL_REVISION,
+            RenderFieldDistanceGuarantee::exact(),
+        )
+        .expect("field protocol");
+        assert_eq!(
+            representation(3, None, Some(field)).surface_semantic_input_requirement(),
+            None
         );
     }
 

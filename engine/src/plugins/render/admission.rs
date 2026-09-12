@@ -1,17 +1,22 @@
-//! R5 current availability, physical output binding, and execution admission.
+//! R5 semantic-binding, current availability, physical output binding, and execution admission.
 //!
-//! This module consumes an accepted R4 [`RenderPlan`] plus invocation-scoped operational facts.
-//! It does not add current availability, GPU state, or physical destinations to R1-R4 semantic
-//! authority. The founding R4 contracts declare no request-scoped semantic binding prerequisite,
-//! so semantic-binding admission is intentionally vacuous here rather than represented by a
-//! placeholder binding store.
+//! This module consumes an accepted R4 [`RenderPlan`] plus invocation-scoped semantic and
+//! operational facts. Request-scoped semantic binding first specializes every candidate's already-
+//! planned representation alternatives. Only semantically admitted candidates then observe current
+//! availability, GPU state, and physical destinations. None of these invocation-local facts become
+//! R1-R4 semantic authority.
 
 use super::method::RenderAbstractExecutionRequirement;
 use super::representation::RenderRepresentationId;
 use super::scene::{RenderObjectId, RenderSceneRevision};
+use super::semantic_binding::{
+    RenderNormalizedSurfaceSemanticInputs, RenderSemanticBindingInputError,
+    RenderSemanticCandidateRejection, RenderSemanticallyAdmittedCandidate,
+};
 use super::semantic_plan::{
     RenderApplicableRepresentationUse, RenderOutputApproximation, RenderPlan, RenderPlanCandidate,
 };
+use super::surface_input::{RenderSurfaceSemanticInput, RenderSurfaceSemanticInputBinding};
 use runen_gpu::{
     GpuBufferHandle, GpuBufferUsage, GpuCapabilityFeature, GpuContext, GpuContextAffinity,
     GpuExecutionLifecycleState, GpuExecutionPolicy, GpuExecutionStats, GpuResourceOwnership,
@@ -58,14 +63,14 @@ impl RenderRepresentationAvailabilityFact {
 
 /// Physical destination family for one requested output.
 ///
-/// The founding R5 slice deliberately does not define numeric channel/packing semantics. R2
-/// semantic output meaning remains independent of this destination choice; method/lowering code
-/// must establish any concrete numeric encoding before writing values.
+/// R5 deliberately does not define numeric channel/packing semantics. R2 semantic output meaning
+/// remains independent of this destination choice; method/lowering code establishes any concrete
+/// numeric encoding before writing values.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RenderOutputDestination {
-    /// Founding scalar destination. The buffer must expose a physically writable usage.
+    /// Scalar destination. The buffer must expose a physically writable usage.
     ScalarBuffer(GpuBufferHandle),
-    /// Founding 2D-lattice destination. The whole base level must match the requested lattice.
+    /// 2D-lattice destination. The whole base level must match the requested lattice.
     SampleLatticeTexture(GpuTextureHandle),
 }
 
@@ -196,6 +201,11 @@ pub enum RenderCandidateAdmissionRejectionReason {
     RequiredCapabilityNotEnabled {
         feature: GpuCapabilityFeature,
     },
+    NoSemanticallyAdmissibleRepresentation {
+        output_index: usize,
+        object_id: RenderObjectId,
+        representation_ids: Vec<RenderRepresentationId>,
+    },
     AvailabilityUnknown {
         output_index: usize,
         object_id: RenderObjectId,
@@ -210,6 +220,7 @@ pub enum RenderCandidateAdmissionRejectionReason {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RenderAdmissionInputError {
+    SemanticBinding(RenderSemanticBindingInputError),
     DuplicateAvailabilityFact {
         representation_id: RenderRepresentationId,
     },
@@ -276,12 +287,13 @@ impl fmt::Display for RenderExecutionAdmissionFailure {
 
 impl Error for RenderExecutionAdmissionFailure {}
 
-/// One R5-selected plan realization under point-in-time operational evidence.
+/// One R5-selected plan realization under invocation-local semantic and operational evidence.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AdmittedRenderPlan {
     plan: RenderPlan,
     candidate_index: usize,
     outputs: Vec<RenderAdmittedOutput>,
+    surface_semantic_inputs: Vec<RenderSurfaceSemanticInputBinding>,
     environment: RenderExecutionAdmissionEvidence,
     skipped_candidates: Vec<RenderCandidateAdmissionRejection>,
 }
@@ -301,6 +313,22 @@ impl AdmittedRenderPlan {
 
     pub fn outputs(&self) -> &[RenderAdmittedOutput] {
         &self.outputs
+    }
+
+    /// Exact invocation-local semantic surface inputs actually selected by admitted representation
+    /// uses, normalized once per representation identity.
+    pub fn surface_semantic_inputs(&self) -> &[RenderSurfaceSemanticInputBinding] {
+        &self.surface_semantic_inputs
+    }
+
+    pub fn surface_semantic_input(
+        &self,
+        representation_id: RenderRepresentationId,
+    ) -> Option<&RenderSurfaceSemanticInput> {
+        self.surface_semantic_inputs
+            .binary_search_by_key(&representation_id, |binding| binding.representation_id())
+            .ok()
+            .map(|index| self.surface_semantic_inputs[index].input())
     }
 
     pub const fn environment(&self) -> RenderExecutionAdmissionEvidence {
@@ -334,29 +362,95 @@ impl CurrentExecutionFacts {
     }
 }
 
-/// Admit one accepted R4 plan against current operational facts.
+/// Admit one accepted R4 plan that declares no request-scoped surface semantic prerequisite.
 ///
-/// The function does not reserve RunenGPU capacity, allocate or realize resources, create work,
-/// submit GPU operations, or alter the retained semantic scene/request/plan. Candidate ordering is
-/// inherited from deterministic R4 planning; current fact insertion order is normalized here.
+/// This preserves the pre-#566 zero-prerequisite call shape. A plan containing a representation use
+/// that declares a current surface semantic prerequisite cannot select that use through this entry;
+/// use [`admit_render_plan_with_surface_inputs`] to supply the required invocation-local values.
 pub fn admit_render_plan(
     plan: &RenderPlan,
     availability: &[RenderRepresentationAvailabilityFact],
     output_bindings: &[RenderOutputBinding],
     context: &GpuContext,
 ) -> Result<AdmittedRenderPlan, RenderExecutionAdmissionFailure> {
+    admit_render_plan_with_surface_inputs(plan, &[], availability, output_bindings, context)
+}
+
+/// Admit one accepted R4 plan against current semantic bindings and operational facts.
+///
+/// Semantic binding admission completes for every candidate before current availability, physical
+/// output bindings, or GPU execution facts are inspected. The function does not reserve RunenGPU
+/// capacity, create work, submit operations, or alter the retained semantic scene/request/plan.
+pub fn admit_render_plan_with_surface_inputs(
+    plan: &RenderPlan,
+    semantic_inputs: &[RenderSurfaceSemanticInputBinding],
+    availability: &[RenderRepresentationAvailabilityFact],
+    output_bindings: &[RenderOutputBinding],
+    context: &GpuContext,
+) -> Result<AdmittedRenderPlan, RenderExecutionAdmissionFailure> {
+    let semantic_inputs = RenderNormalizedSurfaceSemanticInputs::normalize(plan, semantic_inputs)
+        .map_err(|error| {
+            RenderExecutionAdmissionFailure::InvalidInput(RenderAdmissionInputError::SemanticBinding(
+                error,
+            ))
+        })?;
+    let semantic_candidates = plan
+        .candidates()
+        .iter()
+        .map(|candidate| semantic_inputs.specialize_candidate(plan, candidate))
+        .collect::<Vec<_>>();
+
+    if semantic_candidates.iter().all(Result::is_err) {
+        return Err(RenderExecutionAdmissionFailure::NoExecutableCandidate {
+            rejections: semantic_candidates
+                .into_iter()
+                .enumerate()
+                .map(|(candidate_index, rejection)| RenderCandidateAdmissionRejection {
+                    candidate_index,
+                    reason: semantic_rejection(
+                        rejection.expect_err("all semantic candidates were rejected"),
+                    ),
+                })
+                .collect(),
+        });
+    }
+
     let availability = normalize_availability(availability)?;
     let bindings = normalize_output_bindings(plan, output_bindings)?;
     let current = CurrentExecutionFacts::from_context(context);
     let mut skipped_candidates = Vec::new();
 
-    for (candidate_index, candidate) in plan.candidates().iter().enumerate() {
-        match admit_candidate(candidate, &availability, &bindings, current) {
+    for (candidate_index, (candidate, semantic_candidate)) in plan
+        .candidates()
+        .iter()
+        .zip(semantic_candidates)
+        .enumerate()
+    {
+        let semantic_candidate = match semantic_candidate {
+            Ok(candidate) => candidate,
+            Err(rejection) => {
+                skipped_candidates.push(RenderCandidateAdmissionRejection {
+                    candidate_index,
+                    reason: semantic_rejection(rejection),
+                });
+                continue;
+            }
+        };
+        match admit_semantically_admitted_candidate(
+            candidate,
+            &semantic_candidate,
+            &availability,
+            &bindings,
+            current,
+        ) {
             Ok(outputs) => {
+                let selected_semantic_inputs =
+                    selected_surface_semantic_inputs(plan, &outputs, &semantic_inputs);
                 return Ok(AdmittedRenderPlan {
                     plan: plan.clone(),
                     candidate_index,
                     outputs,
+                    surface_semantic_inputs: selected_semantic_inputs,
                     environment: RenderExecutionAdmissionEvidence {
                         affinity: context.affinity(),
                         lifecycle: current.lifecycle,
@@ -376,6 +470,38 @@ pub fn admit_render_plan(
     Err(RenderExecutionAdmissionFailure::NoExecutableCandidate {
         rejections: skipped_candidates,
     })
+}
+
+fn semantic_rejection(
+    rejection: RenderSemanticCandidateRejection,
+) -> RenderCandidateAdmissionRejectionReason {
+    RenderCandidateAdmissionRejectionReason::NoSemanticallyAdmissibleRepresentation {
+        output_index: rejection.output_index(),
+        object_id: rejection.object_id(),
+        representation_ids: rejection.representation_ids().to_vec(),
+    }
+}
+
+fn selected_surface_semantic_inputs(
+    plan: &RenderPlan,
+    outputs: &[RenderAdmittedOutput],
+    semantic_inputs: &RenderNormalizedSurfaceSemanticInputs,
+) -> Vec<RenderSurfaceSemanticInputBinding> {
+    let mut selected = BTreeMap::new();
+    for output in outputs {
+        for object in output.object_representations() {
+            if let Some(binding) = semantic_inputs.binding_for_selected_use(
+                plan,
+                object.object_id(),
+                object.representation(),
+            ) {
+                selected
+                    .entry(binding.representation_id())
+                    .or_insert_with(|| binding.clone());
+            }
+        }
+    }
+    selected.into_values().collect()
 }
 
 fn normalize_availability(
@@ -508,19 +634,19 @@ fn validate_output_binding(
     }
 }
 
-fn admit_candidate(
+fn admit_semantically_admitted_candidate(
     candidate: &RenderPlanCandidate,
+    semantic_candidate: &RenderSemanticallyAdmittedCandidate,
     availability: &BTreeMap<RenderRepresentationId, RenderRepresentationAvailabilityState>,
     bindings: &[RenderOutputBinding],
     current: CurrentExecutionFacts,
 ) -> Result<Vec<RenderAdmittedOutput>, RenderCandidateAdmissionRejectionReason> {
     validate_current_execution(candidate, current)?;
 
-    let mut outputs = Vec::with_capacity(candidate.outputs().len());
-    for planned_output in candidate.outputs() {
-        let mut object_representations =
-            Vec::with_capacity(planned_output.object_representations().len());
-        for object in planned_output.object_representations() {
+    let mut outputs = Vec::with_capacity(semantic_candidate.outputs().len());
+    for semantic_output in semantic_candidate.outputs() {
+        let mut object_representations = Vec::with_capacity(semantic_output.objects().len());
+        for object in semantic_output.objects() {
             let mut selected = None;
             let mut first_unknown = None;
             let mut representation_ids = Vec::with_capacity(object.uses().len());
@@ -545,7 +671,7 @@ fn admit_candidate(
                     if let Some(representation_id) = first_unknown {
                         return Err(
                             RenderCandidateAdmissionRejectionReason::AvailabilityUnknown {
-                                output_index: planned_output.output_index(),
+                                output_index: semantic_output.output_index(),
                                 object_id: object.object_id(),
                                 representation_id,
                             },
@@ -553,7 +679,7 @@ fn admit_candidate(
                     }
                     return Err(
                         RenderCandidateAdmissionRejectionReason::NoAvailableRepresentation {
-                            output_index: planned_output.output_index(),
+                            output_index: semantic_output.output_index(),
                             object_id: object.object_id(),
                             representation_ids,
                         },
@@ -567,14 +693,31 @@ fn admit_candidate(
         }
 
         outputs.push(RenderAdmittedOutput {
-            output_index: planned_output.output_index(),
-            observation_index: planned_output.observation_index(),
-            approximation: planned_output.approximation(),
+            output_index: semantic_output.output_index(),
+            observation_index: semantic_output.observation_index(),
+            approximation: semantic_output.approximation(),
             object_representations,
-            binding: bindings[planned_output.output_index()].clone(),
+            binding: bindings[semantic_output.output_index()].clone(),
         });
     }
     Ok(outputs)
+}
+
+#[cfg(test)]
+fn admit_candidate(
+    candidate: &RenderPlanCandidate,
+    availability: &BTreeMap<RenderRepresentationId, RenderRepresentationAvailabilityState>,
+    bindings: &[RenderOutputBinding],
+    current: CurrentExecutionFacts,
+) -> Result<Vec<RenderAdmittedOutput>, RenderCandidateAdmissionRejectionReason> {
+    let semantic_candidate = RenderSemanticallyAdmittedCandidate::vacuous(candidate);
+    admit_semantically_admitted_candidate(
+        candidate,
+        &semantic_candidate,
+        availability,
+        bindings,
+        current,
+    )
 }
 
 fn validate_current_execution(
@@ -636,6 +779,7 @@ mod tests {
         RenderObjectTemporalState, RenderSpaceSpec, RenderSpatialCoverage, RenderTemporalSupport,
         RenderTimeInterval, RenderTimePoint,
     };
+    use crate::plugins::render::surface_input::RenderSurfaceSemanticInputRequirement;
     use runen_gpu::{
         GpuBufferDescriptor, GpuBufferInitialization, GpuBufferUsages, GpuMemoryIntent,
         GpuReconstruction, GpuResourceCommon, GpuResourceLabel, GpuResourceLifetime,
@@ -788,9 +932,28 @@ mod tests {
         method_with_guarantee(observation_kind, RenderMethodOutputGuarantee::Exact)
     }
 
+    fn surface_evidence(required: bool) -> RenderSurfaceProtocolEvidence {
+        let evidence = RenderSurfaceProtocolEvidence::exact(RENDER_SURFACE_QUERY_PROTOCOL_REVISION)
+            .expect("surface evidence");
+        if required {
+            evidence.with_semantic_input_requirement(RenderSurfaceSemanticInputRequirement::current())
+        } else {
+            evidence
+        }
+    }
+
     fn plan_with_two_surface_representations_for(
         request: super::super::request::RenderRequest,
         guarantee: RenderMethodOutputGuarantee,
+    ) -> (RenderPlan, RenderRepresentationId, RenderRepresentationId) {
+        plan_with_two_surface_representations_and_requirements(request, guarantee, false, false)
+    }
+
+    fn plan_with_two_surface_representations_and_requirements(
+        request: super::super::request::RenderRequest,
+        guarantee: RenderMethodOutputGuarantee,
+        first_requires_input: bool,
+        second_requires_input: bool,
     ) -> (RenderPlan, RenderRepresentationId, RenderRepresentationId) {
         let mut store = RenderSceneStore::new();
         let object_id = store.allocate_object_id().expect("object id");
@@ -804,22 +967,22 @@ mod tests {
         let second_id = store
             .allocate_representation_id(object_id)
             .expect("second representation id");
-        let representation = |id| {
+        let representation = |id, required| {
             RenderRepresentationRecord::new(
                 id,
                 RenderSpatialCoverage::unbounded(),
                 RenderTemporalSupport::unbounded(),
                 RenderRefinementEvidence::none(),
-                Some(
-                    RenderSurfaceProtocolEvidence::exact(RENDER_SURFACE_QUERY_PROTOCOL_REVISION)
-                        .expect("surface evidence"),
-                ),
+                Some(surface_evidence(required)),
                 None,
             )
             .expect("representation")
         };
         let participation = RenderObjectParticipation::new(
-            vec![representation(second_id), representation(first_id)],
+            vec![
+                representation(second_id, second_requires_input),
+                representation(first_id, first_requires_input),
+            ],
             None,
             None,
         )
@@ -848,7 +1011,9 @@ mod tests {
         )
     }
 
-    fn two_output_plan() -> (RenderPlan, RenderRepresentationId) {
+    fn two_output_plan_with_requirement(
+        required: bool,
+    ) -> (RenderPlan, RenderRepresentationId) {
         let mut store = RenderSceneStore::new();
         let object_id = store.allocate_object_id().expect("object id");
         let mut insert = RenderSceneUpdate::new();
@@ -863,10 +1028,7 @@ mod tests {
             RenderSpatialCoverage::unbounded(),
             RenderTemporalSupport::unbounded(),
             RenderRefinementEvidence::none(),
-            Some(
-                RenderSurfaceProtocolEvidence::exact(RENDER_SURFACE_QUERY_PROTOCOL_REVISION)
-                    .expect("surface evidence"),
-            ),
+            Some(surface_evidence(required)),
             None,
         )
         .expect("representation");
@@ -885,6 +1047,10 @@ mod tests {
         (plan, representation_id)
     }
 
+    fn two_output_plan() -> (RenderPlan, RenderRepresentationId) {
+        two_output_plan_with_requirement(false)
+    }
+
     fn lattice_plan(width: u32, height: u32) -> RenderPlan {
         let mut store = RenderSceneStore::new();
         let object_id = store.allocate_object_id().expect("object id");
@@ -900,10 +1066,7 @@ mod tests {
             RenderSpatialCoverage::unbounded(),
             RenderTemporalSupport::unbounded(),
             RenderRefinementEvidence::none(),
-            Some(
-                RenderSurfaceProtocolEvidence::exact(RENDER_SURFACE_QUERY_PROTOCOL_REVISION)
-                    .expect("surface evidence"),
-            ),
+            Some(surface_evidence(false)),
             None,
         )
         .expect("representation");
@@ -1109,6 +1272,119 @@ mod tests {
                 RenderAdmissionInputError::DuplicateOutputBinding { output_index: 0 }
             ))
         ));
+    }
+
+    #[test]
+    fn semantic_binding_eliminates_before_availability_selection() {
+        let (plan, required_id, fallback_id) = plan_with_two_surface_representations_and_requirements(
+            scalar_distance_request(),
+            RenderMethodOutputGuarantee::Exact,
+            true,
+            false,
+        );
+        let missing = RenderNormalizedSurfaceSemanticInputs::normalize(&plan, &[])
+            .expect("missing semantic input is absence, not malformed caller input");
+        let semantic_candidate = missing
+            .specialize_candidate(&plan, &plan.candidates()[0])
+            .expect("self-contained fallback remains semantically legal");
+        assert_eq!(
+            semantic_candidate.outputs()[0].objects()[0].uses()[0].representation_id(),
+            fallback_id
+        );
+
+        let bindings =
+            normalize_output_bindings(&plan, &[scalar_buffer_binding()]).expect("bindings");
+        let availability = normalize_availability(&[
+            RenderRepresentationAvailabilityFact::new(
+                required_id,
+                RenderRepresentationAvailabilityState::Available,
+            ),
+            RenderRepresentationAvailabilityFact::new(
+                fallback_id,
+                RenderRepresentationAvailabilityState::Available,
+            ),
+        ])
+        .expect("availability");
+        let outputs = admit_semantically_admitted_candidate(
+            &plan.candidates()[0],
+            &semantic_candidate,
+            &availability,
+            &bindings,
+            available_execution(),
+        )
+        .expect("execution admission");
+        assert_eq!(
+            outputs[0].object_representations()[0]
+                .representation()
+                .representation_id(),
+            fallback_id
+        );
+
+        let input = RenderSurfaceSemanticInput::sphere(
+            [0.0; 3],
+            1.0,
+            RenderTemporalSupport::unbounded(),
+        )
+        .expect("surface input");
+        let supplied = RenderNormalizedSurfaceSemanticInputs::normalize(
+            &plan,
+            &[RenderSurfaceSemanticInputBinding::new(required_id, input)],
+        )
+        .expect("semantic input");
+        let semantic_candidate = supplied
+            .specialize_candidate(&plan, &plan.candidates()[0])
+            .expect("bound first representation becomes semantically eligible");
+        assert_eq!(
+            semantic_candidate.outputs()[0].objects()[0].uses()[0].representation_id(),
+            required_id
+        );
+    }
+
+    #[test]
+    fn selected_semantic_input_is_retained_once_per_representation_identity() {
+        let (plan, representation_id) = two_output_plan_with_requirement(true);
+        let bindings = normalize_output_bindings(
+            &plan,
+            &[
+                scalar_buffer_binding_for(1, "r5 output one"),
+                scalar_buffer_binding_for(0, "r5 output zero"),
+            ],
+        )
+        .expect("bindings");
+        let availability = normalize_availability(&[RenderRepresentationAvailabilityFact::new(
+            representation_id,
+            RenderRepresentationAvailabilityState::Available,
+        )])
+        .expect("availability");
+        let expected = RenderSurfaceSemanticInput::sphere(
+            [0.0; 3],
+            1.0,
+            RenderTemporalSupport::unbounded(),
+        )
+        .expect("surface input");
+        let semantic_inputs = RenderNormalizedSurfaceSemanticInputs::normalize(
+            &plan,
+            &[RenderSurfaceSemanticInputBinding::new(
+                representation_id,
+                expected.clone(),
+            )],
+        )
+        .expect("semantic input");
+        let semantic_candidate = semantic_inputs
+            .specialize_candidate(&plan, &plan.candidates()[0])
+            .expect("semantic candidate");
+        let outputs = admit_semantically_admitted_candidate(
+            &plan.candidates()[0],
+            &semantic_candidate,
+            &availability,
+            &bindings,
+            available_execution(),
+        )
+        .expect("candidate");
+        let retained = selected_surface_semantic_inputs(&plan, &outputs, &semantic_inputs);
+        assert_eq!(retained.len(), 1);
+        assert_eq!(retained[0].representation_id(), representation_id);
+        assert_eq!(retained[0].input(), &expected);
     }
 
     #[test]
