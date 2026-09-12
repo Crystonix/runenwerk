@@ -46,6 +46,8 @@ mod r6_proof;
 mod r6_reference_proof;
 #[cfg(test)]
 mod r6_spine_proof;
+#[cfg(test)]
+mod semantic_binding_r7_proof;
 
 mod plugin;
 pub mod runtime;
