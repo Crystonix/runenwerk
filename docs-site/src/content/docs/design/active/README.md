@@ -138,7 +138,6 @@ active design contains older conflicting target language.
 
 - [Drawing Authoring and Comic Layout Platform Design](drawing-authoring-and-comic-layout-platform-design.md)
 - [Drawing Domain Crate Design](drawing-domain-crate-design.md)
-- [Field Visualizer Product Workflow Design](field-visualizer-product-workflow-design.md)
 - [Material Lab And Material Preview Design](material-lab-and-material-preview-design.md)
 - [Native Tablet Input and Latency Contract](native-tablet-input-and-latency-contract.md)
 - [Typed App Program And UI Proof Design](typed-app-program-and-ui-proof-design.md)
@@ -158,4 +157,3 @@ active design contains older conflicting target language.
 - [SDF Procedural Animation and Animated Models Design](sdf-procedural-animation-and-animated-models-design.md)
 - [Semantic Graph IR and Compilation Design](semantic-graph-ir-and-compilation-design.md)
 - [Viewport Camera And Projection Contract Platform](viewport-camera-and-projection-contract-platform-design.md)
-- [Viewport Expression Upgrade Design](workspace-viewport-expression-upgrade-design.md)

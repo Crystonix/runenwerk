@@ -5,11 +5,11 @@ status: active
 owner: editor
 layer: domain
 canonical: true
-last_reviewed: 2026-07-24
+last_reviewed: 2026-09-12
 related_designs:
   - ../accepted/sdf-first-field-world-platform-design.md
-  - ./editor-rendered-world-and-multi-entity-viewport-design.md
-  - ./field-visualizer-product-workflow-design.md
+  - ../implemented/editor-rendered-world-and-multi-entity-viewport-design.md
+  - ../implemented/field-visualizer-product-workflow-design.md
   - ./material-lab-and-material-preview-design.md
   - ./sdf-prefab-composition-system-design.md
   - ./editor-procedural-content-and-simulation-workflow-plan.md

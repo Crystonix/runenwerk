@@ -5,9 +5,9 @@ status: active
 owner: workspace
 layer: workspace
 canonical: true
-last_reviewed: 2026-09-10
+last_reviewed: 2026-09-12
 related_designs:
-  - workspace-viewport-expression-upgrade-design.md
+  - ../implemented/workspace-viewport-expression-upgrade-design.md
   - ../implemented/renderer-procedural-population-hardening-platform-design.md
   - ../implemented/render-product-surface-foundation-bundle-design.md
   - ../deferred/game-runtime-ui-projection-and-hud-platform-design.md

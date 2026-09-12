@@ -13,7 +13,7 @@ related_designs:
   - ../../design/active/editor-ui-workspace-tool-surface-architecture.md
   - ../../design/implemented/editor-tool-suite-registry-and-workbench-host-design.md
   - ../../design/accepted/editor-native-multi-window-presentation-design.md
-  - ../../design/active/workspace-viewport-expression-upgrade-design.md
+  - ../../design/implemented/workspace-viewport-expression-upgrade-design.md
   - ../../design/implemented/render-product-surface-foundation-bundle-design.md
   - ../../design/implemented/viewport-dynamic-product-target-allocation-design.md
   - ../../design/implemented/editor-self-authoring-and-final-ui-design.md
@@ -587,8 +587,8 @@ Interaction V2 is implemented for the retained UI target under accepted ADR
   - WR-018 V1 first implemented multi-entity SDF primitive viewport rendering; current production extraction uses `apps/runenwerk_editor/src/runtime/systems/frame_submit.rs::extract_viewport_scene_render_packet_with_material_slots`;
   - material-slot selection is an additive production extension beyond WR-018 V1; terrain, prefab instancing, streaming, and broader general-mesh/world extraction remain separate product tracks.
 - Field Visualizer
-  - active design: `docs-site/src/content/docs/design/active/field-visualizer-product-workflow-design.md`;
-  - implement as viewport product selection and controls, not as a separate viewer.
+  - implemented design: `docs-site/src/content/docs/design/implemented/field-visualizer-product-workflow-design.md`;
+  - the viewport product workflow and presentation controls are implemented; additional field-product producers and broader product maturity remain separately owned.
 - Material Lab
   - active design: `docs-site/src/content/docs/design/active/material-lab-and-material-preview-design.md`;
   - implementation starts after rendered-world V1 and field visualizer product routing are stable;
@@ -864,7 +864,7 @@ Owning roadmap:
 
 Owning design:
 
-- `docs-site/src/content/docs/design/active/workspace-viewport-expression-upgrade-design.md`
+- `docs-site/src/content/docs/design/implemented/workspace-viewport-expression-upgrade-design.md`
 - `docs-site/src/content/docs/design/implemented/render-product-surface-foundation-bundle-design.md`
 
 Status: complete as of 2026-05-08. Explicit viewport instance identity, persisted restore metadata and runtime settings, lifecycle-before-frame-submit sync, viewport-scoped product targets, per-viewport render jobs, shader containment cleanup, viewport-keyed camera/debug/root commands, viewport-local camera input, duplicate settings copy, and closed-surface cleanup are implemented. Further viewport producer breadth or polish belongs to later product milestones, not M3.7 migration work.

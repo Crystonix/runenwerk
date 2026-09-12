@@ -1,11 +1,11 @@
 ---
 title: Runenwerk Viewport Architecture Design
-description: Long-term viewport expression product, presentation, and render-target ownership design.
-status: active
+description: Implemented viewport expression product, presentation, and render-target ownership design.
+status: implemented
 owner: workspace
 layer: workspace
 canonical: true
-last_reviewed: 2026-05-07
+last_reviewed: 2026-09-12
 related_roadmaps:
   - ../../apps/runenwerk-editor/viewport-expression-implementation-roadmap.md
 ---
@@ -13,7 +13,7 @@ related_roadmaps:
 # Viewport Expression Upgrade Design
 
 ## Status
-Implemented foundation, active for product maturity follow-up
+Implemented foundation. Product maturity and additional producers remain separately owned follow-up work and do not keep this foundation design active.
 
 ## Purpose
 Document the long-term panel-owned viewport presentation architecture built around typed expression products. The fullscreen scene pass with shader-side viewport masking has been removed from the normal render path.

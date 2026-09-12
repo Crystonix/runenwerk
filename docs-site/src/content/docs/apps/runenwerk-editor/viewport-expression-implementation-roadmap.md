@@ -5,14 +5,14 @@ status: active
 owner: editor
 layer: app
 canonical: true
-last_reviewed: 2026-05-08
+last_reviewed: 2026-09-12
 related_designs:
-  - ../../design/active/workspace-viewport-expression-upgrade-design.md
+  - ../../design/implemented/workspace-viewport-expression-upgrade-design.md
   - ../../design/implemented/render-product-surface-foundation-bundle-design.md
   - ../../design/implemented/viewport-dynamic-product-target-allocation-design.md
   - ../../design/active/editor-ui-workspace-tool-surface-architecture.md
   - ../../design/implemented/editor-rendered-world-and-multi-entity-viewport-design.md
-  - ../../design/active/field-visualizer-product-workflow-design.md
+  - ../../design/implemented/field-visualizer-product-workflow-design.md
 related_roadmaps:
   - ../../engine/roadmaps/fully-featured-renderer-roadmap.md
 related:
@@ -78,10 +78,11 @@ Remaining work is no longer migration cleanup. The planned non-viewport surface
 workflow follow-up has landed, reusable viewport options now use retained toggle
 controls, and the viewport product catalog exposes descriptor rows for field,
 atlas, volume slice, brickmap debug, and history color products. Products whose
-runtime producers are not implemented are visible but marked unavailable. Product
-maturity now moves to Field Visualizer and Material Lab product producers through
-the same viewport product routing rather than descriptor plumbing or parallel
-viewer paths.
+runtime producers are not implemented are visible but marked unavailable. The
+Field Visualizer viewport workflow and presentation controls are implemented;
+remaining field-product producer breadth and Material Lab producer maturity are
+separately owned work that must continue through the same viewport product
+routing rather than descriptor plumbing or parallel viewer paths.
 
 Long-term renderer capability sequencing for product producers, storage-buffer
 scene packets, SDF/world rendering, materials, temporal history, fragments, and

@@ -1,14 +1,14 @@
 ---
 title: Field Visualizer Product Workflow Design
-description: Active design for inspecting scalar, vector, atlas, volume, brickmap, and history field products through viewport products.
-status: active
+description: Implemented design for inspecting scalar, vector, atlas, volume, brickmap, and history field products through viewport products.
+status: implemented
 owner: apps/runenwerk_editor
 layer: app-runtime / editor-ui
 canonical: true
-last_reviewed: 2026-09-10
+last_reviewed: 2026-09-12
 related_designs:
-  - ../implemented/editor-rendered-world-and-multi-entity-viewport-design.md
-  - ../implemented/render-product-surface-foundation-bundle-design.md
+  - ./editor-rendered-world-and-multi-entity-viewport-design.md
+  - ./render-product-surface-foundation-bundle-design.md
   - ../accepted/sdf-first-field-world-platform-design.md
 related_roadmaps:
   - ../../apps/runenwerk-editor/roadmap.md
@@ -18,7 +18,7 @@ related_roadmaps:
 
 ## Status
 
-Active design. Implementation is staged after the rendered-world V1 scene packet because field visualization must reuse viewport product routing instead of creating another preview path.
+Implemented for the viewport-owned Field Visualizer workflow completed by WR-019. Field-product producer algorithms, renderer-owned field truth, Material Lab, prefab/runtime, terrain, and broader product maturity remain separately owned work; they do not keep this consumer workflow design active.
 
 ## Decision
 
