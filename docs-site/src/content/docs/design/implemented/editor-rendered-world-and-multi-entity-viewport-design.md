@@ -5,10 +5,10 @@ status: implemented
 owner: apps/runenwerk_editor
 layer: app-runtime / engine-render
 canonical: true
-last_reviewed: 2026-09-10
+last_reviewed: 2026-09-12
 related_designs:
   - ./render-product-surface-foundation-bundle-design.md
-  - ../active/workspace-viewport-expression-upgrade-design.md
+  - ./workspace-viewport-expression-upgrade-design.md
   - ../accepted/sdf-first-production-capability-map.md
 related_roadmaps:
   - ../../engine/roadmaps/fully-featured-renderer-roadmap.md

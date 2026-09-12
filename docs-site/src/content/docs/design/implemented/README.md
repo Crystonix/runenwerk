@@ -5,7 +5,7 @@ status: active
 owner: workspace
 layer: workspace
 canonical: true
-last_reviewed: 2026-09-10
+last_reviewed: 2026-09-12
 ---
 
 # Implemented Designs
@@ -52,4 +52,5 @@ checked against code, tests, closeout evidence, and known drift.
 
 ### Workspace / Cross-Domain
 
-No implemented workspace/cross-domain design documents are currently tracked in this folder.
+- [Field Visualizer Product Workflow Design](field-visualizer-product-workflow-design.md)
+- [Viewport Expression Upgrade Design](workspace-viewport-expression-upgrade-design.md)

@@ -5,14 +5,14 @@ status: accepted
 owner: engine
 layer: engine-runtime / render product surfaces
 canonical: true
-last_reviewed: 2026-05-21
+last_reviewed: 2026-09-12
 related_designs:
   - ./render-product-graph-platform-design.md
   - ./render-contract-ergonomics-design.md
   - ./render-execution-graph-compiler-maturity-design.md
   - ./feature-owned-render-contributions-design.md
   - ../implemented/render-product-surface-foundation-bundle-design.md
-  - ../active/field-visualizer-product-workflow-design.md
+  - ../implemented/field-visualizer-product-workflow-design.md
   - ../active/material-lab-and-material-preview-design.md
   - ../active/drawing-authoring-and-comic-layout-platform-design.md
 related_roadmaps:

@@ -5,7 +5,7 @@ status: active
 owner: ui
 layer: domain
 canonical: true
-last_reviewed: 2026-06-20
+last_reviewed: 2026-09-12
 ---
 
 # UI Domain Current-State Architecture
@@ -390,7 +390,7 @@ authority.
 - [UI Definition Formation Framework Design](../../design/implemented/ui-definition-formation-foundation-design.md)
 - [ADR 0009: UI Interaction Formation V2](../../adr/accepted/0009-ui-interaction-formation-v2.md)
 - [Editor / UI / Workspace / Tool-Surface Architecture](../../design/active/editor-ui-workspace-tool-surface-architecture.md)
-- [Viewport Expression Upgrade Design](../../design/active/workspace-viewport-expression-upgrade-design.md)
+- [Viewport Expression Upgrade Design](../../design/implemented/workspace-viewport-expression-upgrade-design.md)
 - [Workspace Identity Contract and Migration Map](../../design/implemented/workspace-identity-contract-and-migration-map.md)
 - [UI Substrate Roadmap](./roadmap.md)
 

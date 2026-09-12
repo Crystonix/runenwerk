@@ -6,13 +6,13 @@ owner: workspace
 layer: cross-domain
 canonical: true
 lifecycle_exception: active_phase_evidence
-last_reviewed: 2026-07-24
+last_reviewed: 2026-09-12
 related_designs:
   - ../accepted/sdf-first-field-world-platform-design.md
   - ./editor-asset-pipeline-and-content-workflow-design.md
   - ./semantic-graph-ir-and-compilation-design.md
   - ./gameplay-graph-atr-ir-and-ecs-lowering-design.md
-  - ./workspace-viewport-expression-upgrade-design.md
+  - ../implemented/workspace-viewport-expression-upgrade-design.md
   - ./editor-ui-workspace-tool-surface-architecture.md
   - ../implemented/editor-workspace-document-mode-panel-architecture.md
 related_roadmaps:

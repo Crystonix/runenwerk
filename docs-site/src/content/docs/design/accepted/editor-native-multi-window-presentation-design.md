@@ -5,14 +5,14 @@ status: accepted
 owner: editor
 layer: app
 canonical: true
-last_reviewed: 2026-05-21
+last_reviewed: 2026-09-12
 related_designs:
   - ./render-product-graph-platform-design.md
   - ./product-surface-platform-hardening-design.md
   - ../implemented/editor-workspace-document-mode-panel-architecture.md
   - ../active/editor-ui-workspace-tool-surface-architecture.md
   - ../implemented/render-product-surface-foundation-bundle-design.md
-  - ../active/workspace-viewport-expression-upgrade-design.md
+  - ../implemented/workspace-viewport-expression-upgrade-design.md
 related_roadmaps:
   - ../../apps/runenwerk-editor/roadmap.md
   - ../../engine/plugins/render/docs/roadmap.md

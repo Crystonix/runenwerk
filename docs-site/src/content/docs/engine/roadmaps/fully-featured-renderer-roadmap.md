@@ -5,13 +5,13 @@ status: active
 owner: engine
 layer: engine-runtime / editor-product-integration
 canonical: true
-last_reviewed: 2026-05-21
+last_reviewed: 2026-09-12
 related_designs:
   - ../../design/accepted/sdf-first-field-world-platform-design.md
   - ../../design/accepted/sdf-product-renderer-and-gpu-residency-design.md
   - ../../design/implemented/render-product-surface-foundation-bundle-design.md
   - ../../design/implemented/editor-rendered-world-and-multi-entity-viewport-design.md
-  - ../../design/active/field-visualizer-product-workflow-design.md
+  - ../../design/implemented/field-visualizer-product-workflow-design.md
   - ../../design/active/material-lab-and-material-preview-design.md
   - ../../design/accepted/render-contract-ergonomics-design.md
   - ../../design/accepted/feature-owned-render-contributions-design.md
