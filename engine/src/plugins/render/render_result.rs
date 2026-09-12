@@ -7,6 +7,27 @@ use std::collections::BTreeSet;
 use std::error::Error;
 use std::fmt;
 
+/// Renderer-owned evidence that one deterministic finite output satisfied the requested tolerance.
+///
+/// This is intentionally not public product API. A RunenRender method/evaluator may construct this
+/// witness only after its concrete finite evaluation has established the requested
+/// `RenderSemanticTolerance` for the correlated admitted output. Physical completion, numeric
+/// format, or semantic/model approximation alone are not sufficient evidence.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) struct RenderDeterministicOutputFormationEvidence {
+    output_index: usize,
+}
+
+impl RenderDeterministicOutputFormationEvidence {
+    pub(super) const fn requested_tolerance_satisfied(output_index: usize) -> Self {
+        Self { output_index }
+    }
+
+    const fn output_index(self) -> usize {
+        self.output_index
+    }
+}
+
 /// Immutable renderer-semantic representation provenance retained for one completed output.
 ///
 /// Physical bindings, GPU execution evidence, readback identities, and output bytes deliberately do
@@ -107,19 +128,20 @@ impl fmt::Display for RenderResultFormationError {
 impl Error for RenderResultFormationError {}
 
 impl RenderResult {
-    /// Form complete semantic result evidence after the caller has established that every listed
-    /// admitted output was successfully formed.
+    /// Form complete semantic result evidence for one deterministic admitted execution.
     ///
-    /// The caller owns the execution-specific completion proof. This constructor deliberately does
-    /// not depend on RunenGPU submission/readback types, so the founding proof's status readback does
-    /// not become a universal result-formation contract.
-    pub(crate) fn complete(
+    /// Every admitted output requires one renderer-owned witness that its concrete finite value has
+    /// satisfied the requested deterministic tolerance. This constructor deliberately does not
+    /// depend on RunenGPU submission/readback types and does not infer evaluation fidelity from GPU
+    /// completion, numeric format, or the admitted semantic/model approximation.
+    pub(super) fn complete_deterministic(
         admitted: &AdmittedRenderPlan,
-        formed_output_indices: impl IntoIterator<Item = usize>,
+        output_evidence: impl IntoIterator<Item = RenderDeterministicOutputFormationEvidence>,
     ) -> Result<Self, RenderResultFormationError> {
         let output_count = admitted.outputs().len();
         let mut formed = BTreeSet::new();
-        for output_index in formed_output_indices {
+        for evidence in output_evidence {
+            let output_index = evidence.output_index();
             if output_index >= output_count {
                 return Err(RenderResultFormationError::OutputOutOfRange {
                     output_index,
