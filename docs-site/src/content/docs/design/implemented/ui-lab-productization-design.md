@@ -1,11 +1,11 @@
 ---
 title: UI Lab Productization Design
-description: Active productization design for the runtime-proven app-hosted Editor Interface Lab target.
-status: active
+description: Implemented productization design for the app-hosted Editor Interface Lab target.
+status: implemented
 owner: editor
 layer: domain/app
 canonical: true
-last_reviewed: 2026-05-24
+last_reviewed: 2026-09-12
 related_adrs:
   - ../../adr/accepted/0001-use-domain-owned-commands.md
   - ../../adr/accepted/0004-separate-description-from-execution.md
@@ -14,11 +14,11 @@ related_adrs:
   - ../../adr/accepted/0010-graph-substrate-canvas-boundary.md
   - ../../adr/superseded/0012-capability-workbench-clean-break.md
 related_designs:
-  - ./ui-designer-interface-lab-platform-design.md
+  - ../active/ui-designer-interface-lab-platform-design.md
   - ./editor-tool-suite-registry-and-workbench-host-design.md
-  - ./editor-ui-workspace-tool-surface-architecture.md
-  - ../implemented/editor-self-authoring-and-final-ui-design.md
-  - ../implemented/surface-workflow-contract-redesign.md
+  - ../active/editor-ui-workspace-tool-surface-architecture.md
+  - ./editor-self-authoring-and-final-ui-design.md
+  - ./surface-workflow-contract-redesign.md
   - ../accepted/ui-designer-canonical-ir-and-composition-design.md
   - ../accepted/ui-designer-target-projection-profiles-design.md
   - ../accepted/ui-designer-visual-layout-and-interface-composition-design.md
@@ -36,14 +36,20 @@ related_designs:
   - ../accepted/ui-lab-api-docs-examples-runtime-closeout-design.md
 related_roadmaps:
   - ../../domain/ui/roadmap.md
+related_reports:
+  - ../../reports/closeouts/pm-ui-lab-perf-006-final-no-gap-certification-closeout/closeout.md
 ---
 
 # UI Lab Productization Design
 
 ## Status
 
-This is the active productization design for the Editor Interface Lab target
-historically decomposed as `PT-UI-LAB`.
+Implemented. Editor Lab V1 completed its runtime-proven productization sequence,
+and the separate final no-gap certification subsequently completed at
+`perfectionist_verified` with no known quality gaps. Game-runtime UI projection
+execution remains separately owned and deferred; it is not part of this
+lifecycle claim. The code-truth reconciliation and milestone decomposition below
+are retained as activation-time provenance, not current gap or work-state claims.
 
 It does not reopen the historical UI Designer sequence. The completed
 UI Designer milestones are design-contract input with bounded evidence; they
@@ -79,10 +85,11 @@ accepted UI Designer contracts
   -> separate no-gap audit when justified
 ```
 
-## Code-Truth Reconciliation
+## Activation-Time Code-Truth Reconciliation
 
-Current code already contains useful foundations, but the product experience is
-not yet the planned Editor Interface Lab.
+At the original productization point, current code already contained useful
+foundations, but the product experience was not yet the planned Editor Interface
+Lab.
 
 - `apps/runenwerk_editor/src/shell/providers/self_authoring.rs` and
   `apps/runenwerk_editor/src/shell/self_authoring.rs` provide self-authoring
@@ -211,8 +218,8 @@ It is not live lifecycle state:
 - `PM-UI-LAB-007`: public API ergonomics, usage docs, examples, final
   runtime-proven closeout, and intake for the later no-gap audit.
 
-Game-runtime UI projection execution is outside Editor Lab V1 until the
-editor/workbench target is runtime-proven.
+Game-runtime UI projection execution remained outside Editor Lab V1 and remains
+separately owned after Editor Lab V1 became runtime-proven.
 
 An owning GitHub issue may adopt, refine, split, or reject this decomposition
 when work is activated. Naming a historical PM does not create an active
@@ -253,9 +260,8 @@ evidence includes:
 - explicit known gaps when an expected check is unsupported by the current
   runtime.
 
-`perfectionist_verified` is not implied by the historical UI Lab sequence. A
-separate no-gap audit is required if runtime-proven evidence is strong enough to
-justify the stronger claim.
+`perfectionist_verified` was not implied by the historical UI Lab sequence; the
+separate final no-gap audit later established that stronger claim.
 
 ## Validation
 

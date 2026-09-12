@@ -1,29 +1,40 @@
 ---
 title: Editor Product UX Lab And Game UI Ready Foundations
-description: Active product/architecture design for native editor UX Lab, all-surface certification, and future game-runtime UI compatibility.
-status: active
+description: Implemented product/architecture design for native editor UX Lab, all-surface certification, and game-runtime UI compatibility seams.
+status: implemented
 owner: editor
 layer: domain/ui-definition / domain/editor / app
 canonical: true
-last_reviewed: 2026-05-25
+last_reviewed: 2026-09-12
 related_adrs:
   - ../../adr/accepted/0004-separate-description-from-execution.md
   - ../../adr/accepted/0005-projections-are-derived-state.md
   - ../../adr/accepted/0009-ui-interaction-formation-v2.md
   - ../../adr/superseded/0012-capability-workbench-clean-break.md
 related_designs:
-  - ./ui-designer-interface-lab-platform-design.md
+  - ../active/ui-designer-interface-lab-platform-design.md
   - ../accepted/ui-designer-target-projection-profiles-design.md
   - ../accepted/ui-designer-component-surface-and-widget-recipe-library-design.md
   - ../accepted/ui-designer-live-preview-fixtures-scenarios-and-target-matrix-design.md
   - ../accepted/ui-designer-production-readiness-and-evidence-design.md
   - ../accepted/ui-lab-perfectionist-audit-design.md
-  - ./game-runtime-ui-projection-and-hud-platform-design.md
+  - ../deferred/game-runtime-ui-projection-and-hud-platform-design.md
 related_roadmaps:
   - ../../domain/ui/roadmap.md
+related_reports:
+  - ../../reports/closeouts/pm-editor-ux-009-final-local-native-no-gap-certification/closeout.md
 ---
 
 # Editor Product UX Lab And Game UI Ready Foundations
+
+## Status
+
+Implemented. The `PT-EDITOR-UX` evidence chain completed with
+`perfectionist_verified` quality and no known quality gaps in the final
+local-native no-gap certification closeout. This lifecycle classification covers
+the editor-product UX and game-readiness seam only; game-runtime HUD execution
+remains separately deferred. Historical decomposition and code-truth snapshots
+below are retained as activation-time provenance, not current gap claims.
 
 ## Decision
 
@@ -36,7 +47,7 @@ product-wide editor UX layer: native scenario coverage, all-surface
 certification, widget gates, graph canvas productization, standalone UI Designer
 workbench proof, and final local-native no-gap certification.
 
-The target is intentionally long-term. It rejects app-only styling patches,
+The target was intentionally long-term. It rejects app-only styling patches,
 descriptor-only proof, visible placeholder product surfaces, and screenshot-free
 claims for user-visible workflows.
 

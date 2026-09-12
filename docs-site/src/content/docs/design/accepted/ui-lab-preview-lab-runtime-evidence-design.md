@@ -5,9 +5,9 @@ status: accepted
 owner: editor
 layer: app/runtime-evidence
 canonical: true
-last_reviewed: 2026-05-24
+last_reviewed: 2026-09-12
 related:
-  - ../active/ui-lab-productization-design.md
+  - ../implemented/ui-lab-productization-design.md
   - ./ui-lab-persistence-project-io-diff-apply-rollback-design.md
   - ./ui-lab-operation-driven-visual-authoring-design.md
   - ./ui-designer-live-preview-fixtures-scenarios-and-target-matrix-design.md
