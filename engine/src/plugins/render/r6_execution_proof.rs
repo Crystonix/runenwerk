@@ -12,7 +12,9 @@ use super::super::derived_transform::{
 use super::super::lowering::RenderWorkSet;
 use super::super::r6_proof::FoundingRepresentationRealization;
 use super::super::r6_reference_proof::{direct_lighting_radiance, observation_forward_depth};
-use super::super::render_result::RenderResult;
+use super::super::render_result::{
+    RenderDeterministicOutputFormationEvidence, RenderResult,
+};
 use super::super::representation::RenderSurfaceQuery;
 use super::super::surface_result::RenderOrientedSurfaceHit;
 use super::*;
@@ -1619,18 +1621,31 @@ fn founding_output_readback_correlation_is_checked_and_order_independent() {
 }
 
 #[test]
-fn complete_render_result_requires_exact_founding_outputs() {
+fn complete_deterministic_render_result_requires_exact_founding_evidence_set() {
     let Some(context) = request_execution_context() else {
         return;
     };
     let fixture = execution_fixture();
     let (admitted, _) = admit_execution(&fixture, &context);
+    let verified = RenderDeterministicOutputFormationEvidence::requested_tolerance_satisfied;
 
-    assert!(RenderResult::complete(&admitted, [0, 1, 2]).is_err());
-    assert!(RenderResult::complete(&admitted, [0, 1, 2, 3, 3]).is_err());
-    assert!(RenderResult::complete(&admitted, [0, 1, 2, 3, 4]).is_err());
+    assert!(RenderResult::complete_deterministic(&admitted, [verified(0), verified(1), verified(2)]).is_err());
+    assert!(RenderResult::complete_deterministic(
+        &admitted,
+        [verified(0), verified(1), verified(2), verified(3), verified(3)]
+    )
+    .is_err());
+    assert!(RenderResult::complete_deterministic(
+        &admitted,
+        [verified(0), verified(1), verified(2), verified(3), verified(4)]
+    )
+    .is_err());
 
-    let result = RenderResult::complete(&admitted, [3, 1, 0, 2]).unwrap();
+    let result = RenderResult::complete_deterministic(
+        &admitted,
+        [verified(3), verified(1), verified(0), verified(2)],
+    )
+    .unwrap();
     assert_eq!(
         result
             .outputs()
@@ -1703,48 +1718,6 @@ fn founding_renderer_executes_and_matches_cpu_reference_through_public_runengpu(
         "any primary/probe miss is a structural R6 proof failure, never a semantic zero sentinel"
     );
 
-    let executed_admission = lowered.work_set.admitted_plan();
-    let result = RenderResult::complete(
-        executed_admission,
-        executed_admission
-            .outputs()
-            .iter()
-            .map(|output| output.output_index()),
-    )
-    .expect("completed founding execution must form one complete semantic result");
-    assert_eq!(result.scene_revision(), admitted.scene_revision());
-    assert_eq!(result.scene(), admitted.plan().scene());
-    assert_eq!(result.request(), admitted.plan().request());
-    assert_eq!(
-        result.method_id(),
-        admitted.selected_candidate().method_id(),
-        "semantic result must retain the selected method identity"
-    );
-    assert_eq!(result.outputs().len(), admitted.outputs().len());
-    for (result_output, admitted_output) in result.outputs().iter().zip(admitted.outputs()) {
-        assert_eq!(result_output.output_index(), admitted_output.output_index());
-        assert_eq!(
-            result_output.observation_index(),
-            admitted_output.observation_index()
-        );
-        assert_eq!(result_output.approximation(), admitted_output.approximation());
-        assert_eq!(
-            result_output.object_representations().len(),
-            admitted_output.object_representations().len()
-        );
-        for (result_object, admitted_object) in result_output
-            .object_representations()
-            .iter()
-            .zip(admitted_output.object_representations())
-        {
-            assert_eq!(result_object.object_id(), admitted_object.object_id());
-            assert_eq!(
-                result_object.representation(),
-                admitted_object.representation()
-            );
-        }
-    }
-
     let output_readback = |output_index| {
         *lowered
             .output_readbacks
@@ -1801,4 +1774,47 @@ fn founding_renderer_executes_and_matches_cpu_reference_through_public_runengpu(
         f64::from(f32::from_bits(probe[0])),
         expected_probe,
     );
+
+    let executed_admission = lowered.work_set.admitted_plan();
+    let result = RenderResult::complete_deterministic(
+        executed_admission,
+        executed_admission.outputs().iter().map(|output| {
+            RenderDeterministicOutputFormationEvidence::requested_tolerance_satisfied(
+                output.output_index(),
+            )
+        }),
+    )
+    .expect("verified founding finite evaluation must form one complete semantic result");
+    assert_eq!(result.scene_revision(), admitted.scene_revision());
+    assert_eq!(result.scene(), admitted.plan().scene());
+    assert_eq!(result.request(), admitted.plan().request());
+    assert_eq!(
+        result.method_id(),
+        admitted.selected_candidate().method_id(),
+        "semantic result must retain the selected method identity"
+    );
+    assert_eq!(result.outputs().len(), admitted.outputs().len());
+    for (result_output, admitted_output) in result.outputs().iter().zip(admitted.outputs()) {
+        assert_eq!(result_output.output_index(), admitted_output.output_index());
+        assert_eq!(
+            result_output.observation_index(),
+            admitted_output.observation_index()
+        );
+        assert_eq!(result_output.approximation(), admitted_output.approximation());
+        assert_eq!(
+            result_output.object_representations().len(),
+            admitted_output.object_representations().len()
+        );
+        for (result_object, admitted_object) in result_output
+            .object_representations()
+            .iter()
+            .zip(admitted_output.object_representations())
+        {
+            assert_eq!(result_object.object_id(), admitted_object.object_id());
+            assert_eq!(
+                result_object.representation(),
+                admitted_object.representation()
+            );
+        }
+    }
 }
