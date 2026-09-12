@@ -78,7 +78,10 @@ impl RenderSurfaceSemanticInput {
     ) -> Result<Self, RenderSurfaceSemanticInputError> {
         Ok(Self {
             kind: RenderSurfaceSemanticInputKind::Sphere {
-                center_local_units: canonical_point(center_local_units, "surface_input_sphere_center")?,
+                center_local_units: canonical_point(
+                    center_local_units,
+                    "surface_input_sphere_center",
+                )?,
                 radius_local_units: positive_value(
                     radius_local_units,
                     "surface_input_sphere_radius",
@@ -96,10 +99,7 @@ impl RenderSurfaceSemanticInput {
         Ok(Self {
             kind: RenderSurfaceSemanticInputKind::Plane {
                 point_local_units: canonical_point(point_local_units, "surface_input_plane_point")?,
-                normal_local: canonical_unit_direction(
-                    normal_local,
-                    "surface_input_plane_normal",
-                )?,
+                normal_local: canonical_unit_direction(normal_local, "surface_input_plane_normal")?,
             },
             validity,
         })
@@ -144,12 +144,7 @@ impl RenderSurfaceSemanticInput {
             RenderSurfaceSemanticInputShape::Sphere {
                 center_local_units,
                 radius_local_units,
-            } => sphere_surface_query(
-                query,
-                &transform,
-                center_local_units,
-                radius_local_units,
-            ),
+            } => sphere_surface_query(query, &transform, center_local_units, radius_local_units),
             RenderSurfaceSemanticInputShape::Plane {
                 point_local_units,
                 normal_local,
@@ -228,16 +223,27 @@ impl fmt::Display for RenderSurfaceSemanticInputError {
         match self {
             Self::SemanticValue(error) => fmt::Display::fmt(error, formatter),
             Self::Representation(error) => fmt::Display::fmt(error, formatter),
-            Self::NonPositiveRadius => write!(formatter, "surface-input sphere radius must be positive"),
+            Self::NonPositiveRadius => {
+                write!(formatter, "surface-input sphere radius must be positive")
+            }
             Self::ZeroNormal => write!(formatter, "surface-input plane normal must be non-zero"),
             Self::NonInvertibleObjectTransform => {
-                write!(formatter, "surface-input query requires an invertible object transform")
+                write!(
+                    formatter,
+                    "surface-input query requires an invertible object transform"
+                )
             }
             Self::QueryOutsideValidity => {
-                write!(formatter, "surface-input query time is outside source-declared validity")
+                write!(
+                    formatter,
+                    "surface-input query time is outside source-declared validity"
+                )
             }
             Self::NonFiniteEvaluation => {
-                write!(formatter, "surface-input query produced a non-finite semantic evaluation")
+                write!(
+                    formatter,
+                    "surface-input query produced a non-finite semantic evaluation"
+                )
             }
         }
     }

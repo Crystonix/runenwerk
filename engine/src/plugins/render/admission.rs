@@ -390,10 +390,10 @@ pub fn admit_render_plan_with_surface_inputs(
 ) -> Result<AdmittedRenderPlan, RenderExecutionAdmissionFailure> {
     let semantic_inputs = RenderNormalizedSurfaceSemanticInputs::normalize(plan, semantic_inputs)
         .map_err(|error| {
-            RenderExecutionAdmissionFailure::InvalidInput(RenderAdmissionInputError::SemanticBinding(
-                error,
-            ))
-        })?;
+        RenderExecutionAdmissionFailure::InvalidInput(RenderAdmissionInputError::SemanticBinding(
+            error,
+        ))
+    })?;
     let semantic_candidates = plan
         .candidates()
         .iter()
@@ -405,12 +405,14 @@ pub fn admit_render_plan_with_surface_inputs(
             rejections: semantic_candidates
                 .into_iter()
                 .enumerate()
-                .map(|(candidate_index, rejection)| RenderCandidateAdmissionRejection {
-                    candidate_index,
-                    reason: semantic_rejection(
-                        rejection.expect_err("all semantic candidates were rejected"),
-                    ),
-                })
+                .map(
+                    |(candidate_index, rejection)| RenderCandidateAdmissionRejection {
+                        candidate_index,
+                        reason: semantic_rejection(
+                            rejection.expect_err("all semantic candidates were rejected"),
+                        ),
+                    },
+                )
                 .collect(),
         });
     }
@@ -936,7 +938,8 @@ mod tests {
         let evidence = RenderSurfaceProtocolEvidence::exact(RENDER_SURFACE_QUERY_PROTOCOL_REVISION)
             .expect("surface evidence");
         if required {
-            evidence.with_semantic_input_requirement(RenderSurfaceSemanticInputRequirement::current())
+            evidence
+                .with_semantic_input_requirement(RenderSurfaceSemanticInputRequirement::current())
         } else {
             evidence
         }
@@ -1011,9 +1014,7 @@ mod tests {
         )
     }
 
-    fn two_output_plan_with_requirement(
-        required: bool,
-    ) -> (RenderPlan, RenderRepresentationId) {
+    fn two_output_plan_with_requirement(required: bool) -> (RenderPlan, RenderRepresentationId) {
         let mut store = RenderSceneStore::new();
         let object_id = store.allocate_object_id().expect("object id");
         let mut insert = RenderSceneUpdate::new();
@@ -1276,12 +1277,13 @@ mod tests {
 
     #[test]
     fn semantic_binding_eliminates_before_availability_selection() {
-        let (plan, required_id, fallback_id) = plan_with_two_surface_representations_and_requirements(
-            scalar_distance_request(),
-            RenderMethodOutputGuarantee::Exact,
-            true,
-            false,
-        );
+        let (plan, required_id, fallback_id) =
+            plan_with_two_surface_representations_and_requirements(
+                scalar_distance_request(),
+                RenderMethodOutputGuarantee::Exact,
+                true,
+                false,
+            );
         let missing = RenderNormalizedSurfaceSemanticInputs::normalize(&plan, &[])
             .expect("missing semantic input is absence, not malformed caller input");
         let semantic_candidate = missing
@@ -1320,12 +1322,9 @@ mod tests {
             fallback_id
         );
 
-        let input = RenderSurfaceSemanticInput::sphere(
-            [0.0; 3],
-            1.0,
-            RenderTemporalSupport::unbounded(),
-        )
-        .expect("surface input");
+        let input =
+            RenderSurfaceSemanticInput::sphere([0.0; 3], 1.0, RenderTemporalSupport::unbounded())
+                .expect("surface input");
         let supplied = RenderNormalizedSurfaceSemanticInputs::normalize(
             &plan,
             &[RenderSurfaceSemanticInputBinding::new(required_id, input)],
@@ -1356,12 +1355,9 @@ mod tests {
             RenderRepresentationAvailabilityState::Available,
         )])
         .expect("availability");
-        let expected = RenderSurfaceSemanticInput::sphere(
-            [0.0; 3],
-            1.0,
-            RenderTemporalSupport::unbounded(),
-        )
-        .expect("surface input");
+        let expected =
+            RenderSurfaceSemanticInput::sphere([0.0; 3], 1.0, RenderTemporalSupport::unbounded())
+                .expect("surface input");
         let semantic_inputs = RenderNormalizedSurfaceSemanticInputs::normalize(
             &plan,
             &[RenderSurfaceSemanticInputBinding::new(

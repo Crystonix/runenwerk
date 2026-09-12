@@ -189,9 +189,7 @@ impl RenderSurfaceProtocolEvidence {
         self.oriented_surface
     }
 
-    pub const fn semantic_input_requirement(
-        self,
-    ) -> Option<RenderSurfaceSemanticInputRequirement> {
+    pub const fn semantic_input_requirement(self) -> Option<RenderSurfaceSemanticInputRequirement> {
         self.semantic_input_requirement
     }
 }

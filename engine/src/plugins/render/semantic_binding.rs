@@ -266,7 +266,10 @@ impl RenderNormalizedSurfaceSemanticInputs {
             return true;
         }
 
-        let Some(binding) = self.by_representation.get(&representation.representation_id()) else {
+        let Some(binding) = self
+            .by_representation
+            .get(&representation.representation_id())
+        else {
             return false;
         };
         let shutter = plan.request().observations()[output.observation_index()].shutter();
@@ -279,7 +282,10 @@ impl RenderNormalizedSurfaceSemanticInputs {
         let Some(object_state) = plan.scene().object_state(object_id) else {
             return false;
         };
-        object_state.temporal().validity().contains_interval(shutter)
+        object_state
+            .temporal()
+            .validity()
+            .contains_interval(shutter)
     }
 
     pub(super) fn binding_for_selected_use(
@@ -289,7 +295,10 @@ impl RenderNormalizedSurfaceSemanticInputs {
         representation: RenderApplicableRepresentationUse,
     ) -> Option<&RenderSurfaceSemanticInputBinding> {
         use_declares_surface_input(plan, object_id, representation)
-            .then(|| self.by_representation.get(&representation.representation_id()))
+            .then(|| {
+                self.by_representation
+                    .get(&representation.representation_id())
+            })
             .flatten()
     }
 

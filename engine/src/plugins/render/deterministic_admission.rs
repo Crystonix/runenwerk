@@ -27,8 +27,12 @@ pub enum RenderDeterministicAdmissionFailure {
 impl fmt::Display for RenderDeterministicAdmissionFailure {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Planning(error) => write!(formatter, "deterministic render planning failed: {error}"),
-            Self::Admission(error) => write!(formatter, "deterministic render admission failed: {error}"),
+            Self::Planning(error) => {
+                write!(formatter, "deterministic render planning failed: {error}")
+            }
+            Self::Admission(error) => {
+                write!(formatter, "deterministic render admission failed: {error}")
+            }
         }
     }
 }
@@ -104,11 +108,16 @@ mod tests {
         let maintained = maintained_deterministic_method();
         assert_eq!(impostor.id(), maintained.id());
         assert_ne!(impostor, maintained);
-        assert!(maintained.output_contracts().iter().any(|contract| matches!(
-            contract.output_kind(),
-            RenderMethodOutputKind::Distance {
-                convention: RenderDistanceConvention::ObservationForwardDepth
-            }
-        )));
+        assert!(
+            maintained
+                .output_contracts()
+                .iter()
+                .any(|contract| matches!(
+                    contract.output_kind(),
+                    RenderMethodOutputKind::Distance {
+                        convention: RenderDistanceConvention::ObservationForwardDepth
+                    }
+                ))
+        );
     }
 }
