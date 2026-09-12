@@ -26,13 +26,15 @@ python3 tools/docs/validate_docs.py
 
 ## Structure
 
-- `workspace/`: repository orientation, agent rules, docs status, and workflow docs
-- `guidelines/`: Runenwerk architecture, programming principles, module structure, and placement rules
-- `domain/`: domain crate documentation
-- `engine/`: engine/runtime/plugin docs
-- `net/`: networking, simulation, replay, and runtime convergence docs
-- `apps/`: runnable application docs
-- `adr/`: accepted architecture decision records
-- `design/`: architecture design proposals and templates
-- `multiplayer/`: multiplayer design proposal material
-- `templates/`: documentation templates
+- `workspace/`: repository orientation, planning, documentation structure, and shared vocabulary
+- `architecture/`: current Runenwerk platform and integration architecture
+- `guidelines/`: stable Runenwerk engineering, dependency, module-structure, and placement guidance
+- `foundation/`: foundation-specific documentation
+- `domain/`: domain-specific documentation
+- `engine/`: engine/runtime/plugin documentation
+- `net/`: networking, simulation, replay, and runtime convergence documentation
+- `apps/`: runnable application and product documentation
+- `adapters/`: external runtime, host, and cross-system integration documentation
+- `adr/`: durable architecture decision records
+- `design/`: design lifecycle documents and section guidance
+- `reports/`: investigations, proofs, closeouts, benchmarks, and retained historical evidence

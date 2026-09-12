@@ -5,7 +5,7 @@ status: active
 owner: ui
 layer: domain
 canonical: true
-last_reviewed: 2026-06-20
+last_reviewed: 2026-09-12
 ---
 
 # UI Dependency Boundaries
@@ -218,8 +218,8 @@ python3 tools/checks/check_ui_layer_dependencies.py --root .
 cargo check --workspace
 cargo test -p ui_story
 cargo test -p runenwerk_editor story
-task docs:validate
-task planning:validate
+cargo validate
+git diff --check
 ```
 
 <!-- BEGIN RUNENWERK:UI_COMPONENT_PLATFORM:domain-ui-note -->
