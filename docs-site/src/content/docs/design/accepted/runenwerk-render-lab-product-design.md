@@ -5,7 +5,7 @@ status: accepted
 owner: workspace
 layer: product / app / renderer-integration
 canonical: true
-last_reviewed: 2026-09-11
+last_reviewed: 2026-09-12
 related_adrs:
   - ../../adr/accepted/0017-cross-authority-consistency-and-graph-semantics.md
   - ../../adr/accepted/0018-semantic-federation-and-physical-realization.md
@@ -28,6 +28,8 @@ This is the accepted product architecture for **Runenwerk Render Lab**.
 It defines durable product ownership, boundaries, proof stages, and acceptance laws. It does not by itself authorize Rust/Cargo implementation work. Live activation, implementation slices, and exact-head evidence remain owned by GitHub issues and pull requests under the canonical roadmap and Runenwerk governance.
 
 RL0 acceptance was censused on accepted `main` after #541 / PR #562. The recorded source state is provenance only; future implementation must re-census exact current `main` rather than reuse an old SHA as authority.
+
+A 2026-09-12 authority reconciliation superseded only RL0's original ordering that deferred #552 until after RL2. Concrete deterministic pressure from #566 required the smallest #552 finite-evaluation normalization before the maintained deterministic execution seam could be formed truthfully. Product ownership, RL1/RL2 goals, and the later stochastic/path-tracing proof sequence remain otherwise unchanged.
 
 ## Purpose
 
@@ -123,9 +125,13 @@ The module and result types are currently crate-private. Render Lab must not rea
 
 If an RL1 consumer genuinely requires result facts that current public RunenRender contracts do not expose, that is concrete framework-surface pressure. Open the smallest owner-correct RunenRender issue and expose only the required stable semantic/inspection contract. Do not solve it inside product code and do not pre-author a generic reflection API.
 
-### #552 remains deferred
+### #552 deterministic normalization is accepted
 
-The deterministic founding renderer does not require a generalized stochastic finite-evaluation model. The accepted sequence therefore keeps #552 deferred until after deterministic visual and real-time product proof.
+RL0 originally deferred #552 because deterministic product proof had not yet demonstrated a finite-evaluation blocker. #566 later produced concrete deterministic pressure: a maintained finite floating-point evaluator could not truthfully form `RenderResult` for arbitrary `Exact` numeric requests under the then-current contracts.
+
+The smallest #552 normalization is therefore accepted before RL1. It preserves requested semantic target meaning while separating admitted semantic/model approximation, finite-evaluation fidelity/error, and numeric realization. The accepted correction is deterministic and result-formation-local; it does not authorize a generalized stochastic estimator, confidence/convergence, session, history, or progress framework.
+
+Any additional stochastic-specific finite-evaluation contract remains deferred until a concrete later method demonstrates that pressure.
 
 ## Normalized product model
 
@@ -289,7 +295,7 @@ This is a feature of Render Lab: it reveals whether the candidate standalone Run
 
 ## RL1 — first meaningful visual proof
 
-RL1 is the first implementation slice after this design and a fresh exact-main census.
+RL1 is the first product implementation slice after the accepted #552 deterministic normalization and the #566 maintained deterministic execution seam. It still begins from a fresh exact-main census.
 
 Its goal is not a window. Its goal is the **first meaningful human-viewable render produced through the new semantic spine**.
 
@@ -318,7 +324,7 @@ The founding radiance contract is spectral, not generic RGB. Product visualizati
 
 RL1 may be driven headlessly. Interactive shell breadth is not an RL1 acceptance requirement.
 
-If RL1 demonstrates that a product-accessible deterministic evaluator, result inspection surface, or output transport contract is missing, stop and open the smallest framework-owned correction rather than importing proof code.
+After #566, if RL1 demonstrates that an additional product-accessible evaluator capability, result inspection surface, or output transport contract is still missing, stop and open the smallest framework-owned correction rather than importing proof code.
 
 ## RL2 — deterministic real-time product proof
 
@@ -429,11 +435,12 @@ The accepted current proof ladder is:
 #541 complete semantic RenderResult/readback proof
     -> exact-main RunenRender/product census
     -> RL0 accepted Render Lab product design          [this document]
+    -> #552 minimal deterministic finite-evaluation normalization [accepted]
+    -> #566 maintained deterministic execution seam
     -> RL1 meaningful deterministic visual artifact
-    -> smallest R7/public-surface correction only if RL1 proves one necessary
     -> RL2 deterministic real-time interactive Render Lab
     -> fresh exact-main census
-    -> #552 requested target vs finite stochastic evaluation normalization
+    -> stochastic-specific finite-evaluation extension only if demonstrated by concrete pressure
     -> P1 stateless multi-bounce path-tracing RenderMethod
     -> direct-vs-path-tracer proof through the same semantic spine
     -> explicit RunenRender extraction-readiness review
@@ -455,9 +462,16 @@ The extraction-readiness review is a decision checkpoint, not automatic permissi
 
 ## #552 and P1 boundary
 
-#552 remains deliberately after RL2.
+The deterministic subset of #552 required by #566 is already accepted. It establishes only the normalized distinction needed for truthful deterministic result formation:
 
-Deterministic product proof should first establish:
+```text
+requested semantic target
+!= admitted semantic/model approximation
+!= finite-evaluation fidelity/error
+!= numeric realization
+```
+
+RL1 and RL2 still precede any **additional stochastic-specific generalization**. Deterministic product proof should establish:
 
 - meaningful visible output;
 - legitimate product presentation;
@@ -466,7 +480,7 @@ Deterministic product proof should first establish:
 - continuous frame delivery;
 - public-contract usability.
 
-Only then should #552 normalize requested target versus finite stochastic evaluation for the first materially different stochastic method.
+After RL2, re-census exact current pressure. Add stochastic/statistical finite-evaluation vocabulary only if the first materially different stochastic method actually requires it; do not pre-author estimator, confidence, convergence, session, or history machinery.
 
 P1 is a **RunenRender method**, not Render Lab algorithm code. Its first proof is stateless, headless, and correctness-oriented. Raw noisy finite stochastic output may be useful diagnostic evidence there; it does not define the normal interactive product experience.
 
@@ -552,7 +566,7 @@ This design does not authorize:
 
 Each implementation slice must re-resolve exact current authority and prove only its own boundary.
 
-RL0 acceptance requires:
+RL0 originally accepted these laws; the sequence-specific item below is historical provenance and is superseded by the current proof ladder above:
 
 1. post-#541 exact-main RunenRender/product census;
 2. canonical Runenwerk product ownership;
@@ -561,7 +575,7 @@ RL0 acceptance requires:
 5. current private/test-only RunenRender seams identified rather than silently bypassed;
 6. normalized scenario/intent/experiment/execution/evidence/presentation separation;
 7. headless/interactive parity law;
-8. RL1/RL2 proof ladder and #552 deferral made canonical;
+8. then-current RL1/RL2 proof ladder and #552 deferral recorded as canonical at RL0 acceptance;
 9. no Rust/Cargo implementation in RL0;
 10. documentation build, repository validation, and exact-head CI green for the unchanged reviewed documentation head.
 
