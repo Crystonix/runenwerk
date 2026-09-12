@@ -16,7 +16,7 @@ related_adrs:
 related_designs:
   - ../implemented/ui-lab-productization-design.md
   - ./ui-lab-command-catalog-and-surface-registry-design.md
-  - ../active/ui-designer-interface-lab-platform-design.md
+  - ./ui-designer-interface-lab-platform-design.md
   - ../implemented/editor-self-authoring-and-final-ui-design.md
   - ../implemented/surface-workflow-contract-redesign.md
   - ./ui-designer-canonical-ir-and-composition-design.md

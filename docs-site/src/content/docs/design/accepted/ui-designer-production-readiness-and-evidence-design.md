@@ -21,7 +21,7 @@ related_designs:
   - ./ui-designer-view-model-capability-and-intent-binding-design.md
   - ./ui-designer-live-preview-fixtures-scenarios-and-target-matrix-design.md
   - ./ui-designer-persistence-migration-diff-and-activation-design.md
-  - ../active/ui-designer-interface-lab-platform-design.md
+  - ./ui-designer-interface-lab-platform-design.md
 related_roadmaps:
   - ../../domain/ui/roadmap.md
 ---

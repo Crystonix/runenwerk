@@ -13,7 +13,7 @@ related_designs:
   - ./ui-designer-canonical-ir-and-composition-design.md
   - ./ui-designer-target-projection-profiles-design.md
   - ./ui-designer-visual-layout-and-interface-composition-design.md
-  - ../active/ui-designer-interface-lab-platform-design.md
+  - ./ui-designer-interface-lab-platform-design.md
   - ../implemented/editor-self-authoring-and-final-ui-design.md
 related_roadmaps:
   - ../../domain/ui/roadmap.md

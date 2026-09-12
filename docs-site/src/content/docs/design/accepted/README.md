@@ -5,7 +5,7 @@ status: active
 owner: workspace
 layer: workspace
 canonical: true
-last_reviewed: 2026-09-11
+last_reviewed: 2026-09-12
 ---
 
 # Accepted Designs
@@ -28,6 +28,7 @@ Move a design to `implemented/` only after code has been checked against it and 
 ### Editor Domain
 
 - [Editor Native Multi-Window Presentation Design](editor-native-multi-window-presentation-design.md)
+- [UI Designer And Interface Lab Platform](ui-designer-interface-lab-platform-design.md)
 - [UI Designer Canonical IR And Composition Design](ui-designer-canonical-ir-and-composition-design.md)
 - [UI Designer Target Projection Profiles Design](ui-designer-target-projection-profiles-design.md)
 - [UI Designer Visual Layout And Interface Composition Design](ui-designer-visual-layout-and-interface-composition-design.md)
