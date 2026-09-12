@@ -5,13 +5,13 @@ status: active
 owner: ui
 layer: domain
 canonical: true
-last_reviewed: 2026-08-23
+last_reviewed: 2026-09-12
 related_docs:
   - ../../workspace/planning/roadmap.md
   - ../../workspace/planning/decision-register.md
   - ./ui-component-platform-generic-interaction-design.md
   - ./ui-component-platform-executable-interaction-story-design.md
-  - ./ui-component-platform-executable-interaction-story-implementation-scope.md
+  - ../../reports/closeouts/pt-ui-component-platform-012a-executable-interaction-story-implementation-scope-closeout.md
   - ./ui-component-platform-text-editing-design.md
 ---
 
