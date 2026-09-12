@@ -10,7 +10,7 @@ use super::semantic_plan::{
     RenderApplicableRepresentationUse, RenderOutputApproximation, RenderPlan, RenderPlanCandidate,
     RenderPlannedOutput,
 };
-use super::surface_input::{RenderSurfaceSemanticInput, RenderSurfaceSemanticInputBinding};
+use super::surface_input::RenderSurfaceSemanticInputBinding;
 use std::collections::{BTreeMap, BTreeSet};
 use std::error::Error;
 use std::fmt;
@@ -300,15 +300,6 @@ impl RenderNormalizedSurfaceSemanticInputs {
                     .get(&representation.representation_id())
             })
             .flatten()
-    }
-
-    pub(super) fn input(
-        &self,
-        representation_id: RenderRepresentationId,
-    ) -> Option<&RenderSurfaceSemanticInput> {
-        self.by_representation
-            .get(&representation_id)
-            .map(RenderSurfaceSemanticInputBinding::input)
     }
 }
 
