@@ -5,12 +5,10 @@ status: implemented
 owner: ui
 layer: domain
 canonical: true
-last_reviewed: 2026-09-10
+last_reviewed: 2026-09-12
 related:
   - ./ui-definition-formation-foundation-design.md
   - ./editor-self-authoring-and-final-ui-design.md
-  - ../active/editor-shell-menu-and-tab-chrome-polish-design.md
-  - ../active/editor-ui-popup-adornment-drop-preview-contract.md
   - ../deferred/ui-model-multiple-execution-strategies-design.md
   - ../../adr/accepted/0009-ui-interaction-formation-v2.md
   - ../../domain/ui/roadmap.md
@@ -25,7 +23,7 @@ related_reports:
 
 Implemented. [ADR 0009](../../adr/accepted/0009-ui-interaction-formation-v2.md) remains the durable decision authority. WR-025 established and repaired the retained Interaction V2 contract spine, and all named retained slices have code-bearing contracts plus behavior evidence.
 
-This document records the implemented boundary rather than an active migration plan. Narrow shell-polish and popup/adornment documents remain subordinate supporting material until their own lifecycle cleanup. Compiled-reactive UI, ECS-driven UI, and other alternate execution targets remain separately deferred and are not activated by this implementation status.
+This document records the implemented boundary rather than an active migration plan. The former shell-polish record is historical evidence and the popup/adornment/drop-preview plan is superseded; neither is current interaction authority. Compiled-reactive UI, ECS-driven UI, and other alternate execution targets remain separately deferred and are not activated by this implementation status.
 
 ## Implemented Formation Boundary
 
@@ -112,7 +110,7 @@ NormalizedUiTemplate
 - No external UI-framework adoption decision.
 - No movement of editor command semantics into `domain/ui`.
 - No rewrite of authored UI source identity, provider ownership, or command ratification boundaries.
-- No claim that shell-polish/supporting documents are independent interaction authorities.
+- No claim that historical shell-polish or superseded popup documents are independent interaction authorities.
 
 ## Completion Evidence
 

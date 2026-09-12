@@ -1,21 +1,30 @@
 ---
 title: Editor UI Popup, Adornment, And Drop Preview Contract
-description: Refactor plan for separating menu popups, anchored adornments, dock previews, and radial menus in the retained editor UI.
-status: active
+description: Historical retained-node migration plan for separating menu popups, anchored adornments, dock previews, and radial menus in the retained editor UI.
+status: superseded
 owner: editor
 layer: app
-canonical: true
-last_reviewed: 2026-05-08
+canonical: false
+last_reviewed: 2026-09-12
+superseded_by:
+  - ../../adr/accepted/0009-ui-interaction-formation-v2.md
+  - ../implemented/editor-ui-runtime-v2-and-interaction-formation-design.md
 related:
   - ../../apps/runenwerk-editor/current-architecture.md
   - ../../apps/runenwerk-editor/execution-priority-checklist.md
-  - ./editor-ui-workspace-tool-surface-architecture.md
-  - ./editor-ui-runtime-v2-and-interaction-formation-design.md
+  - ../active/editor-ui-workspace-tool-surface-architecture.md
+  - ../implemented/editor-ui-runtime-v2-and-interaction-formation-design.md
   - ../../adr/accepted/0009-ui-interaction-formation-v2.md
   - ../implemented/surface-workflow-contract-redesign.md
 ---
 
 # Editor UI Popup, Adornment, And Drop Preview Contract
+
+## Status
+
+Superseded historical migration plan. Current durable popup, scroll, focus, docking/drop-zone, radial/menu hit-testing, chrome-slot, and viewport-input authority is [ADR 0009](../../adr/accepted/0009-ui-interaction-formation-v2.md) together with the [implemented Interaction V2 design](../implemented/editor-ui-runtime-v2-and-interaction-formation-design.md); current code and tests own exact behavior.
+
+The remaining sections preserve the point-in-time refactor sequence and implementation targets. Their phase/future language does not activate work or create current architecture authority.
 
 ## Purpose
 

@@ -5,7 +5,7 @@ status: active
 owner: ui
 layer: domain
 canonical: true
-last_reviewed: 2026-06-16
+last_reviewed: 2026-09-12
 related:
   - ./architecture.md
   - ./story-acceptance-and-review-checklist.md
@@ -17,8 +17,6 @@ related:
   - ../../reports/audits/editor-ui-priority-code-audit-2026-05-05.md
   - ../../design/implemented/editor-self-authoring-and-final-ui-design.md
   - ../../design/implemented/editor-ui-runtime-v2-and-interaction-formation-design.md
-  - ../../design/active/editor-ui-popup-adornment-drop-preview-contract.md
-  - ../../design/active/editor-shell-menu-and-tab-chrome-polish-design.md
   - ../../design/active/editor-ui-workspace-tool-surface-architecture.md
   - ../../design/deferred/ui-model-multiple-execution-strategies-design.md
   - ../../adr/accepted/0009-ui-interaction-formation-v2.md
@@ -242,7 +240,7 @@ Retained UI slice catalog:
 | `IV2-dock-drop-zones` | tab reorder, split insertion, floating-host, invalid-target, and preview-only drop-zone policy with shell/controller guards | docking preview and tab-strip precedence polish |
 | `IV2-status-and-viewport-arbitration` | status overflow and viewport pointer/wheel arbitration with shell projection and app guard tests | FPS/frame-time status and compact viewport metadata polish |
 
-Phase 8 leads WR-024. Shell polish may proceed only as retained UI implementation after the relevant contract slice is defined, or as bounded compatibility evidence that names the old path, target formed contract, and regression guard. It must not define durable popup, scroll, focus, docking, chrome, status, or viewport-input policy in app or shell code.
+Phase 8 owns the durable interaction semantics formerly consumed by WR-024. Historical shell-polish work is not active sequencing authority; any later retained-UI polish must consume the named Interaction V2 contracts and be activated by its own current GitHub work.
 
 ### Phase 9 - Artifact-Backed Runtime Rendering Pipeline
 
@@ -400,7 +398,6 @@ Stop conditions:
 - [x] Complete the M3.5 UI definition formation framework before M3.6 and M4. Status: implemented and validated; crates, fixtures, retained formation, app fixture validation, toolbar route-slot integration, toolbar popup binding data, normal shell chrome formation, and common provider surface fixture formation exist. Provider behavior remains outside `ui_definition`.
 - [x] Implement the promoted UI self-authoring workspace before M4. Status: complete as of 2026-05-06; `editor_definition` owns durable editor schemas and validation guards, `editor_shell` exposes the Editor Design workspace/profile and self-authoring surface kinds, and `runenwerk_editor` loads checked-in UI fixtures as editable documents with validation, retained preview, command diff summaries, retained authoring control routes, UI node/theme/workspace-layout draft edits, and explicit apply/rollback.
 - [x] Keep UI Designer visible as the promoted self-authoring path. Status: complete/current; UI Designer is not a missing roadmap item, it is the Editor Design/self-authoring workspace tracked by `docs-site/src/content/docs/design/implemented/editor-self-authoring-and-final-ui-design.md`.
-- [ ] Continue popup/menu and tab chrome polish only under Interaction V2. Status: ready-next/supporting evidence; `docs-site/src/content/docs/design/active/editor-shell-menu-and-tab-chrome-polish-design.md` tracks immediate retained-UI symptoms, but WR-024 follows WR-025 and may only consume the named `IV2-*` contract slices or provide compatibility evidence. It may not own long-term popup, scroll, focus, menu sizing, chrome, docking-zone, status-overflow, or viewport-input contracts.
 - [x] Continue artifact-backed runtime rendering only through story gates. Status: WR-177 / PM-UI-STORY-004 re-runs the former static gallery proof through `UiStoryRunReport` render primitive, render-data, static-mount, preview-frame, and mount-eligibility stages. Product host mounting remains future story-platform work.
 - [ ] Prepare the story-driven golden workflow through normal WR/production gates. Status: active design intake; `PM-UI-STORY-001` activates planning authority only, while later PM-UI-STORY milestones introduce the story runner, gallery/CLI execution, runtime rendering proof, and mount eligibility.
 - [ ] Keep cross-doc sequencing aligned so workspace index docs do not restate stale phase history. Status: active; generated production docs must remain outputs of their source files and must not be hand-edited.
