@@ -5,12 +5,12 @@ status: active
 owner: ui
 layer: domain
 canonical: true
-last_reviewed: 2026-06-30
+last_reviewed: 2026-09-12
 related_docs:
   - ../../workspace/planning/roadmap.md
   - ../../workspace/planning/decision-register.md
   - ./ui-component-platform-generic-interaction-design.md
-  - ./ui-component-platform-executable-interaction-story-implementation-scope.md
+  - ../../reports/closeouts/pt-ui-component-platform-012a-executable-interaction-story-implementation-scope-closeout.md
   - ./ui-component-platform-overlay-popup-layering-design.md
   - ./ui-component-platform-story-proof-envelope-design.md
   - ./ui-component-platform-input-gesture-device-design.md
@@ -27,7 +27,7 @@ Planning ID: `PT-UI-COMPONENT-PLATFORM-012A`.
 
 Accepted by user review on 2026-06-29. Implemented and merged through PR #43 on 2026-06-30 at merge commit `c8b73dfa95fc335fd2b33c9137cac03a0f35060f`. User start condition for Phase 13 reports PR #43 was validated and merged.
 
-This document is the completed Tier 5 proof design reference for reusable UI interaction work. The exact completed owner files, validation gate, evidence expectation, and stop conditions are recorded in `ui-component-platform-executable-interaction-story-implementation-scope.md`.
+This document is the completed Tier 5 proof design reference for reusable UI interaction work. The exact completed owner files, validation gate, evidence expectation, and stop conditions are retained in the [historical Phase 12A implementation-scope closeout](../../reports/closeouts/pt-ui-component-platform-012a-executable-interaction-story-implementation-scope-closeout.md).
 
 Product-facing UI Gallery exposure remains separate future work under `PT-UI-GALLERY-001`. Phase 13 overlay/popup/layering must consume this proof standard and must not create a parallel executable story path.
 

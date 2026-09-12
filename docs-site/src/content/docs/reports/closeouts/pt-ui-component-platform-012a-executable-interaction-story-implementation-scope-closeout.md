@@ -1,18 +1,18 @@
 ---
 title: UI Component Platform Executable Interaction Story Implementation Scope
-description: Completed scope reference for the Tier 5 executable base-controls interaction story proof-host core slice merged through PR #43.
-status: active
+description: Historical completion evidence for the Tier 5 executable base-controls interaction story proof-host core slice merged through PR #43.
+status: completed
 owner: ui
-layer: domain
+layer: reports
 canonical: true
-last_reviewed: 2026-06-30
+last_reviewed: 2026-09-12
 related_docs:
   - ../../workspace/planning/roadmap.md
   - ../../workspace/planning/decision-register.md
-  - ./ui-component-platform-executable-interaction-story-design.md
-  - ./ui-component-platform-generic-interaction-design.md
-  - ./ui-component-platform-overlay-popup-layering-design.md
-  - ./ui-component-platform-story-proof-envelope-design.md
+  - ../../design/active/ui-component-platform-executable-interaction-story-design.md
+  - ../../design/active/ui-component-platform-generic-interaction-design.md
+  - ../../design/active/ui-component-platform-overlay-popup-layering-design.md
+  - ../../design/active/ui-component-platform-story-proof-envelope-design.md
 ---
 
 # UI Component Platform Executable Interaction Story Implementation Scope
