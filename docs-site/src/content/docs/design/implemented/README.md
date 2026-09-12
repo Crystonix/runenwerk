@@ -29,6 +29,8 @@ checked against code, tests, closeout evidence, and known drift.
 - [Editor Self-Authoring and UI Workspace Design](editor-self-authoring-and-final-ui-design.md)
 - [Editor Rendered World And Multi Entity Viewport Design](editor-rendered-world-and-multi-entity-viewport-design.md)
 - [Editor Tool Suite Registry And Workbench Host Design](editor-tool-suite-registry-and-workbench-host-design.md)
+- [Editor Product UX Lab And Game UI Ready Foundations](editor-product-ux-lab-and-game-ui-ready-foundations-design.md)
+- [UI Lab Productization Design](ui-lab-productization-design.md)
 - [Surface Workflow Contract Redesign](surface-workflow-contract-redesign.md)
 - [Runenwerk Editor Workspace-Document-Mode-Panel Architecture](editor-workspace-document-mode-panel-architecture.md)
 - [Workspace Identity Contract and Migration Map](workspace-identity-contract-and-migration-map.md)

@@ -5,7 +5,7 @@ status: accepted
 owner: editor
 layer: domain/ui-definition / domain/editor / app
 canonical: true
-last_reviewed: 2026-05-26
+last_reviewed: 2026-09-12
 related_adrs:
   - ../../adr/accepted/0001-use-domain-owned-commands.md
   - ../../adr/accepted/0004-separate-description-from-execution.md
@@ -16,10 +16,10 @@ related_adrs:
   - ../../adr/superseded/0012-capability-workbench-clean-break.md
 related_designs:
   - ../active/ui-designer-interface-lab-platform-design.md
-  - ../active/ui-lab-productization-design.md
-  - ../active/editor-product-ux-lab-and-game-ui-ready-foundations-design.md
+  - ../implemented/ui-lab-productization-design.md
+  - ../implemented/editor-product-ux-lab-and-game-ui-ready-foundations-design.md
   - ../active/editor-ui-workspace-tool-surface-architecture.md
-  - ../active/game-runtime-ui-projection-and-hud-platform-design.md
+  - ../deferred/game-runtime-ui-projection-and-hud-platform-design.md
   - ./ui-designer-canonical-ir-and-composition-design.md
   - ./ui-designer-target-projection-profiles-design.md
   - ./ui-designer-visual-layout-and-interface-composition-design.md

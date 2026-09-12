@@ -5,12 +5,12 @@ status: accepted
 owner: editor
 layer: app/runtime-evidence
 canonical: true
-last_reviewed: 2026-05-25
+last_reviewed: 2026-09-12
 related_designs:
   - ./ui-lab-perfectionist-audit-design.md
   - ./ui-lab-preview-lab-runtime-evidence-design.md
   - ./ui-lab-persistence-project-io-diff-apply-rollback-design.md
-  - ../active/ui-lab-productization-design.md
+  - ../implemented/ui-lab-productization-design.md
 related_reports:
   - ../../reports/closeouts/pm-ui-lab-006-preview-lab-and-runtime-evidence/closeout.md
   - ../../reports/closeouts/pm-ui-lab-perf-001-governance-audit-doctrine-and-code-truth-matrix/closeout.md
