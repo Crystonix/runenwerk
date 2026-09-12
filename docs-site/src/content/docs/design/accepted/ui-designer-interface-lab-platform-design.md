@@ -1,11 +1,11 @@
 ---
 title: UI Designer And Interface Lab Platform
-description: Active design for a generic UI/interface Designer and Lab platform spanning editor/workbench UI and game-runtime UI.
-status: active
+description: Accepted architecture for a generic UI/interface Designer and Lab platform spanning editor/workbench UI and game-runtime UI.
+status: accepted
 owner: editor
 layer: domain/app
 canonical: true
-last_reviewed: 2026-05-21
+last_reviewed: 2026-09-12
 related_adrs:
   - ../../adr/accepted/0001-use-domain-owned-commands.md
   - ../../adr/accepted/0004-separate-description-from-execution.md
@@ -14,18 +14,18 @@ related_adrs:
   - ../../adr/accepted/0010-graph-substrate-canvas-boundary.md
   - ../../adr/superseded/0012-capability-workbench-clean-break.md
 related_designs:
-  - ../accepted/ui-designer-canonical-ir-and-composition-design.md
-  - ../accepted/ui-designer-target-projection-profiles-design.md
-  - ../accepted/ui-designer-visual-layout-and-interface-composition-design.md
-  - ../accepted/ui-designer-theme-tokens-modes-skins-and-state-variants-design.md
-  - ../accepted/ui-designer-component-surface-and-widget-recipe-library-design.md
-  - ../accepted/ui-designer-view-model-capability-and-intent-binding-design.md
-  - ../accepted/ui-designer-live-preview-fixtures-scenarios-and-target-matrix-design.md
-  - ../accepted/ui-designer-persistence-migration-diff-and-activation-design.md
-  - ../accepted/ui-designer-production-readiness-and-evidence-design.md
-  - ./editor-tool-suite-registry-and-workbench-host-design.md
+  - ./ui-designer-canonical-ir-and-composition-design.md
+  - ./ui-designer-target-projection-profiles-design.md
+  - ./ui-designer-visual-layout-and-interface-composition-design.md
+  - ./ui-designer-theme-tokens-modes-skins-and-state-variants-design.md
+  - ./ui-designer-component-surface-and-widget-recipe-library-design.md
+  - ./ui-designer-view-model-capability-and-intent-binding-design.md
+  - ./ui-designer-live-preview-fixtures-scenarios-and-target-matrix-design.md
+  - ./ui-designer-persistence-migration-diff-and-activation-design.md
+  - ./ui-designer-production-readiness-and-evidence-design.md
+  - ../implemented/editor-tool-suite-registry-and-workbench-host-design.md
   - ../superseded/runenwerk-capability-workbench-target-architecture.md
-  - ./editor-ui-workspace-tool-surface-architecture.md
+  - ../active/editor-ui-workspace-tool-surface-architecture.md
 related_roadmaps:
   - ../../domain/ui/roadmap.md
 ---
@@ -34,13 +34,17 @@ related_roadmaps:
 
 ## Status
 
-This is an active design, not an accepted implementation contract.
+Accepted architecture direction. This is not an implementation-completeness claim.
 
 It defines the long-term UI Designer/Lab direction historically decomposed as
-`PT-UI-DESIGN`. It does not authorize code, schema, runtime, UI-surface, or work
-state changes by itself. Any implementation requires an owning GitHub issue,
-architecture governance when ownership changes, canonical roadmap sequencing
-when relevant, and a reviewed pull request with exact-head validation evidence.
+`PT-UI-DESIGN`. The platform-level ownership model, canonical definition
+pipeline, and separate editor/workbench and game-runtime target profiles are
+accepted. App/runtime integrations and the future game-runtime UI target remain
+separately owned work. This design does not authorize code, schema, runtime,
+UI-surface, or work state changes by itself. Any implementation requires an
+owning GitHub issue, architecture governance when ownership changes, canonical
+roadmap sequencing when relevant, and a reviewed pull request with exact-head
+validation evidence.
 
 `PT-UI-DESIGN`, `PM-UI-DESIGN-*`, and old WR/workflow records are retained only
 as architecture/decomposition provenance.
@@ -343,19 +347,20 @@ This design does not itself:
 Those are future boundary or implementation decisions owned by accepted designs,
 ADRs where required, GitHub issues, and reviewed pull requests.
 
-## Promotion Criteria
+## Acceptance Basis
 
-This design can move from `active` to `accepted` only after:
+This design was promoted from `active` to `accepted` after confirming that:
 
 - the domain split is unambiguous;
 - editor/workbench and game-runtime target profiles are explicit;
-- architecture governance decides whether an ADR or future
-  `domain/ui_definition` / `domain/game_ui` crate boundary decision is required;
+- architecture governance keeps current ownership in `domain/ui/ui_definition`
+  and requires a future accepted design or ADR before extracting
+  `domain/ui_definition` or introducing a game-UI owner boundary;
 - the accepted designs below it still support the current architecture;
 - current repository documentation validation passes at the reviewed revision.
 
 Promotion is a documentation/architecture state decision, not a production-track
-or WR lifecycle event.
+or WR lifecycle event, and does not imply runtime or product completion.
 
 ## Validation
 
@@ -386,8 +391,8 @@ acceptance evidence.
 - Workbench-only wording is not used as the platform-level description.
 - The composition, styling, binding, diagnostics, fixture/golden, and round-trip
   sections are present.
-- The active design is sequenced through canonical roadmaps rather than a
-  parallel production-track ledger.
+- The design is sequenced through canonical roadmaps rather than a parallel
+  production-track ledger.
 - No implementation is inferred from PT/PM/WR labels alone.
 
 <!-- BEGIN RUNENWERK:UI_COMPONENT_PLATFORM:designer-consumption -->
