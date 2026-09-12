@@ -5,7 +5,7 @@ status: active
 owner: ui
 layer: domain
 canonical: true
-last_reviewed: 2026-09-10
+last_reviewed: 2026-09-12
 ---
 
 # UI Domain
@@ -47,7 +47,7 @@ This page remains the UI-domain landing page and current docs router.
 3. Active UI design docs define target slices.
 4. `docs/domain/ui/architecture.md` records current code truth.
 5. `docs/domain/ui/roadmap.md` records execution sequencing.
-6. Narrow polish docs are supporting evidence only.
+6. Historical polish material is supporting evidence only.
 
 ## Current UI Truth
 
@@ -98,7 +98,6 @@ boundary; neither legacy area is a parallel target authority.
 
 - [Editor UI Runtime V2 and Interaction Formation Design](../../design/implemented/editor-ui-runtime-v2-and-interaction-formation-design.md)
 - [ADR 0009: UI Interaction Formation V2](../../adr/accepted/0009-ui-interaction-formation-v2.md)
-- [Editor UI Popup, Adornment, And Drop Preview Contract](../../design/active/editor-ui-popup-adornment-drop-preview-contract.md)
 
 ## Legacy Shell / Workspace / Tool Surfaces
 
@@ -126,7 +125,7 @@ definition vocabulary
   -> editor/app guard
 ```
 
-Narrow shell polish docs are supporting evidence. They do not own long-term UI
+Historical shell-polish and popup/adornment records are supporting evidence. They do not own long-term UI
 policy and cannot promote alternate execution targets.
 
 The current retained UI slice catalog is:
@@ -153,8 +152,7 @@ are
 `domain/ui/ui_runtime/src/layout/engine.rs::layout_popup`,
 `domain/ui/ui_runtime/src/runtime/ui_runtime.rs::dispatch_keyboard_event`, and
 the toolbar/tab-stack/dock-drop/status adapters in
-`domain/editor/editor_shell/src/composition/`. WR-024 shell polish must still
-cite the named Interaction V2 slice it consumes.
+`domain/editor/editor_shell/src/composition/`. The former WR-024 shell-polish record is historical evidence; any later retained-UI polish must cite the owning Interaction V2 slice rather than reviving WR-024 as policy.
 
 ## Scope Boundary
 

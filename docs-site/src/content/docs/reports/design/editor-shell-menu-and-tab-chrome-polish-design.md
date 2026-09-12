@@ -1,15 +1,18 @@
 ---
 title: Editor Shell Menu And Tab Chrome Polish Design
-description: Active design for popup contrast, scrollable menus, viewport statistics, submenu anchoring, and left-side close/active indicators.
-status: active
+description: Historical supporting evidence for popup contrast, scrollable menus, viewport statistics, submenu anchoring, and tab/workspace chrome polish.
+status: superseded
 owner: domain/editor/editor_shell
-layer: editor-ui
-canonical: true
-last_reviewed: 2026-05-15
+layer: reports
+canonical: false
+last_reviewed: 2026-09-12
+superseded_by:
+  - ../../adr/accepted/0009-ui-interaction-formation-v2.md
+  - ../../design/implemented/editor-ui-runtime-v2-and-interaction-formation-design.md
 related_designs:
-  - ../implemented/editor-ui-runtime-v2-and-interaction-formation-design.md
-  - ./editor-ui-popup-adornment-drop-preview-contract.md
-  - ../implemented/editor-self-authoring-and-final-ui-design.md
+  - ../../design/implemented/editor-ui-runtime-v2-and-interaction-formation-design.md
+  - ../../design/superseded/editor-ui-popup-adornment-drop-preview-contract.md
+  - ../../design/implemented/editor-self-authoring-and-final-ui-design.md
 related_adrs:
   - ../../adr/accepted/0009-ui-interaction-formation-v2.md
 related_roadmaps:
@@ -21,20 +24,9 @@ related_roadmaps:
 
 ## Status
 
-Active supporting evidence. This is retained UI polish, not a new UI execution
-strategy and not the long-term interaction contract owner.
+Historical supporting evidence for the former WR-024 retained-UI polish boundary. This document is not current work or architecture authority.
 
-This document is subordinate to ADR 0009 and
-`editor-ui-runtime-v2-and-interaction-formation-design.md`. Keep it active while
-the immediate polish work is useful, but do not treat it as the long-term owner
-for popup stack, scroll ownership, focus return, chrome slots, docking/drop-zone
-precedence, menu sizing, or status overflow contracts.
-
-Do not start durable popup, scroll, focus, docking-zone, menu-sizing,
-status-overflow, or viewport-input policy from this document before the
-corresponding WR-025 Interaction V2 contract slice is defined. Work from this
-document is valid only as a retained-UI implementation slice that consumes
-Interaction V2 contracts, or as explicitly bounded compatibility evidence.
+Current durable interaction authority is [ADR 0009](../../adr/accepted/0009-ui-interaction-formation-v2.md) together with the [implemented Interaction V2 design](../../design/implemented/editor-ui-runtime-v2-and-interaction-formation-design.md); current code and tests own exact behavior. The remaining sections preserve point-in-time planning, implementation anchors, and compatibility rationale and may therefore use historical WR-024/WR-025 language.
 
 ## WR-024 Entry Boundary
 

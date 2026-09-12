@@ -5,7 +5,7 @@ status: active
 owner: workspace
 layer: workspace
 canonical: true
-last_reviewed: 2026-09-10
+last_reviewed: 2026-09-12
 ---
 
 # Superseded Designs
@@ -20,7 +20,7 @@ No superseded foundation design documents are currently tracked in this folder.
 
 ### Editor Domain
 
-No superseded editor-domain design documents are currently tracked in this folder.
+- [Editor UI Popup, Adornment, And Drop Preview Contract](editor-ui-popup-adornment-drop-preview-contract.md)
 
 ### UI Domain
 
