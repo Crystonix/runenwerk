@@ -24,8 +24,8 @@ related:
 This audit extracts the reusable software-development guidance from Runenwerk's
 repository docs and generalizes it for software projects outside Runenwerk.
 
-The maintained guide produced from this audit now lives in
-[`../../software-development/principles.md`](../../software-development/principles.md).
+At the time of this audit, the maintained guide lived at
+[`docs-site/src/content/docs/software-development/principles.md`](https://github.com/dornglut/runenwerk/blob/2b00243021d9e6c7dff5e7a8770110cbd966e6f7/docs-site/src/content/docs/software-development/principles.md).
 
 It is a completed extraction report, not a new Runenwerk architecture rule. If a
 Runenwerk-specific rule conflicts with this report, the owning guideline, ADR,

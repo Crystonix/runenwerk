@@ -14,7 +14,6 @@ related_adrs:
   - ../adr/accepted/0019-batteries-included-application-composition.md
 related_docs:
   - ./repository-family-architecture.md
-  - ../guidelines/authority-centered-boundary-architecture.md
   - ../guidelines/domain-program-architecture-pattern.md
   - ../reports/investigations/2026-08-12-semantic-federation-and-inspection-provenance.md
   - ../reports/investigations/2026-08-12-application-composition-and-networking-ergonomics.md
@@ -648,7 +647,7 @@ For cross-domain architecture work:
    product-facing `App` and usability doctrine.
 7. [Framework Integration Architecture](./repository-family-architecture.md) and the owning
    subsystem/framework design for the work at hand.
-8. [Authority-Centered Boundary Architecture](../guidelines/authority-centered-boundary-architecture.md)
+8. [Dornglut Engineering Software Design Standard](https://github.com/dornglut/engineering/blob/main/standards/software-design.md)
    or [Domain Program Architecture Pattern](../guidelines/domain-program-architecture-pattern.md)
    when those specialized guidelines apply.
 

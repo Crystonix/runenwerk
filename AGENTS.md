@@ -2,9 +2,10 @@
 
 Runenwerk is a Dornglut `integration-product` repository. This file defines only the Runenwerk-specific executor contract.
 
-Organization-wide work selection, repository and GitHub rules, validation-evidence semantics, contribution/licensing defaults, and cross-repository governance are owned by `dornglut/engineering`:
+Organization-wide work selection, project-neutral software-design defaults, repository and GitHub rules, validation-evidence semantics, contribution/licensing defaults, and cross-repository governance are owned by `dornglut/engineering`:
 
 - [Authority and work](https://github.com/dornglut/engineering/blob/main/governance/authority-and-work.md)
+- [Software design standard](https://github.com/dornglut/engineering/blob/main/standards/software-design.md)
 - [Repository standard](https://github.com/dornglut/engineering/blob/main/standards/repositories.md)
 - [GitHub standard](https://github.com/dornglut/engineering/blob/main/standards/github.md)
 - [Validation standard](https://github.com/dornglut/engineering/blob/main/standards/validation.md)

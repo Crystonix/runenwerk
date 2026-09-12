@@ -7,7 +7,6 @@ layer: guidelines
 canonical: true
 last_reviewed: 2026-07-22
 related_docs:
-  - ../software-development/principles.md
   - ./architecture.md
   - ./code-patterns.md
   - ./dependency-rules.md
@@ -16,7 +15,7 @@ related_docs:
 
 # Runenwerk Programming Principles
 
-Use these principles as review lenses. They do not replace domain ownership, dependency direction, accepted ADRs, tests, or validation.
+Use these principles as review lenses. They do not replace domain ownership, dependency direction, accepted ADRs, tests, or validation. Project-neutral software-design defaults are owned by [Dornglut Engineering's Software Design Standard](https://github.com/dornglut/engineering/blob/main/standards/software-design.md); this page retains the Runenwerk-specific review lens.
 
 ## KISS
 
