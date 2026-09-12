@@ -11,7 +11,6 @@ related_adrs:
   - ./0015-separate-gpu-execution-from-rendering.md
 related_docs:
   - ../../architecture/repository-family-architecture.md
-  - ../../guidelines/authority-centered-boundary-architecture.md
   - ../../guidelines/domain-program-architecture-pattern.md
   - ../../guidelines/runenwerk-architecture.md
   - ../../design/active/runenwerk-domain-workbench-north-star.md

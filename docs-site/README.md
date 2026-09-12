@@ -27,8 +27,7 @@ python3 tools/docs/validate_docs.py
 ## Structure
 
 - `workspace/`: repository orientation, agent rules, docs status, and workflow docs
-- `software-development/`: generalized software development principles extracted from repository practice
-- `guidelines/`: architecture doctrine, module structure, and placement rules
+- `guidelines/`: Runenwerk architecture, programming principles, module structure, and placement rules
 - `domain/`: domain crate documentation
 - `engine/`: engine/runtime/plugin docs
 - `net/`: networking, simulation, replay, and runtime convergence docs

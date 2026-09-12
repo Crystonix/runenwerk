@@ -15,8 +15,8 @@ This document defines the active Runenwerk workspace boundaries and where new Ru
 For the canonical Runenwerk-wide architecture spine, see
 [`../architecture/runenwerk-platform-architecture.md`](../architecture/runenwerk-platform-architecture.md).
 
-For the reusable boundary doctrine underneath that specialization, see
-[`authority-centered-boundary-architecture.md`](authority-centered-boundary-architecture.md).
+Project-neutral software-design defaults are owned by
+[Dornglut Engineering's Software Design Standard](https://github.com/dornglut/engineering/blob/main/standards/software-design.md).
 
 For the exact current local workspace-member inventory, see
 [`../workspace/crate-inventory.md`](../workspace/crate-inventory.md). For detailed dependency guidance, see [`dependency-rules.md`](dependency-rules.md). Cross-repository family membership, repository relationships, and source-authority transfer governance remain owned by Dornglut Engineering rather than by a Runenwerk guideline.

@@ -12,7 +12,6 @@ related_adrs:
   - ./0017-cross-authority-consistency-and-graph-semantics.md
 related_docs:
   - ../../architecture/repository-family-architecture.md
-  - ../../guidelines/authority-centered-boundary-architecture.md
   - ../../guidelines/domain-program-architecture-pattern.md
   - ../../design/active/runenwerk-domain-workbench-north-star.md
   - ../../design/active/runengpu-architecture-design.md
