@@ -18,7 +18,7 @@ related_designs:
   - ./ui-designer-visual-layout-and-interface-composition-design.md
   - ./ui-designer-theme-tokens-modes-skins-and-state-variants-design.md
   - ./ui-designer-component-surface-and-widget-recipe-library-design.md
-  - ../active/ui-designer-interface-lab-platform-design.md
+  - ./ui-designer-interface-lab-platform-design.md
   - ../active/editor-tool-suite-registry-and-workbench-host-design.md
   - ../superseded/runenwerk-capability-workbench-target-architecture.md
 related_roadmaps:

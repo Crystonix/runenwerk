@@ -19,7 +19,7 @@ related_designs:
   - ./ui-designer-component-surface-and-widget-recipe-library-design.md
   - ./ui-designer-view-model-capability-and-intent-binding-design.md
   - ./ui-designer-live-preview-fixtures-scenarios-and-target-matrix-design.md
-  - ../active/ui-designer-interface-lab-platform-design.md
+  - ./ui-designer-interface-lab-platform-design.md
 related_roadmaps:
   - ../../domain/ui/roadmap.md
 ---

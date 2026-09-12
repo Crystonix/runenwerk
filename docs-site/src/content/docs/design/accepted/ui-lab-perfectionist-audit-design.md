@@ -15,7 +15,7 @@ related_adrs:
   - ../../adr/superseded/0012-capability-workbench-clean-break.md
 related_designs:
   - ../implemented/ui-lab-productization-design.md
-  - ../active/ui-designer-interface-lab-platform-design.md
+  - ./ui-designer-interface-lab-platform-design.md
   - ../active/editor-tool-suite-registry-and-workbench-host-design.md
   - ../active/editor-ui-workspace-tool-surface-architecture.md
   - ./ui-lab-command-catalog-and-surface-registry-design.md

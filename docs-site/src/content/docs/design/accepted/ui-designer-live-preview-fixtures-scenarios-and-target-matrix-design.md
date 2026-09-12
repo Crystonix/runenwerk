@@ -18,7 +18,7 @@ related_designs:
   - ./ui-designer-theme-tokens-modes-skins-and-state-variants-design.md
   - ./ui-designer-component-surface-and-widget-recipe-library-design.md
   - ./ui-designer-view-model-capability-and-intent-binding-design.md
-  - ../active/ui-designer-interface-lab-platform-design.md
+  - ./ui-designer-interface-lab-platform-design.md
 related_roadmaps:
   - ../../domain/ui/roadmap.md
 ---

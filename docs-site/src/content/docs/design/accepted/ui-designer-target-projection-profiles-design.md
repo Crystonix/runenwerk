@@ -12,7 +12,7 @@ related_adrs:
   - ../../adr/superseded/0012-capability-workbench-clean-break.md
 related_designs:
   - ./ui-designer-canonical-ir-and-composition-design.md
-  - ../active/ui-designer-interface-lab-platform-design.md
+  - ./ui-designer-interface-lab-platform-design.md
   - ../active/editor-tool-suite-registry-and-workbench-host-design.md
   - ../active/editor-ui-workspace-tool-surface-architecture.md
 related_roadmaps:

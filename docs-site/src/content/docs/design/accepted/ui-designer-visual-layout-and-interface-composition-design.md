@@ -12,7 +12,7 @@ related_adrs:
 related_designs:
   - ./ui-designer-canonical-ir-and-composition-design.md
   - ./ui-designer-target-projection-profiles-design.md
-  - ../active/ui-designer-interface-lab-platform-design.md
+  - ./ui-designer-interface-lab-platform-design.md
   - ../implemented/ui-definition-formation-foundation-design.md
   - ../implemented/editor-self-authoring-and-final-ui-design.md
 related_roadmaps:

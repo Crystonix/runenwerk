@@ -12,7 +12,7 @@ related_adrs:
   - ../../adr/accepted/0009-ui-interaction-formation-v2.md
   - ../../adr/superseded/0012-capability-workbench-clean-break.md
 related_designs:
-  - ../active/ui-designer-interface-lab-platform-design.md
+  - ../accepted/ui-designer-interface-lab-platform-design.md
   - ../accepted/ui-designer-target-projection-profiles-design.md
   - ../accepted/ui-designer-component-surface-and-widget-recipe-library-design.md
   - ../accepted/ui-designer-live-preview-fixtures-scenarios-and-target-matrix-design.md

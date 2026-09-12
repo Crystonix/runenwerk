@@ -12,7 +12,7 @@ related_adrs:
   - ../../adr/accepted/0005-projections-are-derived-state.md
   - ../../adr/superseded/0012-capability-workbench-clean-break.md
 related_designs:
-  - ../active/ui-designer-interface-lab-platform-design.md
+  - ./ui-designer-interface-lab-platform-design.md
   - ../implemented/ui-definition-formation-foundation-design.md
   - ../implemented/editor-self-authoring-and-final-ui-design.md
   - ../active/editor-ui-workspace-tool-surface-architecture.md

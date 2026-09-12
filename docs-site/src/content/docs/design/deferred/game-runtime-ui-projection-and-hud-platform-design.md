@@ -13,7 +13,7 @@ related_adrs:
   - ../../adr/accepted/0009-ui-interaction-formation-v2.md
 related_designs:
   - ../accepted/app-neutral-ui-composition-design.md
-  - ../active/ui-designer-interface-lab-platform-design.md
+  - ../accepted/ui-designer-interface-lab-platform-design.md
   - ../accepted/ui-designer-target-projection-profiles-design.md
   - ../accepted/ui-designer-view-model-capability-and-intent-binding-design.md
   - ../accepted/ui-designer-live-preview-fixtures-scenarios-and-target-matrix-design.md
