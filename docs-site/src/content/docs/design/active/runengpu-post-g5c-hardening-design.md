@@ -12,7 +12,7 @@ related_docs:
   - ./runengpu-g3r-definite-initialization-correction.md
   - ./runengpu-phase-requirements-proof-matrix.md
   - ./runengpu-shader-authoring-artifact-boundary.md
-  - ./runen-family-operational-hardening-design.md
+  - ../../architecture/repository-family-architecture.md
   - ../../reports/investigations/runengpu-public-api-ergonomics-review.md
   - ../../reports/investigations/runengpu-proof-workload-strategy.md
   - ../../reports/investigations/runengpu-industry-comparison.md
