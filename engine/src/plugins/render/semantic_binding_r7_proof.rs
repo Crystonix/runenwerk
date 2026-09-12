@@ -5,8 +5,8 @@
 
 use super::method::{
     RenderAbstractExecutionRequirement, RenderFieldDistanceInputRequirement, RenderMethodContract,
-    RenderMethodId, RenderMethodOutputContract, RenderMethodOutputGuarantee, RenderMethodOutputKind,
-    RenderMethodRepresentationRequirement, RenderObservationKind,
+    RenderMethodId, RenderMethodOutputContract, RenderMethodOutputGuarantee,
+    RenderMethodOutputKind, RenderMethodRepresentationRequirement, RenderObservationKind,
     RenderRepresentationProtocolRequirement,
 };
 use super::participation::RenderObjectParticipation;
@@ -138,9 +138,7 @@ fn plan_for(
         .expect("R7 proof participation");
     let mut attach = RenderSceneUpdate::new();
     attach.replace_participation(object_id, participation);
-    store
-        .commit(attach)
-        .expect("attach R7 proof participation");
+    store.commit(attach).expect("attach R7 proof participation");
 
     let method = method(requirements);
     let plan = plan_render(&store.snapshot(), &request, std::slice::from_ref(&method))
