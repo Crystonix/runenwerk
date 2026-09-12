@@ -16,7 +16,6 @@ related_docs:
   - ./runengpu-post-g5c-hardening-design.md
   - ../accepted/runenrender-decomposition-design.md
   - ./runenrender-internal-decomposition-execution-plan.md
-  - ./runen-family-operational-hardening-design.md
   - ../../reports/investigations/runengpu-g4-context-program-realization-investigation.md
   - ../../reports/investigations/runengpu-industry-comparison.md
   - ../../reports/investigations/runengpu-public-api-ergonomics-review.md
