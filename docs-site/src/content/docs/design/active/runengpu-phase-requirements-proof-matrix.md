@@ -13,7 +13,7 @@ related_docs:
   - ./runengpu-g5-execution-lifecycle-design.md
   - ./runengpu-post-g5c-hardening-design.md
   - ./runengpu-shader-authoring-artifact-boundary.md
-  - ./runen-family-operational-hardening-design.md
+  - ../../architecture/repository-family-architecture.md
   - ../../reports/investigations/runengpu-proof-workload-strategy.md
   - ../../reports/investigations/runengpu-public-api-ergonomics-review.md
   - ../../workspace/planning/roadmap.md
@@ -156,7 +156,7 @@ A single PNG may accompany validated bytes as supporting evidence; the image is 
 
 **Role:** operational evidence.
 
-**Semantic owner:** G5 execution lifecycle design and operational-hardening design.
+**Semantic owner:** G5 execution lifecycle design and RunenGPU architecture design.
 
 Retain structured tests for bounded in-flight work, staging/upload/readback pressure, callback/reentrancy rules, cancellation, shutdown with pending work, and exactly-once terminal outcomes.
 
@@ -441,7 +441,7 @@ RunenGPU does not own a persisted bundle schema, redaction policy, filesystem la
 
 **Role:** operational conformance.
 
-Retain shutdown, pending work, quota saturation, cache reuse/rejection, bounded RunenGPU diagnostic/readback/profiling state, loss/reconstruction, exactly-once outcomes, and zero raw-WGPU reach-through evidence required by the operational-hardening design.
+Retain shutdown, pending work, quota saturation, cache reuse/rejection, bounded RunenGPU diagnostic/readback/profiling state, loss/reconstruction, exactly-once outcomes, and zero raw-WGPU reach-through evidence required by the RunenGPU architecture and post-G5C hardening designs.
 
 Persisted capture growth remains a Runenwerk/product concern unless a future accepted RunenGPU feature explicitly owns part of it.
 

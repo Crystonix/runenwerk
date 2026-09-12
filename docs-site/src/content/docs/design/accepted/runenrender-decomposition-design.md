@@ -17,7 +17,6 @@ related_docs:
   - ../active/runengpu-g3-access-work-graph-design.md
   - ../active/runengpu-shader-authoring-artifact-boundary.md
   - ../active/runenrender-internal-decomposition-execution-plan.md
-  - ../active/runen-family-operational-hardening-design.md
   - ../../reports/investigations/2026-08-04-runenrender-long-term-capability-and-scalability-review.md
   - ../../reports/investigations/runenrender-extraction-investigation.md
   - ../../reports/investigations/runen-family-operational-hardening-investigation.md

@@ -110,7 +110,6 @@ active design contains older conflicting target language.
 - [RunenGPU Post-G5C Hardening Design](runengpu-post-g5c-hardening-design.md)
 - [RunenGPU Phase Requirements and Proof Matrix](runengpu-phase-requirements-proof-matrix.md)
 - [RunenGPU and RunenRender Decomposition Execution Plan](runenrender-internal-decomposition-execution-plan.md)
-- [Runen Family Operational Hardening Design](runen-family-operational-hardening-design.md)
 
 ### Domain Authoring And Standalone UI Framework
 
