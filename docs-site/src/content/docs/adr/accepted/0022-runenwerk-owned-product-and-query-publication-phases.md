@@ -90,6 +90,14 @@ Changing worker count, physical stage shape, cohort width, or the number of ECS 
 publication frontiers must not change Runenwerk publication occurrence cardinality for
 the same application lifecycle path.
 
+A publication phase is installed only where a maintained semantic producer/consumer
+boundary requires it. The predecessor adapter's ability to emit callbacks from Startup,
+PreUpdate, FixedUpdate, RenderPrepare, RenderSubmit, FrameEnd, or any other schedule is
+not evidence that those schedules require a Runenwerk publication phase. Exact-current
+maintained Draw/Editor consumers do not require a separate Startup/PreUpdate publication
+occurrence before the explicit Update phases defined below, so no such compatibility
+phase is authorized merely to preserve callback cadence.
+
 ### 3. Preserve a narrow publication-handler registry
 
 The existing distinction between product handlers and query-snapshot handlers is a
