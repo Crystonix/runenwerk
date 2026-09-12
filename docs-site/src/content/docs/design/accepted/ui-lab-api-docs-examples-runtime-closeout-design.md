@@ -5,9 +5,9 @@ status: accepted
 owner: editor
 layer: domain/app/docs
 canonical: true
-last_reviewed: 2026-05-24
+last_reviewed: 2026-09-12
 related:
-  - ../active/ui-lab-productization-design.md
+  - ../implemented/ui-lab-productization-design.md
   - ./ui-lab-preview-lab-runtime-evidence-design.md
   - ./ui-lab-persistence-project-io-diff-apply-rollback-design.md
   - ./ui-designer-production-readiness-and-evidence-design.md

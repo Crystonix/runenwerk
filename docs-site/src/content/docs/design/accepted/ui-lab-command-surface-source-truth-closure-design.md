@@ -5,7 +5,7 @@ status: accepted
 owner: editor
 layer: domain/app
 canonical: true
-last_reviewed: 2026-05-25
+last_reviewed: 2026-09-12
 related_adrs:
   - ../../adr/accepted/0001-use-domain-owned-commands.md
   - ../../adr/accepted/0004-separate-description-from-execution.md
@@ -16,7 +16,7 @@ related_designs:
   - ./ui-lab-perfectionist-audit-design.md
   - ./ui-lab-command-catalog-and-surface-registry-design.md
   - ./ui-lab-runtime-evidence-platform-closure-design.md
-  - ../active/ui-lab-productization-design.md
+  - ../implemented/ui-lab-productization-design.md
   - ../active/editor-tool-suite-registry-and-workbench-host-design.md
   - ../active/editor-ui-workspace-tool-surface-architecture.md
 related_reports:

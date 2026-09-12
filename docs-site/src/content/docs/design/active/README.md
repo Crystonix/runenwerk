@@ -41,10 +41,8 @@ active design contains older conflicting target language.
 
 - [Editor Asset Pipeline and Content Workflow Design](editor-asset-pipeline-and-content-workflow-design.md)
 - [Editor Procedural Content and Simulation Workflow Plan](editor-procedural-content-and-simulation-workflow-plan.md)
-- [Editor Product UX Lab And Game UI Ready Foundations](editor-product-ux-lab-and-game-ui-ready-foundations-design.md)
 - [Editor UI Workspace Tool Surface Architecture](editor-ui-workspace-tool-surface-architecture.md)
 - [UI Designer And Interface Lab Platform](ui-designer-interface-lab-platform-design.md)
-- [UI Lab Productization Design](ui-lab-productization-design.md)
 
 ### Engine Runtime
 

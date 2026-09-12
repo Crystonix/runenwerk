@@ -5,7 +5,7 @@ status: accepted
 owner: editor
 layer: domain/app
 canonical: true
-last_reviewed: 2026-05-24
+last_reviewed: 2026-09-12
 related_adrs:
   - ../../adr/accepted/0001-use-domain-owned-commands.md
   - ../../adr/accepted/0004-separate-description-from-execution.md
@@ -14,7 +14,7 @@ related_adrs:
   - ../../adr/accepted/0010-graph-substrate-canvas-boundary.md
   - ../../adr/superseded/0012-capability-workbench-clean-break.md
 related_designs:
-  - ../active/ui-lab-productization-design.md
+  - ../implemented/ui-lab-productization-design.md
   - ../active/ui-designer-interface-lab-platform-design.md
   - ../active/editor-tool-suite-registry-and-workbench-host-design.md
   - ../active/editor-ui-workspace-tool-surface-architecture.md
