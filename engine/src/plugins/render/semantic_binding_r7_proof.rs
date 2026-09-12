@@ -23,9 +23,7 @@ use super::request::{
     RenderSamplingSupport, RenderSemanticTolerance,
 };
 use super::scene::{RenderObjectId, RenderObjectState, RenderSceneStore, RenderSceneUpdate};
-use super::semantic_binding::{
-    RenderNormalizedSurfaceSemanticInputs, RenderSemanticCandidateRejection,
-};
+use super::semantic_binding::RenderNormalizedSurfaceSemanticInputs;
 use super::semantic_plan::{RenderPlan, plan_render};
 use super::space_time::{
     RenderAffineTransform3, RenderHandedness, RenderObjectSpatialState, RenderObjectTemporalState,
@@ -272,13 +270,10 @@ fn one_binding_must_cover_every_selected_observation_shutter() {
         )],
     )
     .expect("binding shape");
-    assert!(matches!(
-        only_first.specialize_candidate(&plan, &plan.candidates()[0]),
-        Err(RenderSemanticCandidateRejection {
-            output_index: 1,
-            ..
-        })
-    ));
+    let rejection = only_first
+        .specialize_candidate(&plan, &plan.candidates()[0])
+        .expect_err("the one canonical value must cover every selected shutter");
+    assert_eq!(rejection.output_index(), 1);
 
     let covers_both = RenderNormalizedSurfaceSemanticInputs::normalize(
         &plan,
