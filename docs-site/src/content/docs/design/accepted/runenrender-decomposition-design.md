@@ -5,7 +5,7 @@ status: accepted
 owner: render
 layer: framework/render
 canonical: true
-last_reviewed: 2026-09-10
+last_reviewed: 2026-09-12
 related_docs:
   - ../../architecture/repository-family-architecture.md
   - ../../adr/accepted/0014-repository-family-extraction-boundaries.md
@@ -195,17 +195,28 @@ scene state
 != request state
 != request-scoped foreign semantic state
 
-requested semantics
-!= algorithm choice
-!= current executability
-!= physical realization
+requested semantic target
+!= method / evaluator choice
 
-semantic accuracy
+semantic/model approximation
+!= finite-evaluation fidelity/error
 != numeric realization
+
+current executability
+!= physical execution completion
+!= semantic result formation
+!= convergence
 
 semantic output meaning
 != physical output binding
 ```
+
+A method may target the exact requested semantic quantity while one finite computation
+still has deterministic numerical error, Monte Carlo variance, estimator bias, iterative
+residual, reconstruction error, learned prediction error, or another finite-evaluation
+limitation. Such finite-evaluation error is not automatically semantic/model
+approximation. Numeric realization such as f16/f32/f64 is separate again and does not by
+itself establish any semantic or finite-evaluation guarantee.
 
 An empty `RenderSceneSnapshot` is valid. Do not create parallel foundational
 "scene rendering" and "scene-less rendering" APIs.
@@ -368,8 +379,9 @@ semantic sampling support
 != algorithmic sampling strategy
 ```
 
-Different valid strategies may satisfy the same requested semantics under the declared
-equality/tolerance contract.
+Different valid strategies may target the same requested semantics under compatible
+finite-evaluation contracts. Their finite values need not be identical unless a separate
+equality or reproducibility contract requires that.
 
 ## Output semantics
 
@@ -413,11 +425,36 @@ Where applicable, an output may use monochromatic, RGB radiometric approximation
 spectral, or polarized spectral representation. These axes are not attached to outputs
 where they are meaningless.
 
-### Accuracy versus numeric realization
+### Semantic accuracy, finite evaluation, and numeric realization
 
-Semantic tolerance, error bound, confidence, physical interpretation, and meaningful
-range are distinct from f16/f32/f64, mixed precision, fixed point, quantization, texture
-format, buffer format, or packing.
+Keep three concerns distinct:
+
+```text
+semantic/model approximation
+    changes or weakens the semantic problem or guarantee being evaluated
+
+finite-evaluation fidelity/error
+    describes properties of one finite computation of the admitted semantic problem
+
+numeric realization
+    f16/f32/f64, mixed precision, fixed point, quantization, format, and packing
+```
+
+`RenderSemanticTolerance` retains the deterministic scalar tolerance contract it already
+defines where that contract is applicable. In particular, `Exact` permits no deviation
+under that contract. It must not be reinterpreted as merely "the evaluator targets the
+exact quantity," and it must not be promoted into the universal quality model for every
+stochastic, iterative, reconstructed, or learned evaluator.
+
+A numeric format does not itself imply an error bound. When a deterministic method uses
+`RenderSemanticTolerance` as its finite-value acceptance contract, its finite-evaluation
+evidence must establish that tolerance rather than infer it from f32/f64 or successful
+GPU completion. Other method families may require different method-specific finite-
+evaluation properties; introduce shared vocabulary only from demonstrated cross-method
+pressure.
+
+An explicitly admitted semantic/model approximation remains separate even when its
+finite evaluation is exact relative to that approximated model.
 
 ### Physical output binding
 
@@ -466,16 +503,21 @@ Distinguish:
 semantics-preserving alternative
     different realization/algorithm; same requested semantic contract
 
-bounded semantic approximation
-    same declared semantic quantity/result family with an explicitly weaker guarantee
+bounded semantic/model approximation
+    same result family with an explicitly weakened semantic/model guarantee
     inside the allowed approximation envelope
+
+finite-evaluation error
+    one finite computation differs from the admitted semantic target/model without
+    thereby changing that target/model
 
 semantic relaxation/substitution
     requested meaning changes; explicit authorization required
 ```
 
-Pressure may choose the first two when allowed or reject. It must never silently perform
-the third.
+Pressure may choose a semantics-preserving alternative or an explicitly permitted
+semantic/model approximation. It must never silently authorize semantic relaxation or
+silently treat finite-evaluation error as semantic/model approximation.
 
 ## Render objects and representations
 
@@ -592,10 +634,21 @@ supported observations and outputs
 supported transport/radiometric domains
 required protocols/materials/media/emitters
 required request-scoped semantic inputs
-accuracy and legal approximation
+semantic-target compatibility and legal semantic/model approximation
+finite-evaluation properties that the method can truthfully establish
 structural/numerical/statistical reproducibility properties
 execution capability requirements
 ```
+
+Method target compatibility and semantic/model approximation answer a different question
+from finite-evaluation fidelity. A method may be semantically exact but unable to prove
+that an arbitrary finite evaluation satisfies an arbitrarily strict deterministic
+request tolerance. Static deterministic bounds may participate when genuinely
+established; other methods may require invocation/result-specific evidence.
+
+No generic `Estimator`, `Quality`, variance, confidence, or convergence abstraction is
+authorized merely by this distinction. A method-specific contract should remain narrow
+until multiple materially different consumers prove common vocabulary.
 
 Method-internal topology may use rasterization, ray tracing, compute, wavefront queues,
 field traversal, regional propagation, volume integration, persistent queues, indirect
@@ -629,7 +682,7 @@ request-static applicability
 required protocols and semantic-input contracts
 binding predicates / unresolved semantic prerequisites
 legal semantics-preserving alternatives
-legal approximation envelopes
+legal semantic/model approximation envelopes
 semantic dependencies
 logical output obligations
 normalized abstract RunenGPU capability/work requirements
@@ -639,6 +692,12 @@ A plan answers:
 
 > Which solution families can satisfy this request provided their declared semantic
 > prerequisites are admitted?
+
+Planning must not claim that a finite evaluation has already satisfied an evaluation
+contract merely because the selected method targets the requested semantic quantity or
+because one numeric realization is physically executable. A statically established
+finite-evaluation property may participate in planning where it is semantic and device-
+independent; otherwise the evaluation obligation remains to later formation evidence.
 
 Planning requires no current GPU handles, residency, surface acquisition, concrete
 output binding, physical allocation, concrete pipeline, or submission.
@@ -687,6 +746,10 @@ execution admission
 
 `unsupported != unavailable`.
 
+Execution admission proves current executability. It does not by itself prove any
+method-specific finite-evaluation property of the result that a future execution may
+produce.
+
 The selected output is `AdmittedRenderPlan`. No public intermediate type is required
 merely to mirror every conceptual stage.
 
@@ -712,6 +775,10 @@ progress/completion/readback mechanics, surface lifecycle, and device-loss outco
 No second GPU lifetime, error, resource, hazard, submission, or surface authority exists
 in RunenRender.
 
+Physical execution completion is therefore distinct from semantic result formation.
+RunenGPU completion may be necessary evidence for an execution, but it does not establish
+method-specific finite-evaluation fidelity on RunenRender's behalf.
+
 ## Color, overlay, reconstruction, and presentation intent
 
 RunenRender owns renderer-semantic color/transfer behavior where it affects render-result
@@ -735,11 +802,20 @@ not necessarily a Rust-owned byte container.
 
 Applicable result evidence may include scene revision, request/observation correlation,
 outputs formed, semantic-input generations, method/revision, representation/protocol
-provenance, declared approximation, semantic validity/error evidence, and
-completion/partial-completion state.
+provenance, admitted semantic/model approximation, method-specific finite-evaluation
+provenance, semantic validity evidence, and completion/partial-completion state.
+
+A result may claim only finite-evaluation properties that the renderer has actually
+established for that invocation. Physical execution completion alone is insufficient.
+When a deterministic method uses `RenderSemanticTolerance` as its finite-value acceptance
+contract, semantic result formation must establish that tolerance. A stochastic,
+iterative, reconstructed, or otherwise refinable result may instead be complete under a
+different declared finite-evaluation contract while remaining noisy, unconverged, and
+improvable.
 
 Actual values may remain in retained renderer products, physical output bindings,
-readback results, or presentation destinations.
+readback results, or presentation destinations. Result evidence need not own those bytes,
+but it must not fabricate evaluation quality from GPU completion or numeric format.
 
 GPU backend/device/timing/submission IDs are diagnostics unless a concrete semantic
 contract explicitly requires them.
@@ -764,7 +840,8 @@ explicit compatibility/invalidation semantics and never observes partial scene m
 
 ## Incremental correctness and resynchronization
 
-For the same admitted semantic inputs:
+For deterministic methods and the same admitted semantic inputs plus compatible finite-
+evaluation contract:
 
 ```text
 incremental evaluation
@@ -772,6 +849,12 @@ incremental evaluation
 clean/full evaluation
 under owner-declared equality/tolerance
 ```
+
+For stochastic or otherwise non-deterministic methods, incremental/full correctness
+requires preservation of the same requested semantic target, the same admitted
+semantic/model approximation, and a compatible finite-evaluation contract. It does not
+require identical random streams, finite samples, estimator realizations, or output bits
+unless a separate reproducibility contract explicitly requires them.
 
 Unknown, incompatible, pruned, or untrusted narrow evidence widens invalidation or
 triggers owner-local recovery:
@@ -847,6 +930,10 @@ Statistical
 BitwiseUnderConstrainedEnvironment
 ```
 
+These classes describe reproducibility/evaluation behavior, not semantic/model
+approximation. In particular, a method may target an exact semantic quantity while one
+finite realization is only `NumericalWithinTolerance` or `Statistical`.
+
 Applicable reproducibility facts may include random generator/revision, seed/stream
 allocation, sample ranges, accumulation order, numerical mode, method/protocol revisions,
 representation/input generations, and permitted device/backend facts.
@@ -907,7 +994,8 @@ unbounded message storm.
 ### Selection provenance
 
 Exact selected protocols, representations, methods/revisions, relevant seeds, input
-generations, and declared approximations remain inspectable.
+generations, admitted semantic/model approximations, and applicable finite-evaluation
+provenance remain inspectable.
 
 The logical world may be finite or unbounded. Every concrete render execution operates
 on a finite bounded working set.
@@ -944,6 +1032,11 @@ execution
     minimal physical output bindings
     CPU reference probes
 ```
+
+The current founding execution proof uses a finite deterministic numeric tolerance for
+its f32-valued radiance/depth comparison while retaining exact categorical identity.
+That is concrete finite-evaluation evidence for the proof workload; it does not redefine
+the method's semantic/model target and does not establish a universal method bound.
 
 This proves both conventional image rendering and the broader-than-image semantic API.
 It does not authorize public types named after SDF, direct lighting, preview, or the
