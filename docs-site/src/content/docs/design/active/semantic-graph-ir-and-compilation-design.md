@@ -5,7 +5,7 @@ status: active
 owner: workspace
 layer: cross-domain
 canonical: true
-last_reviewed: 2026-09-11
+last_reviewed: 2026-09-12
 related_docs:
   - ../../guidelines/runenwerk-architecture.md
   - ../../domain/ecs/architecture.md
@@ -13,7 +13,7 @@ related_designs:
   - ./gameplay-graph-atr-ir-and-ecs-lowering-design.md
   - ./engine-game-runtime-editor-ecs-scripting-hot-reload-design.md
   - ../accepted/sdf-first-field-world-platform-design.md
-  - ./workspace-viewport-expression-upgrade-design.md
+  - ../implemented/workspace-viewport-expression-upgrade-design.md
 related_adrs:
   - ../../adr/accepted/0010-graph-substrate-canvas-boundary.md
 ---

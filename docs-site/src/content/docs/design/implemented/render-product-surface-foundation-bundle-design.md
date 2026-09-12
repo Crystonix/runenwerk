@@ -5,12 +5,12 @@ status: implemented
 owner: engine
 layer: engine-runtime
 canonical: true
-last_reviewed: 2026-05-16
+last_reviewed: 2026-09-12
 related_designs:
   - ../accepted/editor-native-multi-window-presentation-design.md
   - ../accepted/render-fragment-data-driven-maturity-design.md
   - ./viewport-dynamic-product-target-allocation-design.md
-  - ../active/workspace-viewport-expression-upgrade-design.md
+  - ./workspace-viewport-expression-upgrade-design.md
   - ../active/engine-game-runtime-editor-ecs-scripting-hot-reload-design.md
 related_roadmaps:
   - ../../engine/plugins/render/docs/roadmap.md

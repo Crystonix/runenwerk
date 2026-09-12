@@ -5,7 +5,7 @@ status: active
 owner: workspace
 layer: workspace
 canonical: true
-last_reviewed: 2026-09-09
+last_reviewed: 2026-09-12
 ---
 
 # Design Documents
@@ -47,7 +47,6 @@ Examples:
 
 ```text
 active/editor-ui-workspace-tool-surface-architecture.md
-active/workspace-viewport-expression-upgrade-design.md
 ```
 
 ## `accepted/`
@@ -101,6 +100,7 @@ Examples:
 
 ```text
 implemented/foundation-ratification-design.md
+implemented/workspace-viewport-expression-upgrade-design.md
 ```
 
 ## `rejected/`
